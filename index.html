@@ -11,6 +11,10 @@
             box-sizing: border-box;
         }
 
+        html {
+            overflow-x: hidden;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: #1a1a1a;
@@ -19,6 +23,8 @@
             padding: 0;
             margin: 0;
             overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
         }
 
         .header-section {
@@ -46,8 +52,8 @@
 
         .button {
             display: inline-block;
-            background-color: #3a3a3a;
-            color: #ffffff;
+            background-color: #ffffff;
+            color: #000000;
             text-decoration: none;
             padding: 16px 48px;
             border-radius: 12px;
@@ -59,11 +65,11 @@
         }
 
         .button:hover {
-            background-color: #4a4a4a;
+            background-color: #e0e0e0;
         }
 
         .button:active {
-            background-color: #2a2a2a;
+            background-color: #cccccc;
         }
 
         .image-gallery {
@@ -111,24 +117,21 @@
             }
 
             .image-gallery {
-                gap: 12px;
+                gap: 10px;
                 padding: 32px 0 60px;
                 flex-wrap: nowrap;
                 justify-content: center;
-                overflow-x: visible;
-                width: 100vw;
-                position: relative;
-                left: 50%;
-                right: 50%;
-                margin-left: -50vw;
-                margin-right: -50vw;
+                overflow-x: hidden;
+                width: 100%;
+                max-width: 100vw;
+                margin: 0;
             }
 
             .image-gallery img {
-                width: 160px;
+                width: calc(33.333% - 7px);
                 max-width: none;
-                min-width: 160px;
-                flex: 0 0 160px;
+                min-width: 0;
+                flex: 0 0 calc(33.333% - 7px);
             }
 
             .image-gallery img.mobile-hidden {
