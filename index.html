@@ -80,29 +80,39 @@
             background-color: #cccccc;
         }
 
-        .image-gallery {
+        .collection-grid {
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 20px;
+            gap: 2rem;
             padding: 40px 0 80px;
-            max-width: 100%;
-            margin: 0;
-            flex-wrap: nowrap;
             width: 100%;
+            overflow: hidden;
+            animation: scroll 120s linear infinite;
         }
 
-        .image-gallery img {
+        .collection-grid .card {
+            flex-shrink: 0;
             width: auto;
-            max-width: 250px;
             height: auto;
             border-radius: 12px;
             object-fit: cover;
-            flex: 0 0 auto;
         }
 
-        .image-gallery img.mobile-hidden {
+        .collection-grid .card.desktop {
+            max-width: 250px;
+        }
+
+        .collection-grid .card.mobile-hidden {
             display: block;
+        }
+
+        @keyframes scroll {
+            from {
+                transform: translateX(0);
+            }
+            to {
+                transform: translateX(calc(var(--scroll-distance) * -1));
+            }
         }
 
         @media (max-width: 768px) {
@@ -130,25 +140,20 @@
                 font-size: 16px;
             }
 
-            .image-gallery {
+            .collection-grid {
                 gap: 12px;
                 padding: 32px 0 60px;
-                flex-wrap: nowrap;
-                justify-content: center;
                 width: 100vw;
                 margin-left: calc(50% - 50vw);
                 margin-right: calc(50% - 50vw);
-                position: relative;
             }
 
-            .image-gallery img {
+            .collection-grid .card.desktop {
                 width: 180px;
-                max-width: none;
                 min-width: 180px;
-                flex: 0 0 180px;
             }
 
-            .image-gallery img.mobile-hidden {
+            .collection-grid .card.mobile-hidden {
                 display: none;
             }
         }
@@ -161,13 +166,74 @@
         <p class="intro">A different angle to listen to.<br>Morning, noon, and evening.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Join Beta</a>
     </div>
-    <div class="image-gallery">
-        <img src="images/1.webp" alt="Angle preview 1" class="mobile-hidden">
-        <img src="images/2.webp" alt="Angle preview 2">
-        <img src="images/3.webp" alt="Angle preview 3">
-        <img src="images/4.webp" alt="Angle preview 4">
-        <img src="images/5.webp" alt="Angle preview 5" class="mobile-hidden">
-    </div>
+    <div class="collection-grid" id="collectionGrid"></div>
+    <script src="images.js"></script>
+    <script>
+        // Initialize the collection grid
+        function initCollectionGrid() {
+            const collectionGrid = document.getElementById('collectionGrid');
+            const isMobile = window.innerWidth <= 768;
+            
+            // Filter images based on device
+            const visibleImages = isMobile 
+                ? imageData.filter(img => !img.mobileHidden)
+                : imageData;
+            
+            // Create cards from image data
+            function createCards() {
+                const cards = [];
+                visibleImages.forEach(img => {
+                    const card = document.createElement('img');
+                    card.src = img.src;
+                    card.alt = img.alt;
+                    card.className = 'card desktop';
+                    if (img.mobileHidden) {
+                        card.classList.add('mobile-hidden');
+                    }
+                    cards.push(card);
+                });
+                return cards;
+            }
+            
+            // Clear existing content
+            collectionGrid.innerHTML = '';
+            
+            // Create first set of cards
+            const firstSet = createCards();
+            firstSet.forEach(card => collectionGrid.appendChild(card));
+            
+            // Measure the width of one complete set
+            const setWidth = collectionGrid.scrollWidth;
+            
+            // Duplicate the set enough times to fill at least 2x the viewport width
+            const viewportWidth = window.innerWidth;
+            const setsNeeded = Math.ceil((viewportWidth * 2) / setWidth) + 1;
+            
+            // Create additional sets for seamless looping
+            for (let i = 0; i < setsNeeded; i++) {
+                const duplicateSet = createCards();
+                duplicateSet.forEach(card => {
+                    const clonedCard = card.cloneNode(true);
+                    collectionGrid.appendChild(clonedCard);
+                });
+            }
+            
+            // Set CSS variable for scroll distance
+            collectionGrid.style.setProperty('--scroll-distance', setWidth + 'px');
+        }
+        
+        // Initialize on load
+        initCollectionGrid();
+        
+        // Reinitialize on resize (debounced)
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                initCollectionGrid();
+            }, 250);
+        });
+    </script>
 </body>
 </html>
 
