@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Angle</title>
+    <link rel="icon" type="image/webp" href="/images/icon.webp">
     <style>
         @font-face {
             font-family: 'LTT Recoletta';
-            src: url('LttRecoleta-CmpRegular.otf') format('opentype');
+            src: url('/fonts/LttRecoleta-CmpRegular.otf') format('opentype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -15,11 +16,12 @@
         
         @font-face {
             font-family: 'Berkeley Mono';
-            src: url('BerkeleyMono-Regular.otf') format('opentype');
+            src: url('/fonts/BerkeleyMono-Regular.otf') format('opentype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
         }
+        
         * {
             margin: 0;
             padding: 0;
@@ -146,28 +148,6 @@
             will-change: transform;
         }
 
-        .collection-grid .card {
-            flex-shrink: 0;
-            width: auto;
-            height: auto;
-            border-radius: 12px;
-            object-fit: cover;
-        }
-
-        .collection-grid .card.desktop {
-            max-width: 250px;
-        }
-
-        .collection-grid .episode-card {
-            width: 300px !important;
-            height: 400px !important;
-            max-width: 300px !important;
-        }
-
-        .collection-grid .card.mobile-hidden {
-            display: block;
-        }
-
         .episode-card {
             position: relative;
             border-radius: 32px;
@@ -179,6 +159,7 @@
             height: 400px;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
         }
 
         .episode-card:hover {
@@ -284,15 +265,6 @@
                 padding: 15px 0 60px;
             }
 
-            .collection-grid .card.desktop {
-                width: 180px;
-                min-width: 180px;
-            }
-
-            .collection-grid .card.mobile-hidden {
-                display: none;
-            }
-
             .episode-card {
                 width: 300px;
                 height: 400px;
@@ -318,22 +290,22 @@
 </head>
 <body>
     <div class="header-section">
-        <img src="images/icon.webp" alt="Angle icon" class="app-icon">
+        <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
         <h1>Angle</h1>
         <p class="intro">A different angle to listen to.<br>Morning, noon, and evening.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Join Beta</a>
     </div>
-    <div class="filters" id="filters">
-        <!-- Categories will be loaded dynamically -->
-    </div>
+    <div class="filters" id="filters"></div>
     <div class="gallery-wrapper">
-        <div class="collection-grid" id="collectionGrid"></div>
+        <div class="collection-grid" id="collectionGrid">
+            <div class="loading">Loading episodes...</div>
+        </div>
     </div>
-    <script src="images.js"></script>
+    
     <script>
         let episodes = [];
         let activeFilter = 'all';
-        
+
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
             const shuffled = [...array];
@@ -343,203 +315,78 @@
             }
             return shuffled;
         }
-        
-        // Fetch categories from API
-        async function fetchCategories() {
-            try {
-                const response = await fetch('/api/categories');
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    initFilters(result.data);
-                } else {
-                    console.error('Failed to fetch categories:', result.error);
-                }
-            } catch (error) {
-                console.error('Error fetching categories:', error);
-            }
-        }
-        
-        // Fetch episodes from API
-        async function fetchEpisodes() {
-            try {
-                const response = await fetch('/api/episodes');
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    episodes = shuffleArray(result.data);
-                    initEpisodesGrid();
-                } else {
-                    console.error('Failed to fetch episodes:', result.error);
-                    // Fallback to images if API fails
-                    initImageGrid();
-                }
-            } catch (error) {
-                console.error('Error fetching episodes:', error);
-                // Fallback to images if API fails
-                initImageGrid();
-            }
-        }
-        
+
         // Create episode card element
         function createEpisodeCard(episode) {
             const card = document.createElement('div');
-            card.className = 'episode-card card desktop';
+            card.className = 'episode-card';
+            card.setAttribute('data-category', episode.category || '');
             
-            const img = document.createElement('img');
-            img.src = episode.coverImage || 'images/icon.webp';
-            img.alt = episode.title;
-            img.loading = 'lazy';
-            
-            const gradient = document.createElement('div');
-            gradient.className = 'episode-gradient';
-            
-            const info = document.createElement('div');
-            info.className = 'episode-info';
-            
-            const title = document.createElement('h3');
-            title.className = 'episode-title';
-            title.textContent = episode.title;
-            
-            const description = document.createElement('p');
-            description.className = 'episode-description';
-            description.textContent = episode.description || '';
-            
-            info.appendChild(title);
-            info.appendChild(description);
-            card.appendChild(img);
-            card.appendChild(gradient);
-            card.appendChild(info);
+            card.innerHTML = `
+                <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
+                <div class="episode-gradient"></div>
+                <div class="episode-info">
+                    <h3 class="episode-title">${episode.title}</h3>
+                    <p class="episode-description">${episode.description || ''}</p>
+                </div>
+            `;
             
             return card;
         }
-        
-        // Filter episodes by category
-        function getFilteredEpisodes() {
-            if (activeFilter === 'all') {
-                return episodes;
-            }
-            return episodes.filter(episode => episode.category === activeFilter);
-        }
-        
-        // Initialize episodes grid
-        function initEpisodesGrid() {
-            const collectionGrid = document.getElementById('collectionGrid');
+
+        // Filter and render episodes
+        function renderEpisodes(filter = 'all') {
+            const grid = document.getElementById('collectionGrid');
             const isMobile = window.innerWidth <= 768;
             
-            // Get filtered episodes by category
-            const filteredEpisodes = getFilteredEpisodes();
-            
-            // Filter episodes based on device (show only middle 3 on mobile)
-            const visibleEpisodes = isMobile 
-                ? filteredEpisodes.filter((episode, index) => {
+            // Filter by category
+            let filteredEpisodes = filter === 'all' 
+                ? episodes 
+                : episodes.filter(ep => ep.category === filter);
+
+            // Filter for mobile (show only middle 3 of each 5)
+            if (isMobile) {
+                filteredEpisodes = filteredEpisodes.filter((_, index) => {
                     const episodeIndex = index % 5;
                     return episodeIndex === 1 || episodeIndex === 2 || episodeIndex === 3;
-                })
-                : filteredEpisodes;
-            
-            // Clear existing content
-            collectionGrid.innerHTML = '';
-            
-            // Show loading if no episodes
-            if (visibleEpisodes.length === 0) {
-                collectionGrid.innerHTML = '<div class="loading">No episodes available</div>';
+                });
+            }
+
+            grid.innerHTML = '';
+
+            if (filteredEpisodes.length === 0) {
+                grid.innerHTML = '<div class="loading">No episodes available</div>';
                 return;
             }
-            
-            // Create first set of cards
-            const firstSet = visibleEpisodes.map(episode => createEpisodeCard(episode));
-            firstSet.forEach(card => collectionGrid.appendChild(card));
-            
-            // Measure the width of one complete set
-            const setWidth = collectionGrid.scrollWidth;
-            
-            // Create at least 3 complete sets for seamless looping
+
+            // Create first set
+            filteredEpisodes.forEach(ep => grid.appendChild(createEpisodeCard(ep)));
+
+            // Measure set width
+            const setWidth = grid.scrollWidth;
+
+            // Create 3 more sets for seamless looping
             for (let i = 0; i < 3; i++) {
-                const duplicateSet = visibleEpisodes.map(episode => createEpisodeCard(episode));
-                duplicateSet.forEach(card => {
-                    const clonedCard = card.cloneNode(true);
-                    collectionGrid.appendChild(clonedCard);
-                });
+                filteredEpisodes.forEach(ep => grid.appendChild(createEpisodeCard(ep)));
             }
-            
-            // Set CSS variable for scroll distance (one set width)
-            collectionGrid.style.setProperty('--scroll-distance', setWidth + 'px');
+
+            // Set CSS variable for scroll distance
+            grid.style.setProperty('--scroll-distance', `${setWidth}px`);
         }
-        
-        // Fallback: Initialize image grid (original functionality)
-        function initImageGrid() {
-            const collectionGrid = document.getElementById('collectionGrid');
-            const isMobile = window.innerWidth <= 768;
-            
-            // Get filtered images
-            const filteredImages = getFilteredImages();
-            
-            // Filter images based on device (show only middle 3 on mobile)
-            const visibleImages = isMobile 
-                ? filteredImages.filter((img, index) => {
-                    const imageIndex = index % 5;
-                    return imageIndex === 1 || imageIndex === 2 || imageIndex === 3;
-                })
-                : filteredImages;
-            
-            // Create cards from image data
-            function createCards() {
-                const cards = [];
-                visibleImages.forEach(img => {
-                    const card = document.createElement('img');
-                    card.src = img.src;
-                    card.alt = img.alt;
-                    card.title = img.title;
-                    card.className = 'card desktop';
-                    cards.push(card);
-                });
-                return cards;
-            }
-            
-            // Clear existing content
-            collectionGrid.innerHTML = '';
-            
-            // Don't animate if no images
-            if (visibleImages.length === 0) {
-                return;
-            }
-            
-            // Create first set of cards
-            const firstSet = createCards();
-            firstSet.forEach(card => collectionGrid.appendChild(card));
-            
-            // Measure the width of one complete set
-            const setWidth = collectionGrid.scrollWidth;
-            
-            // Create at least 3 complete sets for seamless looping
-            for (let i = 0; i < 3; i++) {
-                const duplicateSet = createCards();
-                duplicateSet.forEach(card => {
-                    const clonedCard = card.cloneNode(true);
-                    collectionGrid.appendChild(clonedCard);
-                });
-            }
-            
-            // Set CSS variable for scroll distance (one set width)
-            collectionGrid.style.setProperty('--scroll-distance', setWidth + 'px');
-        }
-        
-        // Initialize filter buttons with categories from API
+
+        // Initialize filter buttons
         function initFilters(categories) {
             const filtersContainer = document.getElementById('filters');
-            
-            // Clear existing buttons
             filtersContainer.innerHTML = '';
-            
+
             // Create "All" button
             const allBtn = document.createElement('button');
             allBtn.className = 'filter-btn active';
             allBtn.textContent = 'All';
             allBtn.setAttribute('data-filter', 'all');
             filtersContainer.appendChild(allBtn);
-            
-            // Create category filter buttons
+
+            // Create category buttons
             categories.forEach(category => {
                 const btn = document.createElement('button');
                 btn.className = 'filter-btn';
@@ -547,59 +394,57 @@
                 btn.setAttribute('data-filter', category);
                 filtersContainer.appendChild(btn);
             });
-            
+
             // Add click handlers
             filtersContainer.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    // Update active state
-                    filtersContainer.querySelectorAll('.filter-btn').forEach(b => {
-                        b.classList.remove('active');
-                    });
+                    filtersContainer.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    
-                    // Update active filter
                     activeFilter = btn.getAttribute('data-filter');
-                    
-                    // Reinitialize grid with new filter
-                    if (episodes.length > 0) {
-                        initEpisodesGrid();
-                    } else {
-                        initImageGrid();
-                    }
+                    renderEpisodes(activeFilter);
                 });
             });
         }
-        
-        // Filter images based on active filter
-        function getFilteredImages() {
-            if (activeFilter === 'all') {
-                return imageData;
+
+        // Fetch and initialize
+        async function init() {
+            try {
+                // Fetch categories and episodes in parallel
+                const [categoriesRes, episodesRes] = await Promise.all([
+                    fetch('/api/categories'),
+                    fetch('/api/episodes')
+                ]);
+
+                const categoriesData = await categoriesRes.json();
+                const episodesData = await episodesRes.json();
+
+                if (categoriesData.success) {
+                    initFilters(categoriesData.data);
+                }
+
+                if (episodesData.success) {
+                    episodes = shuffleArray(episodesData.data);
+                    renderEpisodes();
+                } else {
+                    document.getElementById('collectionGrid').innerHTML = 
+                        '<div class="loading">Failed to load episodes</div>';
+                }
+            } catch (error) {
+                console.error('Error initializing:', error);
+                document.getElementById('collectionGrid').innerHTML = 
+                    '<div class="loading">Failed to load episodes</div>';
             }
-            return imageData.filter(img => {
-                return img.tags && img.tags.includes(activeFilter);
-            });
         }
-        
-        // Show loading state
-        document.getElementById('collectionGrid').innerHTML = '<div class="loading">Loading episodes...</div>';
-        
-        // Fetch categories and episodes on page load
-        fetchCategories();
-        fetchEpisodes();
-        
-        // Reinitialize on resize (debounced)
+
+        // Re-render on resize
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                if (episodes.length > 0) {
-                    initEpisodesGrid();
-                } else {
-                    initImageGrid();
-                }
-            }, 250);
+            resizeTimeout = setTimeout(() => renderEpisodes(activeFilter), 250);
         });
+
+        // Start
+        init();
     </script>
 </body>
 </html>
-
