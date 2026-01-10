@@ -185,9 +185,12 @@
             const collectionGrid = document.getElementById('collectionGrid');
             const isMobile = window.innerWidth <= 768;
             
-            // Filter images based on device
+            // Filter images based on device (show only middle 3 on mobile)
             const visibleImages = isMobile 
-                ? imageData.filter(img => !img.mobileHidden)
+                ? imageData.filter((img, index) => {
+                    const imageIndex = index % 5;
+                    return imageIndex === 1 || imageIndex === 2 || imageIndex === 3;
+                })
                 : imageData;
             
             // Create cards from image data
@@ -197,10 +200,8 @@
                     const card = document.createElement('img');
                     card.src = img.src;
                     card.alt = img.alt;
+                    card.title = img.title;
                     card.className = 'card desktop';
-                    if (img.mobileHidden) {
-                        card.classList.add('mobile-hidden');
-                    }
                     cards.push(card);
                 });
                 return cards;
