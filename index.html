@@ -80,14 +80,20 @@
             background-color: #cccccc;
         }
 
+        .gallery-wrapper {
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+
         .collection-grid {
             display: flex;
             align-items: center;
             gap: 2rem;
             padding: 40px 0 80px;
-            width: 100%;
-            overflow: hidden;
+            width: max-content;
             animation: scroll 120s linear infinite;
+            will-change: transform;
         }
 
         .collection-grid .card {
@@ -140,12 +146,15 @@
                 font-size: 16px;
             }
 
-            .collection-grid {
-                gap: 12px;
-                padding: 32px 0 60px;
+            .gallery-wrapper {
                 width: 100vw;
                 margin-left: calc(50% - 50vw);
                 margin-right: calc(50% - 50vw);
+            }
+
+            .collection-grid {
+                gap: 12px;
+                padding: 32px 0 60px;
             }
 
             .collection-grid .card.desktop {
@@ -166,7 +175,9 @@
         <p class="intro">A different angle to listen to.<br>Morning, noon, and evening.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Join Beta</a>
     </div>
-    <div class="collection-grid" id="collectionGrid"></div>
+    <div class="gallery-wrapper">
+        <div class="collection-grid" id="collectionGrid"></div>
+    </div>
     <script src="images.js"></script>
     <script>
         // Initialize the collection grid
@@ -205,12 +216,9 @@
             // Measure the width of one complete set
             const setWidth = collectionGrid.scrollWidth;
             
-            // Duplicate the set enough times to fill at least 2x the viewport width
-            const viewportWidth = window.innerWidth;
-            const setsNeeded = Math.ceil((viewportWidth * 2) / setWidth) + 1;
-            
-            // Create additional sets for seamless looping
-            for (let i = 0; i < setsNeeded; i++) {
+            // Create at least 3 complete sets for seamless looping
+            // This ensures when animation resets, duplicated content is already visible
+            for (let i = 0; i < 3; i++) {
                 const duplicateSet = createCards();
                 duplicateSet.forEach(card => {
                     const clonedCard = card.cloneNode(true);
@@ -218,7 +226,7 @@
                 });
             }
             
-            // Set CSS variable for scroll distance
+            // Set CSS variable for scroll distance (one set width)
             collectionGrid.style.setProperty('--scroll-distance', setWidth + 'px');
         }
         
