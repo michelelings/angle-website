@@ -372,6 +372,11 @@
 
             // Set CSS variable for scroll distance
             grid.style.setProperty('--scroll-distance', `${setWidth}px`);
+            
+            // Calculate duration for consistent speed (10px per second)
+            const scrollSpeed = 15; // pixels per second
+            const duration = setWidth / scrollSpeed;
+            grid.style.animationDuration = `${duration}s`;
         }
 
         // Initialize filter buttons
