@@ -58,6 +58,41 @@
             font-weight: 400;
         }
 
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px 20px 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .filter-btn.active {
+            background-color: #ffffff;
+            color: #1a1a1a;
+        }
+
+        .filter-btn:not(.active) {
+            background-color: #2a2a2a;
+            color: #ffffff;
+        }
+
+        .filter-btn:hover:not(.active) {
+            background-color: #3a3a3a;
+        }
+
         .button {
             display: inline-block;
             background-color: #ffffff;
@@ -175,23 +210,96 @@
         <p class="intro">A different angle to listen to.<br>Morning, noon, and evening.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Join Beta</a>
     </div>
+    <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="technology">Technology</button>
+    </div>
     <div class="gallery-wrapper">
         <div class="collection-grid" id="collectionGrid"></div>
     </div>
     <script src="images.js"></script>
     <script>
+        let activeFilter = 'all';
+        
+        // Get all unique tags from image data
+        function getAllTags() {
+            const tags = new Set();
+            imageData.forEach(img => {
+                if (img.tags && Array.isArray(img.tags)) {
+                    img.tags.forEach(tag => tags.add(tag));
+                }
+            });
+            return Array.from(tags).sort();
+        }
+        
+        // Initialize filter buttons
+        function initFilters() {
+            const filtersContainer = document.getElementById('filters');
+            const tags = getAllTags();
+            
+            // Create "All" button if it doesn't exist
+            if (!filtersContainer.querySelector('[data-filter="all"]')) {
+                const allBtn = document.createElement('button');
+                allBtn.className = 'filter-btn active';
+                allBtn.textContent = 'All';
+                allBtn.setAttribute('data-filter', 'all');
+                filtersContainer.insertBefore(allBtn, filtersContainer.firstChild);
+            }
+            
+            // Create tag filter buttons
+            tags.forEach(tag => {
+                if (!filtersContainer.querySelector(`[data-filter="${tag}"]`)) {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+                    btn.setAttribute('data-filter', tag);
+                    filtersContainer.appendChild(btn);
+                }
+            });
+            
+            // Add click handlers
+            filtersContainer.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    filtersContainer.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    
+                    // Update active filter
+                    activeFilter = btn.getAttribute('data-filter');
+                    
+                    // Reinitialize grid with new filter
+                    initCollectionGrid();
+                });
+            });
+        }
+        
+        // Filter images based on active filter
+        function getFilteredImages() {
+            if (activeFilter === 'all') {
+                return imageData;
+            }
+            return imageData.filter(img => {
+                return img.tags && img.tags.includes(activeFilter);
+            });
+        }
+        
         // Initialize the collection grid
         function initCollectionGrid() {
             const collectionGrid = document.getElementById('collectionGrid');
             const isMobile = window.innerWidth <= 768;
             
+            // Get filtered images
+            const filteredImages = getFilteredImages();
+            
             // Filter images based on device (show only middle 3 on mobile)
             const visibleImages = isMobile 
-                ? imageData.filter((img, index) => {
+                ? filteredImages.filter((img, index) => {
                     const imageIndex = index % 5;
                     return imageIndex === 1 || imageIndex === 2 || imageIndex === 3;
                 })
-                : imageData;
+                : filteredImages;
             
             // Create cards from image data
             function createCards() {
@@ -209,6 +317,11 @@
             
             // Clear existing content
             collectionGrid.innerHTML = '';
+            
+            // Don't animate if no images
+            if (visibleImages.length === 0) {
+                return;
+            }
             
             // Create first set of cards
             const firstSet = createCards();
@@ -231,7 +344,8 @@
             collectionGrid.style.setProperty('--scroll-distance', setWidth + 'px');
         }
         
-        // Initialize on load
+        // Initialize filters and grid on load
+        initFilters();
         initCollectionGrid();
         
         // Reinitialize on resize (debounced)
