@@ -846,7 +846,16 @@
             card.setAttribute('data-category', episode.category || '');
             card.setAttribute('data-episode-id', episode.id);
             
-            const durationText = episode.duration ? formatDurationMinutes(episode.duration) : null;
+            // Handle duration - check for null, undefined, or 0, and handle string conversion
+            let durationText = null;
+            if (episode.duration !== null && episode.duration !== undefined) {
+                const durationValue = typeof episode.duration === 'string' ? parseFloat(episode.duration) : episode.duration;
+                // Debug: uncomment to see duration values in console
+                // console.log('Episode:', episode.title, 'Duration:', episode.duration, 'Parsed:', durationValue);
+                if (!isNaN(durationValue) && durationValue > 0) {
+                    durationText = formatDurationMinutes(durationValue);
+                }
+            }
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
             
             const metaHTML = (dateText || durationText) ? `
@@ -943,9 +952,11 @@
 
         // Format duration to minutes and seconds for card display
         function formatDurationMinutes(seconds) {
-            if (!seconds) return null;
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
+            if (!seconds || seconds <= 0) return null;
+            // Handle if duration might be in milliseconds (if > 3600000, assume milliseconds)
+            const durationInSeconds = seconds > 3600000 ? Math.floor(seconds / 1000) : seconds;
+            const minutes = Math.floor(durationInSeconds / 60);
+            const secs = Math.floor(durationInSeconds % 60);
             return `${minutes}m ${secs}s`;
         }
 
