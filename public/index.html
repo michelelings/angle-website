@@ -424,10 +424,28 @@
             const grid = document.getElementById('collectionGrid');
             const isMobile = window.innerWidth <= 768;
             
-            // Filter by category
-            let filteredEpisodes = filter === 'all' 
-                ? episodes 
-                : episodes.filter(ep => ep.category === filter);
+            // Filter episodes based on selected filter
+            let filteredEpisodes;
+            if (filter === 'all') {
+                filteredEpisodes = episodes;
+            } else if (filter === 'new') {
+                // Show episodes from the last 30 days
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                filteredEpisodes = episodes.filter(ep => {
+                    const episodeDate = new Date(ep.createdAt);
+                    return episodeDate >= thirtyDaysAgo;
+                });
+            } else if (filter === 'popular') {
+                // For now, show most recent episodes as placeholder
+                // TODO: Replace with actual popularity metric when available
+                filteredEpisodes = [...episodes].sort((a, b) => {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }).slice(0, Math.ceil(episodes.length * 0.3)); // Top 30% most recent
+            } else {
+                // Filter by category
+                filteredEpisodes = episodes.filter(ep => ep.category === filter);
+            }
 
             // Filter for mobile (show only middle 3 of each 5)
             if (isMobile) {
@@ -503,6 +521,28 @@
         function initFilters(categories) {
             const filtersContainer = document.getElementById('filters');
             filtersContainer.innerHTML = '';
+
+            // Create special filter tags (new and popular)
+            const specialFilters = [
+                { id: 'new', label: 'NEW' },
+                { id: 'popular', label: 'POPULAR' }
+            ];
+
+            specialFilters.forEach(filter => {
+                const tag = document.createElement('button');
+                tag.className = 'category-tag';
+                tag.textContent = filter.label;
+                tag.setAttribute('data-category', filter.id);
+                tag.setAttribute('type', 'button');
+                tag.setAttribute('aria-label', `Filter by ${filter.label}`);
+                
+                // Add click handler
+                tag.addEventListener('click', () => {
+                    handleFilterClick(filter.id);
+                });
+                
+                filtersContainer.appendChild(tag);
+            });
 
             // Create category tags
             categories.forEach(category => {
