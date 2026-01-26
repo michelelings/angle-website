@@ -473,27 +473,105 @@
             color: #ffffff;
         }
 
-        .modal-audio-link {
-            display: inline-block;
+        .modal-audio-player {
             margin-top: 24px;
-            padding: 12px 24px;
+            padding: 20px;
+            background-color: #2a2a2a;
+            border-radius: 12px;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .audio-play-pause {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
             background-color: #ffffff;
             color: #000000;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
             transition: background-color 0.2s ease, transform 0.2s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        .modal-audio-link:hover {
+        .audio-play-pause:hover {
             background-color: #e0e0e0;
-            transform: translateY(-1px);
+            transform: scale(1.05);
         }
 
-        .modal-audio-link:active {
-            transform: translateY(0);
+        .audio-play-pause:active {
+            transform: scale(0.95);
+        }
+
+        .audio-play-pause.playing {
+            background-color: #ffffff;
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-filled {
+            height: 100%;
+            background-color: #ffffff;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .audio-progress-bar:hover .audio-progress-filled {
+            background-color: #e0e0e0;
+        }
+
+        .audio-time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #b0b0b0;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+
+        .audio-time-current {
+            color: #ffffff;
+        }
+
+        .audio-time-separator {
+            color: #666666;
+        }
+
+        .audio-error {
+            color: #ff6b6b;
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .audio-loading {
+            opacity: 0.6;
+            pointer-events: none;
         }
 
         body.modal-open {
@@ -617,9 +695,24 @@
                 padding-bottom: 20px;
             }
 
-            .modal-audio-link {
-                width: 100%;
-                text-align: center;
+            .modal-audio-player {
+                padding: 16px;
+            }
+
+            .audio-controls {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .audio-play-pause {
+                width: 44px;
+                height: 44px;
+                font-size: 16px;
+            }
+
+            .audio-time {
+                min-width: 80px;
+                font-size: 11px;
             }
         }
     </style>
@@ -648,7 +741,28 @@
                 <div class="modal-meta" id="modalMeta"></div>
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-tags" id="modalTags"></div>
-                <div id="modalAudioLink"></div>
+                <div class="modal-audio-player" id="modalAudioPlayer" style="display: none;">
+                    <audio id="audioElement" preload="metadata"></audio>
+                    <div class="audio-controls">
+                        <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon" style="display: none;">⏸</span>
+                        </button>
+                        <div class="audio-progress-container">
+                            <div class="audio-progress-bar" id="audioProgressBar">
+                                <div class="audio-progress-filled" id="audioProgressFilled"></div>
+                            </div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
+                            <span class="audio-time-separator">/</span>
+                            <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
+                        </div>
+                    </div>
+                    <div class="audio-error" id="audioError" style="display: none;">
+                        Unable to load audio. Please try again later.
+                    </div>
+                </div>
                 <div class="modal-date" id="modalDate"></div>
             </div>
         </div>
@@ -662,6 +776,7 @@
         let scrollSpeed = 15; // pixels per second
         let scrollDistance = 0;
         let lastTime = null;
+        let currentAudio = null;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -765,6 +880,147 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
 
+        // Format time for audio player (MM:SS or HH:MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '0:00';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize audio player
+        function initAudioPlayer(audioUrl) {
+            const audioElement = document.getElementById('audioElement');
+            const audioPlayer = document.getElementById('modalAudioPlayer');
+            const playPauseBtn = document.getElementById('audioPlayPause');
+            const playIcon = playPauseBtn.querySelector('.play-icon');
+            const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+            const progressFilled = document.getElementById('audioProgressFilled');
+            const timeCurrent = document.getElementById('audioTimeCurrent');
+            const timeDuration = document.getElementById('audioTimeDuration');
+            const audioError = document.getElementById('audioError');
+
+            // Reset state
+            audioError.style.display = 'none';
+            audioPlayer.classList.remove('audio-loading');
+            playIcon.style.display = 'inline';
+            pauseIcon.style.display = 'none';
+            playPauseBtn.classList.remove('playing');
+            progressFilled.style.width = '0%';
+            timeCurrent.textContent = '0:00';
+            timeDuration.textContent = '0:00';
+
+            if (!audioUrl) {
+                audioPlayer.style.display = 'none';
+                return;
+            }
+
+            // Set audio source
+            audioElement.src = audioUrl;
+            audioPlayer.style.display = 'block';
+            currentAudio = audioElement;
+
+            // Load metadata
+            audioElement.load();
+
+            // Handle metadata loaded
+            audioElement.addEventListener('loadedmetadata', () => {
+                const duration = audioElement.duration;
+                if (isFinite(duration)) {
+                    timeDuration.textContent = formatTime(duration);
+                }
+            });
+
+            // Handle time updates
+            audioElement.addEventListener('timeupdate', () => {
+                const current = audioElement.currentTime;
+                const duration = audioElement.duration;
+                
+                if (isFinite(duration) && duration > 0) {
+                    const progress = (current / duration) * 100;
+                    progressFilled.style.width = `${progress}%`;
+                    timeCurrent.textContent = formatTime(current);
+                }
+            });
+
+            // Handle play/pause
+            audioElement.addEventListener('play', () => {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'inline';
+                playPauseBtn.classList.add('playing');
+            });
+
+            audioElement.addEventListener('pause', () => {
+                playIcon.style.display = 'inline';
+                pauseIcon.style.display = 'none';
+                playPauseBtn.classList.remove('playing');
+            });
+
+            // Handle errors
+            audioElement.addEventListener('error', () => {
+                audioError.style.display = 'block';
+                audioPlayer.classList.remove('audio-loading');
+                playPauseBtn.disabled = true;
+            });
+
+            // Handle loading
+            audioElement.addEventListener('loadstart', () => {
+                audioPlayer.classList.add('audio-loading');
+            });
+
+            audioElement.addEventListener('canplay', () => {
+                audioPlayer.classList.remove('audio-loading');
+            });
+        }
+
+        // Handle play/pause button click
+        function handleAudioPlayPause() {
+            const audioElement = document.getElementById('audioElement');
+            if (!audioElement || !audioElement.src) return;
+
+            if (audioElement.paused) {
+                audioElement.play().catch(err => {
+                    console.error('Error playing audio:', err);
+                    document.getElementById('audioError').style.display = 'block';
+                });
+            } else {
+                audioElement.pause();
+            }
+        }
+
+        // Handle progress bar click (seeking)
+        function handleProgressBarClick(event) {
+            const audioElement = document.getElementById('audioElement');
+            const progressBar = document.getElementById('audioProgressBar');
+            
+            if (!audioElement || !audioElement.src || audioElement.readyState === 0) return;
+
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            const duration = audioElement.duration;
+            
+            if (isFinite(duration) && duration > 0) {
+                audioElement.currentTime = percentage * duration;
+            }
+        }
+
+        // Cleanup audio when modal closes
+        function cleanupAudio() {
+            const audioElement = document.getElementById('audioElement');
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.src = '';
+                audioElement.load();
+            }
+            currentAudio = null;
+        }
+
         // Open story modal
         function openStoryModal(episode) {
             const modal = document.getElementById('storyModal');
@@ -774,7 +1030,6 @@
             const modalMeta = document.getElementById('modalMeta');
             const modalDescription = document.getElementById('modalDescription');
             const modalTags = document.getElementById('modalTags');
-            const modalAudioLink = document.getElementById('modalAudioLink');
             const modalDate = document.getElementById('modalDate');
 
             // Populate modal with episode data
@@ -822,14 +1077,8 @@
                 modalTags.style.display = 'none';
             }
             
-            // Display audio link if available
-            if (episode.audioUrl) {
-                modalAudioLink.innerHTML = `<a href="${episode.audioUrl}" target="_blank" rel="noopener noreferrer" class="modal-audio-link">Listen Now</a>`;
-                modalAudioLink.style.display = 'block';
-            } else {
-                modalAudioLink.innerHTML = '';
-                modalAudioLink.style.display = 'none';
-            }
+            // Initialize audio player if audio URL is available
+            initAudioPlayer(episode.audioUrl || null);
             
             modalDate.textContent = formatDate(episode.createdAt);
 
@@ -840,6 +1089,7 @@
 
         // Close story modal
         function closeStoryModal() {
+            cleanupAudio();
             const modal = document.getElementById('storyModal');
             modal.classList.remove('open');
             document.body.classList.remove('modal-open');
@@ -849,6 +1099,8 @@
         function initModal() {
             const modal = document.getElementById('storyModal');
             const closeButton = document.getElementById('modalClose');
+            const playPauseBtn = document.getElementById('audioPlayPause');
+            const progressBar = document.getElementById('audioProgressBar');
 
             // Close button click
             closeButton.addEventListener('click', (e) => {
@@ -869,6 +1121,15 @@
                     closeStoryModal();
                 }
             });
+
+            // Audio player controls
+            if (playPauseBtn) {
+                playPauseBtn.addEventListener('click', handleAudioPlayPause);
+            }
+
+            if (progressBar) {
+                progressBar.addEventListener('click', handleProgressBarClick);
+            }
         }
 
         // Filter and render episodes (initial render)
