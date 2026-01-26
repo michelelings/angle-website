@@ -271,14 +271,11 @@
             opacity: 0.9;
         }
 
-        .episode-duration {
-            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #ffffff;
-            margin: 0;
+        .episode-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             margin-top: 8px;
-            opacity: 0.9;
         }
 
         .episode-date {
@@ -287,7 +284,15 @@
             line-height: 1.4;
             color: #ffffff;
             margin: 0;
-            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        .episode-duration {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
             opacity: 0.9;
         }
 
@@ -844,6 +849,13 @@
             const durationText = episode.duration ? formatDurationMinutes(episode.duration) : null;
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
             
+            const metaHTML = (dateText || durationText) ? `
+                <div class="episode-meta">
+                    ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
+                    ${durationText ? `<div class="episode-duration">${durationText}</div>` : ''}
+                </div>
+            ` : '';
+            
             card.innerHTML = `
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
                 <div class="episode-gradient"></div>
@@ -851,8 +863,7 @@
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
                     ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
-                    ${durationText ? `<div class="episode-duration">${durationText}</div>` : ''}
-                    ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
+                    ${metaHTML}
                 </div>
             `;
             
@@ -943,7 +954,7 @@
             if (!dateString) return null;
             const date = new Date(dateString);
             const options = { weekday: 'short', month: 'short', day: 'numeric' };
-            return date.toLocaleDateString('en-US', options);
+            return date.toLocaleDateString('en-US', options).replace(',', '');
         }
 
         // Format time for audio player (MM:SS or HH:MM:SS)
