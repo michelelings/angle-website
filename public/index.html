@@ -446,15 +446,8 @@
             color: #ffffff;
         }
 
-        .modal-audio-section {
-            margin-top: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
         .modal-audio-player {
-            flex: 1;
+            margin-top: 24px;
             padding: 20px;
             background-color: #2a2a2a;
             border-radius: 12px;
@@ -541,6 +534,30 @@
             color: #666666;
         }
 
+        .audio-get-angle-btn {
+            display: inline-block;
+            background-color: #ffffff;
+            color: #000000;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .audio-get-angle-btn:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .audio-get-angle-btn:active {
+            transform: translateY(0);
+        }
+
         .audio-error {
             color: #ff6b6b;
             font-size: 12px;
@@ -552,33 +569,6 @@
         .audio-loading {
             opacity: 0.6;
             pointer-events: none;
-        }
-
-        .modal-download-link {
-            flex-shrink: 0;
-        }
-
-        .download-angle-btn {
-            display: inline-block;
-            background-color: #ffffff;
-            color: #000000;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            white-space: nowrap;
-        }
-
-        .download-angle-btn:hover {
-            background-color: #e0e0e0;
-            transform: translateY(-1px);
-        }
-
-        .download-angle-btn:active {
-            transform: translateY(0);
         }
 
         body.modal-open {
@@ -717,24 +707,9 @@
                 font-size: 11px;
             }
 
-            .modal-audio-section {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .modal-audio-player {
-                width: 100%;
-            }
-
-            .modal-download-link {
-                width: 100%;
-            }
-
-            .download-angle-btn {
-                padding: 10px 20px;
-                font-size: 12px;
-                width: 100%;
-                text-align: center;
+            .audio-get-angle-btn {
+                padding: 8px 16px;
+                font-size: 11px;
             }
         }
     </style>
@@ -742,7 +717,7 @@
 <body>
     <div class="header-section">
         <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
-        <p class="intro">Stories you need to hear.</p>
+        <p class="intro">0 stories you need to hear.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Get Angle (Beta)</a>
     </div>
     <div class="filters" id="filters"></div>
@@ -763,31 +738,27 @@
                 <div class="modal-meta" id="modalMeta"></div>
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-tags" id="modalTags"></div>
-                <div class="modal-audio-section" id="modalAudioSection" style="display: none;">
-                    <div class="modal-audio-player" id="modalAudioPlayer">
-                        <audio id="audioElement" preload="metadata"></audio>
-                        <div class="audio-controls">
-                            <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
-                                <span class="play-icon">▶</span>
-                                <span class="pause-icon" style="display: none;">⏸</span>
-                            </button>
-                            <div class="audio-progress-container">
-                                <div class="audio-progress-bar" id="audioProgressBar">
-                                    <div class="audio-progress-filled" id="audioProgressFilled"></div>
-                                </div>
-                            </div>
-                            <div class="audio-time">
-                                <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
-                                <span class="audio-time-separator">/</span>
-                                <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
+                <div class="modal-audio-player" id="modalAudioPlayer" style="display: none;">
+                    <audio id="audioElement" preload="metadata"></audio>
+                    <div class="audio-controls">
+                        <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon" style="display: none;">⏸</span>
+                        </button>
+                        <div class="audio-progress-container">
+                            <div class="audio-progress-bar" id="audioProgressBar">
+                                <div class="audio-progress-filled" id="audioProgressFilled"></div>
                             </div>
                         </div>
-                        <div class="audio-error" id="audioError" style="display: none;">
-                            Unable to load audio. Please try again later.
+                        <div class="audio-time">
+                            <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
+                            <span class="audio-time-separator">/</span>
+                            <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
                         </div>
+                        <a href="https://testflight.apple.com/join/p2VQgeun" class="audio-get-angle-btn" target="_blank" rel="noopener noreferrer">Get Angle</a>
                     </div>
-                    <div class="modal-download-link" id="modalDownloadLink">
-                        <a href="https://testflight.apple.com/join/p2VQgeun" class="download-angle-btn" target="_blank" rel="noopener noreferrer">Download Angle - beta</a>
+                    <div class="audio-error" id="audioError" style="display: none;">
+                        Unable to load audio. Please try again later.
                     </div>
                 </div>
                 <div class="modal-date" id="modalDate"></div>
@@ -797,7 +768,7 @@
     
     <script>
         let episodes = [];
-        let activeFilter = 'new';
+        let activeFilter = 'all';
         let animationFrameId = null;
         let scrollPosition = 0;
         let scrollSpeed = 15; // pixels per second
@@ -919,6 +890,36 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
 
+        // Animate count from 0 to target number
+        function animateStoryCount(targetCount) {
+            const introElement = document.querySelector('.intro');
+            if (!introElement) return;
+
+            const duration = 1500; // Animation duration in milliseconds
+            const startTime = performance.now();
+            const startCount = 0;
+
+            function updateCount(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation (ease-out)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentCount = Math.floor(startCount + (targetCount - startCount) * easeOut);
+                
+                introElement.textContent = `${currentCount} stories you need to hear.`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCount);
+                } else {
+                    // Ensure final count is exact
+                    introElement.textContent = `${targetCount} stories you need to hear.`;
+                }
+            }
+
+            requestAnimationFrame(updateCount);
+        }
+
         // Initialize audio player
         function initAudioPlayer(audioUrl) {
             const audioElement = document.getElementById('audioElement');
@@ -943,12 +944,13 @@
 
             if (!audioUrl) {
                 audioPlayer.style.display = 'none';
-            } else {
-                // Set audio source
-                audioElement.src = audioUrl;
-                audioPlayer.style.display = 'block';
-                currentAudio = audioElement;
+                return;
             }
+
+            // Set audio source
+            audioElement.src = audioUrl;
+            audioPlayer.style.display = 'block';
+            currentAudio = audioElement;
 
             // Load metadata
             audioElement.load();
@@ -1102,12 +1104,6 @@
                 modalTags.style.display = 'none';
             }
             
-            // Show audio section (always visible for download link)
-            const modalAudioSection = document.getElementById('modalAudioSection');
-            if (modalAudioSection) {
-                modalAudioSection.style.display = 'flex';
-            }
-            
             // Initialize audio player if audio URL is available
             initAudioPlayer(episode.audioUrl || null);
             
@@ -1122,10 +1118,6 @@
         function closeStoryModal() {
             cleanupAudio();
             const modal = document.getElementById('storyModal');
-            const modalDownloadLink = document.getElementById('modalDownloadLink');
-            if (modalDownloadLink) {
-                modalDownloadLink.style.display = 'none';
-            }
             modal.classList.remove('open');
             document.body.classList.remove('modal-open');
         }
@@ -1341,13 +1333,12 @@
                 }
 
                 if (episodesData.success) {
-                    episodes = episodesData.data;
-                    // Update intro text with episode count
-                    const introElement = document.querySelector('.intro');
-                    if (introElement && episodes.length > 0) {
-                        introElement.textContent = `${episodes.length} stories you need to hear.`;
+                    episodes = shuffleArray(episodesData.data);
+                    // Animate story count from 0 to actual count
+                    if (episodes.length > 0) {
+                        animateStoryCount(episodes.length);
                     }
-                    renderEpisodes('new');
+                    renderEpisodes();
                 } else {
                     document.getElementById('collectionGrid').innerHTML = 
                         '<div class="loading">Failed to load episodes</div>';
