@@ -881,12 +881,9 @@
             if (filter === 'all') {
                 filteredEpisodes = episodes;
             } else if (filter === 'new') {
-                // Show episodes from the last 30 days
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                filteredEpisodes = episodes.filter(ep => {
-                    const episodeDate = new Date(ep.createdAt);
-                    return episodeDate >= thirtyDaysAgo;
+                // Show episodes sorted by createdAt (newest first)
+                filteredEpisodes = [...episodes].sort((a, b) => {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
                 });
             } else if (filter === 'popular') {
                 // For now, show most recent episodes as placeholder
