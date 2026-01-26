@@ -313,6 +313,7 @@
         let scrollSpeed = 15; // pixels per second
         let scrollDistance = 0;
         let lastTime = null;
+        let isInitialRender = true;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -353,16 +354,19 @@
             const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
             lastTime = currentTime;
             
-            // Update scroll position
-            scrollPosition += scrollSpeed * deltaTime;
-            
-            // Loop back when we've scrolled one set width
-            if (scrollDistance > 0 && scrollPosition >= scrollDistance) {
-                scrollPosition = scrollPosition % scrollDistance;
+            // Only animate if we have content
+            if (scrollDistance > 0) {
+                // Update scroll position
+                scrollPosition += scrollSpeed * deltaTime;
+                
+                // Loop back when we've scrolled one set width
+                if (scrollPosition >= scrollDistance) {
+                    scrollPosition = scrollPosition % scrollDistance;
+                }
+                
+                // Apply transform
+                grid.style.transform = `translateX(-${scrollPosition}px)`;
             }
-            
-            // Apply transform
-            grid.style.transform = `translateX(-${scrollPosition}px)`;
             
             // Continue animation
             animationFrameId = requestAnimationFrame(animate);
@@ -408,6 +412,8 @@
             if (filteredEpisodes.length === 0) {
                 grid.innerHTML = '<div class="loading">No episodes available</div>';
                 scrollDistance = 0;
+                scrollPosition = 0;
+                grid.style.transform = 'translateX(0)';
                 return;
             }
 
@@ -425,8 +431,22 @@
             // Update scroll distance
             scrollDistance = setWidth;
             
-            // Reset scroll position to maintain smooth transition
-            scrollPosition = scrollPosition % scrollDistance;
+            // Ensure scroll position is valid and maintains continuity
+            if (scrollDistance > 0) {
+                if (isInitialRender) {
+                    // Initial load - start at beginning
+                    scrollPosition = 0;
+                    isInitialRender = false;
+                } else {
+                    // Maintain relative position when filtering/re-rendering
+                    scrollPosition = scrollPosition % scrollDistance;
+                }
+            } else {
+                scrollPosition = 0;
+            }
+            
+            // Ensure cards are visible in viewport (start with cards visible, not empty space)
+            grid.style.transform = `translateX(-${scrollPosition}px)`;
             
             // Update tag states
             updateTagStates(filter);
@@ -518,6 +538,8 @@
                 
                 if (visibleCards.length === 0) {
                     scrollDistance = 0;
+                    scrollPosition = 0;
+                    grid.style.transform = 'translateX(0)';
                     return;
                 }
                 
@@ -543,11 +565,16 @@
                 
                 // Update scroll distance smoothly
                 // Maintain current scroll position relative to new distance
-                if (scrollDistance > 0) {
+                if (scrollDistance > 0 && newSetWidth > 0) {
                     const progress = scrollPosition / scrollDistance;
                     scrollPosition = (progress * newSetWidth) % newSetWidth;
+                } else {
+                    scrollPosition = 0;
                 }
                 scrollDistance = newSetWidth;
+                
+                // Ensure position is applied immediately to avoid white space
+                grid.style.transform = `translateX(-${scrollPosition}px)`;
             });
         }
 
@@ -586,8 +613,16 @@
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                scrollPosition = 0; // Reset on resize
+                // Maintain relative position on resize
+                const oldDistance = scrollDistance;
                 renderEpisodes(activeFilter);
+                // Adjust position if distance changed
+                if (oldDistance > 0 && scrollDistance > 0) {
+                    const progress = scrollPosition / oldDistance;
+                    scrollPosition = (progress * scrollDistance) % scrollDistance;
+                    const grid = document.getElementById('collectionGrid');
+                    grid.style.transform = `translateX(-${scrollPosition}px)`;
+                }
             }, 250);
         });
 
