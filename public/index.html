@@ -271,7 +271,7 @@
             opacity: 0.9;
         }
 
-        .loading {
+        #loadingSpinner {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -280,6 +280,13 @@
             align-items: center;
             justify-content: center;
             z-index: 10;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #b0b0b0;
+            font-size: 16px;
         }
 
         .spinner {
@@ -740,9 +747,9 @@
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Get Angle (Beta)</a>
     </div>
     <div class="filters" id="filters"></div>
+    <div class="loading" id="loadingSpinner"><div class="spinner"></div></div>
     <div class="gallery-wrapper">
         <div class="collection-grid" id="collectionGrid">
-            <div class="loading"><div class="spinner"></div></div>
         </div>
     </div>
 
@@ -1233,6 +1240,12 @@
             // Store old scroll distance for smooth transition
             const oldScrollDistance = scrollDistance;
 
+            // Hide loading spinner
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+
             grid.innerHTML = '';
 
             if (filteredEpisodes.length === 0) {
@@ -1378,11 +1391,19 @@
                     }
                     renderEpisodes();
                 } else {
+                    const loadingSpinner = document.getElementById('loadingSpinner');
+                    if (loadingSpinner) {
+                        loadingSpinner.style.display = 'none';
+                    }
                     document.getElementById('collectionGrid').innerHTML = 
                         '<div class="loading">Failed to load episodes</div>';
                 }
             } catch (error) {
                 console.error('Error initializing:', error);
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                if (loadingSpinner) {
+                    loadingSpinner.style.display = 'none';
+                }
                 document.getElementById('collectionGrid').innerHTML = 
                     '<div class="loading">Failed to load episodes</div>';
             }
