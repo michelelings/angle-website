@@ -846,10 +846,7 @@
             card.setAttribute('data-category', episode.category || '');
             card.setAttribute('data-episode-id', episode.id);
             
-            // Debug: log duration to check what we're getting
-            // console.log('Episode duration:', episode.duration, 'Type:', typeof episode.duration);
-            
-            const durationText = formatDurationMinutes(episode.duration);
+            const durationText = (episode.duration !== null && episode.duration !== undefined) ? formatDurationMinutes(episode.duration) : null;
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
             
             const metaHTML = (dateText || durationText) ? `
@@ -947,15 +944,8 @@
         // Format duration to minutes and seconds for card display
         function formatDurationMinutes(seconds) {
             if (seconds === null || seconds === undefined || seconds === '') return null;
-            let numSeconds = typeof seconds === 'string' ? parseFloat(seconds) : seconds;
+            const numSeconds = Number(seconds);
             if (isNaN(numSeconds) || numSeconds <= 0) return null;
-            
-            // If duration is greater than 36000 (10 hours), it's likely in milliseconds
-            // Convert to seconds
-            if (numSeconds > 36000) {
-                numSeconds = numSeconds / 1000;
-            }
-            
             const minutes = Math.floor(numSeconds / 60);
             const secs = Math.floor(numSeconds % 60);
             return `${minutes}m ${secs}s`;
