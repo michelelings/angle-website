@@ -446,8 +446,15 @@
             color: #ffffff;
         }
 
-        .modal-audio-player {
+        .modal-audio-section {
             margin-top: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .modal-audio-player {
+            flex: 1;
             padding: 20px;
             background-color: #2a2a2a;
             border-radius: 12px;
@@ -548,8 +555,7 @@
         }
 
         .modal-download-link {
-            margin-top: 24px;
-            text-align: center;
+            flex-shrink: 0;
         }
 
         .download-angle-btn {
@@ -563,6 +569,7 @@
             font-weight: 500;
             transition: background-color 0.2s ease, transform 0.2s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            white-space: nowrap;
         }
 
         .download-angle-btn:hover {
@@ -710,8 +717,17 @@
                 font-size: 11px;
             }
 
+            .modal-audio-section {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .modal-audio-player {
+                width: 100%;
+            }
+
             .modal-download-link {
-                margin-top: 20px;
+                width: 100%;
             }
 
             .download-angle-btn {
@@ -747,30 +763,32 @@
                 <div class="modal-meta" id="modalMeta"></div>
                 <p class="modal-description" id="modalDescription"></p>
                 <div class="modal-tags" id="modalTags"></div>
-                <div class="modal-audio-player" id="modalAudioPlayer" style="display: none;">
-                    <audio id="audioElement" preload="metadata"></audio>
-                    <div class="audio-controls">
-                        <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
-                            <span class="play-icon">▶</span>
-                            <span class="pause-icon" style="display: none;">⏸</span>
-                        </button>
-                        <div class="audio-progress-container">
-                            <div class="audio-progress-bar" id="audioProgressBar">
-                                <div class="audio-progress-filled" id="audioProgressFilled"></div>
+                <div class="modal-audio-section" id="modalAudioSection" style="display: none;">
+                    <div class="modal-audio-player" id="modalAudioPlayer">
+                        <audio id="audioElement" preload="metadata"></audio>
+                        <div class="audio-controls">
+                            <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
+                                <span class="play-icon">▶</span>
+                                <span class="pause-icon" style="display: none;">⏸</span>
+                            </button>
+                            <div class="audio-progress-container">
+                                <div class="audio-progress-bar" id="audioProgressBar">
+                                    <div class="audio-progress-filled" id="audioProgressFilled"></div>
+                                </div>
+                            </div>
+                            <div class="audio-time">
+                                <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
+                                <span class="audio-time-separator">/</span>
+                                <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
                             </div>
                         </div>
-                        <div class="audio-time">
-                            <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
-                            <span class="audio-time-separator">/</span>
-                            <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
+                        <div class="audio-error" id="audioError" style="display: none;">
+                            Unable to load audio. Please try again later.
                         </div>
                     </div>
-                    <div class="audio-error" id="audioError" style="display: none;">
-                        Unable to load audio. Please try again later.
+                    <div class="modal-download-link" id="modalDownloadLink">
+                        <a href="https://testflight.apple.com/join/p2VQgeun" class="download-angle-btn" target="_blank" rel="noopener noreferrer">Download Angle - beta</a>
                     </div>
-                </div>
-                <div class="modal-download-link" id="modalDownloadLink" style="display: none;">
-                    <a href="https://testflight.apple.com/join/p2VQgeun" class="download-angle-btn" target="_blank" rel="noopener noreferrer">Download Angle - beta</a>
                 </div>
                 <div class="modal-date" id="modalDate"></div>
             </div>
@@ -925,13 +943,12 @@
 
             if (!audioUrl) {
                 audioPlayer.style.display = 'none';
-                return;
+            } else {
+                // Set audio source
+                audioElement.src = audioUrl;
+                audioPlayer.style.display = 'block';
+                currentAudio = audioElement;
             }
-
-            // Set audio source
-            audioElement.src = audioUrl;
-            audioPlayer.style.display = 'block';
-            currentAudio = audioElement;
 
             // Load metadata
             audioElement.load();
@@ -1085,14 +1102,14 @@
                 modalTags.style.display = 'none';
             }
             
+            // Show audio section (always visible for download link)
+            const modalAudioSection = document.getElementById('modalAudioSection');
+            if (modalAudioSection) {
+                modalAudioSection.style.display = 'flex';
+            }
+            
             // Initialize audio player if audio URL is available
             initAudioPlayer(episode.audioUrl || null);
-            
-            // Show download link (always visible)
-            const modalDownloadLink = document.getElementById('modalDownloadLink');
-            if (modalDownloadLink) {
-                modalDownloadLink.style.display = 'block';
-            }
             
             modalDate.textContent = formatDate(episode.createdAt);
 
@@ -1325,6 +1342,11 @@
 
                 if (episodesData.success) {
                     episodes = episodesData.data;
+                    // Update intro text with episode count
+                    const introElement = document.querySelector('.intro');
+                    if (introElement && episodes.length > 0) {
+                        introElement.textContent = `${episodes.length} stories you need to hear.`;
+                    }
                     renderEpisodes('new');
                 } else {
                     document.getElementById('collectionGrid').innerHTML = 
