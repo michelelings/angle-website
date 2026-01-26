@@ -775,6 +775,8 @@
         let scrollDistance = 0;
         let lastTime = null;
         let currentAudio = null;
+        let countAnimationId = null;
+        let currentTargetCount = 0;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -890,14 +892,30 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // Animate count from 0 to target number
+        // Animate count from current to target number
         function animateStoryCount(targetCount) {
             const introElement = document.querySelector('.intro');
             if (!introElement) return;
 
-            const duration = 1500; // Animation duration in milliseconds
+            // Cancel any existing animation
+            if (countAnimationId !== null) {
+                cancelAnimationFrame(countAnimationId);
+            }
+
+            // Get current displayed count
+            const currentText = introElement.textContent;
+            const match = currentText.match(/(\d+)\s+stories/);
+            const startCount = match ? parseInt(match[1], 10) : 0;
+            
+            // If already at target, no need to animate
+            if (startCount === targetCount) {
+                introElement.textContent = `${targetCount} stories you need to hear.`;
+                return;
+            }
+
+            currentTargetCount = targetCount;
+            const duration = 800; // Faster animation duration in milliseconds
             const startTime = performance.now();
-            const startCount = 0;
 
             function updateCount(currentTime) {
                 const elapsed = currentTime - startTime;
@@ -910,14 +928,15 @@
                 introElement.textContent = `${currentCount} stories you need to hear.`;
                 
                 if (progress < 1) {
-                    requestAnimationFrame(updateCount);
+                    countAnimationId = requestAnimationFrame(updateCount);
                 } else {
                     // Ensure final count is exact
                     introElement.textContent = `${targetCount} stories you need to hear.`;
+                    countAnimationId = null;
                 }
             }
 
-            requestAnimationFrame(updateCount);
+            countAnimationId = requestAnimationFrame(updateCount);
         }
 
         // Initialize audio player
@@ -1334,7 +1353,7 @@
 
                 if (episodesData.success) {
                     episodes = shuffleArray(episodesData.data);
-                    // Animate story count from 0 to actual count
+                    // Update to actual count (will smoothly transition from current count)
                     if (episodes.length > 0) {
                         animateStoryCount(episodes.length);
                     }
@@ -1370,6 +1389,10 @@
 
         // Initialize modal on page load
         initModal();
+
+        // Start counting immediately (before data loads)
+        // Estimate a reasonable starting count - will update to actual count when data loads
+        animateStoryCount(150); // Start counting to a reasonable estimate
 
         // Start
         init();
