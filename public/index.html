@@ -247,6 +247,133 @@
             font-size: 16px;
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #1a1a1a;
+            border-radius: 32px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-close:active {
+            transform: rotate(90deg) scale(0.95);
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 32px 32px 0 0;
+            display: block;
+        }
+
+        .modal-body {
+            padding: 40px;
+        }
+
+        .modal-category {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-family: 'LTT Recoletta', Georgia, 'Times New Roman', serif;
+            font-size: 48px;
+            font-weight: 400;
+            line-height: 1.1;
+            color: #ffffff;
+            margin: 0 0 24px 0;
+        }
+
+        .modal-description {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin: 0 0 24px 0;
+        }
+
+        .modal-date {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            color: #b0b0b0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 24px;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
 
         @media (max-width: 768px) {
             .header-section {
@@ -320,6 +447,39 @@
             .episode-gradient {
                 height: 65%;
             }
+
+            .modal-content {
+                max-width: 100%;
+                border-radius: 24px;
+                max-height: 95vh;
+            }
+
+            .modal-close {
+                top: 15px;
+                right: 15px;
+                width: 36px;
+                height: 36px;
+                font-size: 20px;
+            }
+
+            .modal-image {
+                height: 300px;
+                border-radius: 24px 24px 0 0;
+            }
+
+            .modal-body {
+                padding: 28px 24px;
+            }
+
+            .modal-title {
+                font-size: 36px;
+                margin-bottom: 20px;
+            }
+
+            .modal-description {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
         }
     </style>
 </head>
@@ -333,6 +493,20 @@
     <div class="gallery-wrapper">
         <div class="collection-grid" id="collectionGrid">
             <div class="loading">Loading episodes...</div>
+        </div>
+    </div>
+
+    <!-- Story Detail Modal -->
+    <div class="modal-overlay" id="storyModal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose" aria-label="Close story">×</button>
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <div class="modal-body">
+                <span class="modal-category" id="modalCategory"></span>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-date" id="modalDate"></div>
+            </div>
         </div>
     </div>
     
@@ -360,6 +534,7 @@
             const card = document.createElement('div');
             card.className = 'episode-card';
             card.setAttribute('data-category', episode.category || '');
+            card.setAttribute('data-episode-id', episode.id);
             
             card.innerHTML = `
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
@@ -369,6 +544,11 @@
                     <p class="episode-description">${episode.description || ''}</p>
                 </div>
             `;
+            
+            // Add click handler to open modal
+            card.addEventListener('click', () => {
+                openStoryModal(episode);
+            });
             
             return card;
         }
@@ -417,6 +597,75 @@
                 animationFrameId = null;
                 lastTime = null;
             }
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options).toUpperCase();
+        }
+
+        // Open story modal
+        function openStoryModal(episode) {
+            const modal = document.getElementById('storyModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalCategory = document.getElementById('modalCategory');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalDescription = document.getElementById('modalDescription');
+            const modalDate = document.getElementById('modalDate');
+
+            // Populate modal with episode data
+            modalImage.src = episode.coverImage || '/images/icon.webp';
+            modalImage.alt = episode.title;
+            
+            if (episode.category) {
+                modalCategory.textContent = episode.category.toUpperCase();
+                modalCategory.style.display = 'inline-block';
+            } else {
+                modalCategory.style.display = 'none';
+            }
+            
+            modalTitle.textContent = episode.title;
+            modalDescription.textContent = episode.description || 'No description available.';
+            modalDate.textContent = formatDate(episode.createdAt);
+
+            // Show modal
+            modal.classList.add('open');
+            document.body.classList.add('modal-open');
+        }
+
+        // Close story modal
+        function closeStoryModal() {
+            const modal = document.getElementById('storyModal');
+            modal.classList.remove('open');
+            document.body.classList.remove('modal-open');
+        }
+
+        // Initialize modal event listeners
+        function initModal() {
+            const modal = document.getElementById('storyModal');
+            const closeButton = document.getElementById('modalClose');
+
+            // Close button click
+            closeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeStoryModal();
+            });
+
+            // Backdrop click (close when clicking outside modal content)
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeStoryModal();
+                }
+            });
+
+            // ESC key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('open')) {
+                    closeStoryModal();
+                }
+            });
         }
 
         // Filter and render episodes (initial render)
@@ -626,6 +875,9 @@
                 }
             }, 250);
         });
+
+        // Initialize modal on page load
+        initModal();
 
         // Start
         init();
