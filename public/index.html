@@ -313,7 +313,6 @@
         let scrollSpeed = 15; // pixels per second
         let scrollDistance = 0;
         let lastTime = null;
-        let isInitialRender = true;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -407,13 +406,16 @@
                 });
             }
 
+            // Store old scroll distance for smooth transition
+            const oldScrollDistance = scrollDistance;
+
             grid.innerHTML = '';
 
             if (filteredEpisodes.length === 0) {
                 grid.innerHTML = '<div class="loading">No episodes available</div>';
                 scrollDistance = 0;
                 scrollPosition = 0;
-                grid.style.transform = 'translateX(0)';
+                updateTagStates(filter);
                 return;
             }
 
@@ -431,22 +433,13 @@
             // Update scroll distance
             scrollDistance = setWidth;
             
-            // Ensure scroll position is valid and maintains continuity
-            if (scrollDistance > 0) {
-                if (isInitialRender) {
-                    // Initial load - start at beginning
-                    scrollPosition = 0;
-                    isInitialRender = false;
-                } else {
-                    // Maintain relative position when filtering/re-rendering
-                    scrollPosition = scrollPosition % scrollDistance;
-                }
+            // Maintain scroll position relative to new distance for smooth transition
+            if (oldScrollDistance > 0 && scrollDistance > 0) {
+                const progress = scrollPosition / oldScrollDistance;
+                scrollPosition = (progress * scrollDistance) % scrollDistance;
             } else {
                 scrollPosition = 0;
             }
-            
-            // Ensure cards are visible in viewport (start with cards visible, not empty space)
-            grid.style.transform = `translateX(-${scrollPosition}px)`;
             
             // Update tag states
             updateTagStates(filter);
@@ -510,72 +503,9 @@
             // Update tag states
             updateTagStates(activeFilter);
             
-            // Filter episodes with animation
-            filterEpisodes(activeFilter);
-        }
-
-        // Filter episodes with smooth animation
-        function filterEpisodes(filter) {
-            const grid = document.getElementById('collectionGrid');
-            const cards = grid.querySelectorAll('.episode-card');
-            
-            // Start fading cards immediately
-            cards.forEach(card => {
-                const cardCategory = card.getAttribute('data-category') || '';
-                const shouldShow = filter === 'all' || cardCategory === filter;
-                
-                if (!shouldShow) {
-                    card.classList.add('hidden');
-                } else {
-                    card.classList.remove('hidden');
-                }
-            });
-            
-            // Recalculate scroll distance smoothly
-            // Do this quickly so animation continues smoothly
-            requestAnimationFrame(() => {
-                const visibleCards = Array.from(grid.querySelectorAll('.episode-card:not(.hidden)'));
-                
-                if (visibleCards.length === 0) {
-                    scrollDistance = 0;
-                    scrollPosition = 0;
-                    grid.style.transform = 'translateX(0)';
-                    return;
-                }
-                
-                // Find unique episodes by title (to determine one set)
-                const seenTitles = new Set();
-                const firstSetCards = [];
-                
-                for (const card of visibleCards) {
-                    const title = card.querySelector('.episode-title')?.textContent;
-                    if (title && !seenTitles.has(title)) {
-                        seenTitles.add(title);
-                        firstSetCards.push(card);
-                    } else if (title && seenTitles.has(title)) {
-                        break;
-                    }
-                }
-                
-                // Calculate new width
-                const isMobile = window.innerWidth <= 768;
-                const cardWidth = isMobile ? 340 : 380;
-                const gap = 10;
-                const newSetWidth = firstSetCards.length * (cardWidth + gap) - gap;
-                
-                // Update scroll distance smoothly
-                // Maintain current scroll position relative to new distance
-                if (scrollDistance > 0 && newSetWidth > 0) {
-                    const progress = scrollPosition / scrollDistance;
-                    scrollPosition = (progress * newSetWidth) % newSetWidth;
-                } else {
-                    scrollPosition = 0;
-                }
-                scrollDistance = newSetWidth;
-                
-                // Ensure position is applied immediately to avoid white space
-                grid.style.transform = `translateX(-${scrollPosition}px)`;
-            });
+            // Re-render episodes with the new filter
+            // This ensures consistency and proper mobile filtering
+            renderEpisodes(activeFilter);
         }
 
         // Fetch and initialize
