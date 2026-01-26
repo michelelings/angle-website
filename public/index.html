@@ -291,6 +291,16 @@
             opacity: 0.9;
         }
 
+        .episode-host {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
         #loadingSpinner {
             position: fixed;
             top: 50%;
@@ -850,6 +860,7 @@
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
                     ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
+                    ${episode.host ? `<div class="episode-host">Host: ${episode.host}</div>` : ''}
                     ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
                 </div>
             `;
