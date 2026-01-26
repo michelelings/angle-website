@@ -377,6 +377,31 @@
             margin: 0 0 24px 0;
         }
 
+        .modal-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            color: #b0b0b0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-meta-item strong {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
         .modal-date {
             font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
             font-size: 10px;
@@ -384,6 +409,48 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-top: 24px;
+        }
+
+        .modal-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .modal-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .modal-audio-link {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background-color: #ffffff;
+            color: #000000;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .modal-audio-link:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .modal-audio-link:active {
+            transform: translateY(0);
         }
 
         body.modal-open {
@@ -495,6 +562,17 @@
                 font-size: 14px;
                 margin-bottom: 20px;
             }
+
+            .modal-meta {
+                gap: 12px;
+                margin-bottom: 20px;
+                padding-bottom: 20px;
+            }
+
+            .modal-audio-link {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -519,7 +597,10 @@
             <div class="modal-body">
                 <span class="modal-category" id="modalCategory"></span>
                 <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta" id="modalMeta"></div>
                 <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-tags" id="modalTags"></div>
+                <div id="modalAudioLink"></div>
                 <div class="modal-date" id="modalDate"></div>
             </div>
         </div>
@@ -622,13 +703,29 @@
             return date.toLocaleDateString('en-US', options).toUpperCase();
         }
 
+        // Format duration (in seconds) to readable format
+        function formatDuration(seconds) {
+            if (!seconds) return null;
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
         // Open story modal
         function openStoryModal(episode) {
             const modal = document.getElementById('storyModal');
             const modalImage = document.getElementById('modalImage');
             const modalCategory = document.getElementById('modalCategory');
             const modalTitle = document.getElementById('modalTitle');
+            const modalMeta = document.getElementById('modalMeta');
             const modalDescription = document.getElementById('modalDescription');
+            const modalTags = document.getElementById('modalTags');
+            const modalAudioLink = document.getElementById('modalAudioLink');
             const modalDate = document.getElementById('modalDate');
 
             // Populate modal with episode data
@@ -643,7 +740,48 @@
             }
             
             modalTitle.textContent = episode.title;
-            modalDescription.textContent = episode.description || 'No description available.';
+            
+            // Build meta information
+            let metaHTML = '';
+            if (episode.episodeNumber) {
+                metaHTML += `<div class="modal-meta-item"><strong>Episode</strong> ${episode.episodeNumber}</div>`;
+            }
+            if (episode.duration) {
+                const formattedDuration = formatDuration(episode.duration);
+                if (formattedDuration) {
+                    metaHTML += `<div class="modal-meta-item"><strong>Duration</strong> ${formattedDuration}</div>`;
+                }
+            }
+            if (episode.host) {
+                metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${episode.host}</div>`;
+            }
+            modalMeta.innerHTML = metaHTML || '';
+            modalMeta.style.display = metaHTML ? 'flex' : 'none';
+            
+            // Use fullDescription if available, otherwise use description
+            const descriptionText = episode.fullDescription || episode.description || 'No description available.';
+            modalDescription.textContent = descriptionText;
+            
+            // Display tags if available
+            if (episode.tags && Array.isArray(episode.tags) && episode.tags.length > 0) {
+                modalTags.innerHTML = episode.tags.map(tag => 
+                    `<span class="modal-tag">${tag.toUpperCase()}</span>`
+                ).join('');
+                modalTags.style.display = 'flex';
+            } else {
+                modalTags.innerHTML = '';
+                modalTags.style.display = 'none';
+            }
+            
+            // Display audio link if available
+            if (episode.audioUrl) {
+                modalAudioLink.innerHTML = `<a href="${episode.audioUrl}" target="_blank" rel="noopener noreferrer" class="modal-audio-link">Listen Now</a>`;
+                modalAudioLink.style.display = 'block';
+            } else {
+                modalAudioLink.innerHTML = '';
+                modalAudioLink.style.display = 'none';
+            }
+            
             modalDate.textContent = formatDate(episode.createdAt);
 
             // Show modal
