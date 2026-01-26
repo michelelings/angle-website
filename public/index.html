@@ -159,21 +159,20 @@
             overflow: hidden;
             background-color: #000000;
             cursor: pointer;
-            transition: transform 0.2s ease, opacity 0.4s ease, width 0.4s ease, margin 0.4s ease;
+            transition: transform 0.2s ease, opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
             width: 380px;
             height: 500px;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
             opacity: 1;
+            visibility: visible;
         }
 
         .episode-card.hidden {
             opacity: 0;
-            width: 0;
-            margin: 0;
+            visibility: hidden;
             pointer-events: none;
-            overflow: hidden;
         }
 
         .episode-card:hover {
@@ -459,7 +458,7 @@
             const grid = document.getElementById('collectionGrid');
             const cards = grid.querySelectorAll('.episode-card');
             
-            // Fade out cards that don't match filter
+            // Start fading cards immediately
             cards.forEach(card => {
                 const cardCategory = card.getAttribute('data-category') || '';
                 const shouldShow = filter === 'all' || cardCategory === filter;
@@ -471,7 +470,8 @@
                 }
             });
             
-            // After transition, recalculate animation based on visible cards
+            // Recalculate animation after fade completes
+            // Use a delay that matches the fade transition
             setTimeout(() => {
                 const visibleCards = Array.from(grid.querySelectorAll('.episode-card:not(.hidden)'));
                 
@@ -489,25 +489,27 @@
                         seenTitles.add(title);
                         firstSetCards.push(card);
                     } else if (title && seenTitles.has(title)) {
-                        // We've completed one full set
                         break;
                     }
                 }
                 
-                // Calculate width of one set
+                // Calculate new width
                 const isMobile = window.innerWidth <= 768;
                 const cardWidth = isMobile ? 340 : 380;
                 const gap = 10;
-                const setWidth = firstSetCards.length * (cardWidth + gap) - gap; // Subtract last gap
+                const newSetWidth = firstSetCards.length * (cardWidth + gap) - gap;
                 
                 // Update scroll distance
-                grid.style.setProperty('--scroll-distance', `${setWidth}px`);
+                grid.style.setProperty('--scroll-distance', `${newSetWidth}px`);
                 
                 // Calculate new duration for consistent speed
                 const scrollSpeed = 15;
-                const duration = setWidth / scrollSpeed;
-                grid.style.animationDuration = `${duration}s`;
-            }, 400); // Match CSS transition duration
+                const newDuration = newSetWidth / scrollSpeed;
+                
+                // Update animation duration
+                // The animation will smoothly continue, and the fade masks any small jump
+                grid.style.animationDuration = `${newDuration}s`;
+            }, 600); // Match fade transition duration
         }
 
         // Fetch and initialize
