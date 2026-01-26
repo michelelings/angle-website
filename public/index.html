@@ -10,7 +10,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://angle.app/">
     <meta property="og:title" content="Angle">
-    <meta property="og:description" content="Stories you need to hear.">
+    <meta property="og:description" content="Stories worth listening.">
     <meta property="og:image" content="https://angle.app/api/og-image">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -19,7 +19,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://angle.app/">
     <meta name="twitter:title" content="Angle">
-    <meta name="twitter:description" content="Stories you need to hear.">
+    <meta name="twitter:description" content="Stories worth listening.">
     <meta name="twitter:image" content="https://angle.app/api/og-image">
     <style>
         @font-face {
@@ -743,7 +743,7 @@
 <body>
     <div class="header-section">
         <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
-        <p class="intro">0 stories you need to hear.</p>
+        <p class="intro">0 stories worth listening.</p>
         <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Get Angle (Beta)</a>
     </div>
     <div class="filters" id="filters"></div>
@@ -935,7 +935,7 @@
             
             // If already at target, no need to animate
             if (startCount === targetCount) {
-                introElement.textContent = `${targetCount} stories you need to hear.`;
+                introElement.textContent = `${targetCount} stories worth listening.`;
                 return;
             }
 
@@ -951,13 +951,13 @@
                 const easeOut = 1 - Math.pow(1 - progress, 3);
                 const currentCount = Math.floor(startCount + (targetCount - startCount) * easeOut);
                 
-                introElement.textContent = `${currentCount} stories you need to hear.`;
+                introElement.textContent = `${currentCount} stories worth listening.`;
                 
                 if (progress < 1) {
                     countAnimationId = requestAnimationFrame(updateCount);
                 } else {
                     // Ensure final count is exact
-                    introElement.textContent = `${targetCount} stories you need to hear.`;
+                    introElement.textContent = `${targetCount} stories worth listening.`;
                     countAnimationId = null;
                 }
             }
