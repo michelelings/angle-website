@@ -96,6 +96,22 @@
             font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
             background-color: #2a2a2a;
             color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s ease, opacity 0.3s ease, transform 0.2s ease;
+        }
+
+        .category-tag:hover {
+            background-color: #3a3a3a;
+            transform: translateY(-1px);
+        }
+
+        .category-tag.active {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        .category-tag.inactive {
+            opacity: 0.4;
         }
 
         .button {
@@ -136,18 +152,28 @@
             will-change: transform;
         }
 
+
         .episode-card {
             position: relative;
             border-radius: 32px;
             overflow: hidden;
             background-color: #000000;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, opacity 0.4s ease, width 0.4s ease, margin 0.4s ease;
             width: 380px;
             height: 500px;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            opacity: 1;
+        }
+
+        .episode-card.hidden {
+            opacity: 0;
+            width: 0;
+            margin: 0;
+            pointer-events: none;
+            overflow: hidden;
         }
 
         .episode-card:hover {
@@ -321,7 +347,7 @@
             return card;
         }
 
-        // Filter and render episodes
+        // Filter and render episodes (initial render)
         function renderEpisodes(filter = 'all') {
             const grid = document.getElementById('collectionGrid');
             const isMobile = window.innerWidth <= 768;
@@ -360,24 +386,128 @@
             // Set CSS variable for scroll distance
             grid.style.setProperty('--scroll-distance', `${setWidth}px`);
             
-            // Calculate duration for consistent speed (10px per second)
+            // Calculate duration for consistent speed (15px per second)
             const scrollSpeed = 15; // pixels per second
             const duration = setWidth / scrollSpeed;
             grid.style.animationDuration = `${duration}s`;
+            
+            // Update tag states
+            updateTagStates(filter);
         }
 
-        // Initialize category tags (display only)
+        // Update tag states based on active filter
+        function updateTagStates(activeFilter) {
+            const tags = document.querySelectorAll('.category-tag');
+            tags.forEach(tag => {
+                const tagCategory = tag.getAttribute('data-category');
+                tag.classList.remove('active', 'inactive');
+                
+                if (activeFilter === 'all') {
+                    // No filter active, all tags normal
+                    tag.classList.remove('inactive');
+                } else if (tagCategory === activeFilter) {
+                    // This tag is active
+                    tag.classList.add('active');
+                } else {
+                    // Other tags should fade
+                    tag.classList.add('inactive');
+                }
+            });
+        }
+
+        // Initialize category tags with click handlers
         function initFilters(categories) {
             const filtersContainer = document.getElementById('filters');
             filtersContainer.innerHTML = '';
 
             // Create category tags
             categories.forEach(category => {
-                const tag = document.createElement('span');
+                const tag = document.createElement('button');
                 tag.className = 'category-tag';
                 tag.textContent = category.toUpperCase();
+                tag.setAttribute('data-category', category);
+                tag.setAttribute('type', 'button');
+                tag.setAttribute('aria-label', `Filter by ${category}`);
+                
+                // Add click handler
+                tag.addEventListener('click', () => {
+                    handleFilterClick(category);
+                });
+                
                 filtersContainer.appendChild(tag);
             });
+        }
+
+        // Handle filter tag click
+        function handleFilterClick(category) {
+            // Toggle: if clicking the same filter, turn it off
+            if (activeFilter === category) {
+                activeFilter = 'all';
+            } else {
+                activeFilter = category;
+            }
+            
+            // Update tag states
+            updateTagStates(activeFilter);
+            
+            // Filter episodes with animation
+            filterEpisodes(activeFilter);
+        }
+
+        // Filter episodes with smooth animation
+        function filterEpisodes(filter) {
+            const grid = document.getElementById('collectionGrid');
+            const cards = grid.querySelectorAll('.episode-card');
+            
+            // Fade out cards that don't match filter
+            cards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category') || '';
+                const shouldShow = filter === 'all' || cardCategory === filter;
+                
+                if (!shouldShow) {
+                    card.classList.add('hidden');
+                } else {
+                    card.classList.remove('hidden');
+                }
+            });
+            
+            // After transition, recalculate animation based on visible cards
+            setTimeout(() => {
+                const visibleCards = Array.from(grid.querySelectorAll('.episode-card:not(.hidden)'));
+                
+                if (visibleCards.length === 0) {
+                    return;
+                }
+                
+                // Find unique episodes by title (to determine one set)
+                const seenTitles = new Set();
+                const firstSetCards = [];
+                
+                for (const card of visibleCards) {
+                    const title = card.querySelector('.episode-title')?.textContent;
+                    if (title && !seenTitles.has(title)) {
+                        seenTitles.add(title);
+                        firstSetCards.push(card);
+                    } else if (title && seenTitles.has(title)) {
+                        // We've completed one full set
+                        break;
+                    }
+                }
+                
+                // Calculate width of one set
+                const isMobile = window.innerWidth <= 768;
+                const cardWidth = isMobile ? 340 : 380;
+                const gap = 10;
+                const setWidth = firstSetCards.length * (cardWidth + gap) - gap; // Subtract last gap
+                
+                // Update scroll distance
+                grid.style.setProperty('--scroll-distance', `${setWidth}px`);
+                
+                // Calculate new duration for consistent speed
+                const scrollSpeed = 15;
+                const duration = setWidth / scrollSpeed;
+                grid.style.animationDuration = `${duration}s`;
+            }, 400); // Match CSS transition duration
         }
 
         // Fetch and initialize
