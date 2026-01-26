@@ -271,11 +271,14 @@
             opacity: 0.9;
         }
 
-        .episode-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .episode-duration {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
             margin-top: 8px;
+            opacity: 0.9;
         }
 
         .episode-date {
@@ -284,15 +287,7 @@
             line-height: 1.4;
             color: #ffffff;
             margin: 0;
-            opacity: 0.9;
-        }
-
-        .episode-duration {
-            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #ffffff;
-            margin: 0;
+            margin-top: 8px;
             opacity: 0.9;
         }
 
@@ -846,15 +841,7 @@
             card.setAttribute('data-category', episode.category || '');
             card.setAttribute('data-episode-id', episode.id);
             
-            const durationText = (episode.duration !== null && episode.duration !== undefined) ? formatDurationMinutes(episode.duration) : null;
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
-            
-            const metaHTML = (dateText || durationText) ? `
-                <div class="episode-meta">
-                    ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
-                    ${durationText ? `<div class="episode-duration">${durationText}</div>` : ''}
-                </div>
-            ` : '';
             
             card.innerHTML = `
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
@@ -863,7 +850,7 @@
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
                     ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
-                    ${metaHTML}
+                    ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
                 </div>
             `;
             
@@ -943,11 +930,9 @@
 
         // Format duration to minutes and seconds for card display
         function formatDurationMinutes(seconds) {
-            if (seconds === null || seconds === undefined || seconds === '') return null;
-            const numSeconds = Number(seconds);
-            if (isNaN(numSeconds) || numSeconds <= 0) return null;
-            const minutes = Math.floor(numSeconds / 60);
-            const secs = Math.floor(numSeconds % 60);
+            if (!seconds) return null;
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
             return `${minutes}m ${secs}s`;
         }
 
