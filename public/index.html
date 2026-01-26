@@ -271,6 +271,16 @@
             opacity: 0.9;
         }
 
+        .episode-duration {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
         #loadingSpinner {
             position: fixed;
             top: 50%;
@@ -821,6 +831,8 @@
             card.setAttribute('data-category', episode.category || '');
             card.setAttribute('data-episode-id', episode.id);
             
+            const durationText = episode.duration ? formatDurationMinutes(episode.duration) : null;
+            
             card.innerHTML = `
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
                 <div class="episode-gradient"></div>
@@ -828,6 +840,7 @@
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
                     ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
+                    ${durationText ? `<div class="episode-duration">${durationText}</div>` : ''}
                 </div>
             `;
             
@@ -903,6 +916,14 @@
                 return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             }
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Format duration to minutes and seconds for card display
+        function formatDurationMinutes(seconds) {
+            if (!seconds) return null;
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}m ${secs}s`;
         }
 
         // Format time for audio player (MM:SS or HH:MM:SS)
