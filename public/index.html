@@ -80,16 +80,24 @@
             justify-content: center;
             gap: 6px;
             padding: 20px 20px 30px;
-            flex-wrap: nowrap;
+            flex-wrap: nowrap !important;
             overflow-x: auto;
+            overflow-y: hidden;
             max-width: 100%;
+            width: 100%;
             margin: 0 auto;
+            white-space: nowrap;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
         }
 
         .filters::-webkit-scrollbar {
             display: none; /* Chrome, Safari, Opera */
+        }
+
+        .category-tag {
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .category-tag {
@@ -266,11 +274,19 @@
             }
 
             .filters {
-                flex-wrap: nowrap;
+                flex-wrap: nowrap !important;
                 overflow-x: auto;
+                overflow-y: hidden;
                 padding: 15px 20px 20px;
                 justify-content: flex-start;
                 -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+                width: 100%;
+            }
+
+            .category-tag {
+                white-space: nowrap;
+                flex-shrink: 0;
             }
 
             .gallery-wrapper {
