@@ -242,7 +242,7 @@
             font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
             background-color: #2a2a2a;
             color: #ffffff;
-            margin-bottom: 8px;
+            margin-top: 8px;
             align-self: flex-start;
         }
 
@@ -636,9 +636,9 @@
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
                 <div class="episode-gradient"></div>
                 <div class="episode-info">
-                    ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
+                    ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
                 </div>
             `;
             
