@@ -159,7 +159,6 @@
             overflow: hidden;
             background-color: #000000;
             cursor: pointer;
-            transition: transform 0.2s ease, opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
             width: 380px;
             height: 500px;
             display: flex;
@@ -167,12 +166,27 @@
             flex-shrink: 0;
             opacity: 1;
             visibility: visible;
+            transition: transform 0.2s ease;
+        }
+
+        /* Only animate opacity/visibility for cards in viewport */
+        .episode-card.in-viewport {
+            transition: transform 0.2s ease, opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
         }
 
         .episode-card.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+        }
+
+        /* Cards not in viewport update instantly (no transition) */
+        .episode-card:not(.in-viewport) {
+            transition: transform 0.2s ease !important;
+        }
+        
+        .episode-card:not(.in-viewport).hidden {
+            transition: transform 0.2s ease !important;
         }
 
         .episode-card:hover {
@@ -317,6 +331,7 @@
     <script>
         let episodes = [];
         let activeFilter = 'all';
+        let intersectionObserver = null;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -392,6 +407,9 @@
             
             // Update tag states
             updateTagStates(filter);
+            
+            // Set up intersection observer for new cards
+            setupIntersectionObserver();
         }
 
         // Update tag states based on active filter
@@ -453,25 +471,64 @@
             filterEpisodes(activeFilter);
         }
 
-        // Filter episodes with smooth animation
+        // Set up Intersection Observer to track cards in viewport
+        function setupIntersectionObserver() {
+            // Disconnect existing observer if any
+            if (intersectionObserver) {
+                intersectionObserver.disconnect();
+            }
+            
+            const cards = document.querySelectorAll('.episode-card');
+            if (cards.length === 0) return;
+            
+            // Create observer with generous root margin to catch cards near viewport
+            intersectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-viewport');
+                    } else {
+                        // Keep in-viewport class for a bit after leaving to smooth transitions
+                        setTimeout(() => {
+                            if (!entry.isIntersecting) {
+                                entry.target.classList.remove('in-viewport');
+                            }
+                        }, 100);
+                    }
+                });
+            }, {
+                root: null, // viewport
+                rootMargin: '200px', // Start tracking 200px before entering viewport
+                threshold: 0 // Trigger as soon as any part is visible
+            });
+            
+            // Observe all cards
+            cards.forEach(card => {
+                intersectionObserver.observe(card);
+            });
+        }
+
+        // Filter episodes with smooth animation (only for viewport cards)
         function filterEpisodes(filter) {
             const grid = document.getElementById('collectionGrid');
             const cards = grid.querySelectorAll('.episode-card');
             
-            // Start fading cards immediately
+            // Only animate cards that are in viewport, others update instantly
             cards.forEach(card => {
                 const cardCategory = card.getAttribute('data-category') || '';
                 const shouldShow = filter === 'all' || cardCategory === filter;
+                const isInViewport = card.classList.contains('in-viewport');
                 
                 if (!shouldShow) {
                     card.classList.add('hidden');
                 } else {
                     card.classList.remove('hidden');
                 }
+                
+                // Cards not in viewport will update instantly due to CSS
+                // Cards in viewport will animate smoothly
             });
             
-            // Recalculate animation after fade completes
-            // Use a delay that matches the fade transition
+            // Recalculate animation after transition completes
             setTimeout(() => {
                 const visibleCards = Array.from(grid.querySelectorAll('.episode-card:not(.hidden)'));
                 
@@ -507,9 +564,8 @@
                 const newDuration = newSetWidth / scrollSpeed;
                 
                 // Update animation duration
-                // The animation will smoothly continue, and the fade masks any small jump
                 grid.style.animationDuration = `${newDuration}s`;
-            }, 600); // Match fade transition duration
+            }, 500); // Match fade transition duration (slightly shorter for responsiveness)
         }
 
         // Fetch and initialize
@@ -546,7 +602,10 @@
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => renderEpisodes(activeFilter), 250);
+            resizeTimeout = setTimeout(() => {
+                renderEpisodes(activeFilter);
+                // Observer will be reinitialized in renderEpisodes
+            }, 250);
         });
 
         // Start
