@@ -231,6 +231,21 @@
             margin: 0;
         }
 
+        .episode-category {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            margin-bottom: 8px;
+            align-self: flex-start;
+        }
+
         .episode-description {
             font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
             font-size: 10px;
@@ -540,6 +555,7 @@
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
                 <div class="episode-gradient"></div>
                 <div class="episode-info">
+                    ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
                     <h3 class="episode-title">${episode.title}</h3>
                     <p class="episode-description">${episode.description || ''}</p>
                 </div>

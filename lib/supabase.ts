@@ -14,6 +14,13 @@ export interface Episode {
   coverImage: string | null;
   createdAt: string;
   category: string | null;
+  duration?: number | null;
+  audioUrl?: string | null;
+  transcript?: string | null;
+  host?: string | null;
+  episodeNumber?: number | null;
+  tags?: string[] | null;
+  fullDescription?: string | null;
 }
 
 interface EpisodeRow {
@@ -35,7 +42,7 @@ export interface ApiResponse<T> {
 export async function fetchEpisodes(): Promise<Episode[]> {
   const { data, error } = await supabase
     .from('episodes')
-    .select('id, title, excerpt, cover_url, created_at, category')
+    .select('*')
     .eq('status', 'completed')
     .order('created_at', { ascending: false });
 
@@ -44,13 +51,21 @@ export async function fetchEpisodes(): Promise<Episode[]> {
     throw error;
   }
 
-  return (data as EpisodeRow[]).map((episode) => ({
+  return (data as any[]).map((episode) => ({
     id: episode.id,
     title: episode.title,
     description: episode.excerpt,
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
     category: episode.category,
+    // Include any additional fields that might exist
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: episode.transcript || null,
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: episode.description || episode.full_description || null,
   }));
 }
 
