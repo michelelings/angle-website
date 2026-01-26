@@ -281,6 +281,16 @@
             opacity: 0.9;
         }
 
+        .episode-date {
+            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
         #loadingSpinner {
             position: fixed;
             top: 50%;
@@ -832,6 +842,7 @@
             card.setAttribute('data-episode-id', episode.id);
             
             const durationText = episode.duration ? formatDurationMinutes(episode.duration) : null;
+            const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
             
             card.innerHTML = `
                 <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
@@ -841,6 +852,7 @@
                     <p class="episode-description">${episode.description || ''}</p>
                     ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
                     ${durationText ? `<div class="episode-duration">${durationText}</div>` : ''}
+                    ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
                 </div>
             `;
             
@@ -924,6 +936,14 @@
             const minutes = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${minutes}m ${secs}s`;
+        }
+
+        // Format date for card display (e.g., "Sun Jan 25")
+        function formatCardDate(dateString) {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
         }
 
         // Format time for audio player (MM:SS or HH:MM:SS)
