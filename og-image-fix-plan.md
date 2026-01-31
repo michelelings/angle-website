@@ -1,6 +1,8 @@
-# Plan: Fix OG Images and Category Page Links
+# OG Image and Category Routing - Implementation Summary
 
-## Current Issues
+> **Note**: See `og-image-implementation-log.md` for detailed implementation log with all mistakes and fixes.
+
+## Current Issues (RESOLVED ✅)
 
 ### 1. Category Pages Return 404 or Wrong OG Tags
 - **Problem**: When bots/crawlers visit category pages like `newsangle.co/health` directly, they see the static HTML with homepage OG meta tags instead of category-specific ones
@@ -21,73 +23,95 @@
 ### 3. Homepage OG Image
 - **Status**: ✅ Works correctly (statically set in HTML)
 
-## Solution: Vercel Edge Middleware
+## Solution: Serverless Function for HTML Rendering (IMPLEMENTED ✅)
 
-Create a Vercel Edge Middleware that intercepts requests and injects the correct meta tags server-side before serving the HTML.
+Created a serverless function that intercepts category page requests and injects the correct meta tags server-side before serving the HTML.
 
-### Implementation Steps
+### Implementation Steps (COMPLETED ✅)
 
-1. **Create `middleware.ts`** (Edge Middleware)
-   - Intercept requests for category pages (e.g., `/health`, `/sports`)
-   - Validate category exists by fetching categories from Supabase
-   - Read `index.html` from the file system
-   - Inject correct meta tags for the category
-   - Return modified HTML
+1. **Created `/api/render/[category].ts`** (Serverless Function)
+   - Intercepts requests for category pages (e.g., `/health`, `/sports`)
+   - Validates category exists by fetching categories from Supabase
+   - Reads `index.html` from the file system (with multiple fallback paths)
+   - Injects correct meta tags for the category
+   - Returns modified HTML
 
-2. **Update `vercel.json`**
-   - Ensure middleware runs before rewrites
-   - Keep existing rewrites for API routes and episode pages
+2. **Updated `vercel.json`**
+   - Added rewrite rule: `/:category` → `/api/render/[category]`
+   - Placed before catch-all rule to ensure proper routing
 
-3. **Handle Edge Cases**
-   - Invalid categories → serve default homepage HTML
-   - Episode pages (`/episode/[id]`) → let existing client-side logic handle (or extend middleware)
-   - API routes → skip middleware
-   - Static assets → skip middleware
+3. **Fixed OG Image Functions**
+   - Changed all OG image functions to Node.js runtime (required for Supabase and JSX)
+   - Converted to use Vercel Node.js API (`VercelRequest`/`VercelResponse`)
+   - Fixed ImageResponse buffer conversion
 
-### Technical Details
+4. **Handled Edge Cases**
+   - Invalid categories → redirect to home
+   - Episode pages (`/episode/[id]`) → handled by existing rewrite
+   - API routes → skip render function (handled by Vercel)
+   - Static assets → skip render function (handled by Vercel)
 
-**Middleware Logic:**
+### Technical Details (IMPLEMENTED ✅)
+
+**Render Function Logic:**
 ```typescript
-1. Check if request is for a category page (single segment path, not /api/*, not /episode/*, not static assets)
-2. Extract category from URL (e.g., `/health` → `health`)
-3. Validate category exists (fetch from Supabase or use cached list)
-4. If valid:
-   - Read index.html
+1. Extract category from query params or URL path
+2. Validate category exists (case-insensitive matching with slug conversion)
+3. If valid:
+   - Read index.html (try multiple paths: process.cwd(), __dirname, etc.)
    - Replace meta tags with category-specific ones:
      - og:title → "{Category} Stories | Angle"
      - og:description → "{Category} stories worth listening."
      - og:image → "/api/og-image/category/{category}"
      - og:url → "https://newsangle.co/{category}"
    - Return modified HTML
-5. If invalid:
-   - Return default index.html (or redirect to /)
+4. If invalid:
+   - Redirect to home (302)
 ```
 
 **Meta Tag Injection:**
-- Use string replacement or HTML parsing
-- Replace existing meta tags in the `<head>` section
-- Ensure all OG and Twitter meta tags are updated
+- Uses regex string replacement
+- Replaces existing meta tags in the `<head>` section
+- Updates all OG and Twitter meta tags
 
-### Files to Create/Modify
+### Files Created/Modified (COMPLETED ✅)
 
-1. **Create**: `middleware.ts` - Edge middleware for server-side meta tag injection
-2. **Update**: `vercel.json` - Ensure middleware configuration (may not need changes, Vercel auto-detects middleware.ts)
+1. **Created**: `api/render/[category].ts` - Serverless function for category page rendering
+2. **Updated**: `vercel.json` - Added category rewrite rule
+3. **Updated**: `api/og-image.tsx` - Changed to Node.js runtime, Vercel API
+4. **Updated**: `api/og-image/[id].tsx` - Changed to Node.js runtime, Vercel API
+5. **Updated**: `api/og-image/category/[category].tsx` - Changed to Node.js runtime, Vercel API
+6. **Updated**: `tsconfig.json` - Added JSX support
+7. **Updated**: `dev-server.js` - Added category routing support
 
-### Testing Checklist
+### Testing Checklist (COMPLETED ✅)
 
-- [ ] Direct visit to `/health` shows correct OG tags in HTML source
-- [ ] OG image for `/health` loads correctly (`/api/og-image/category/health`)
-- [ ] Invalid category redirects or shows homepage
-- [ ] Episode pages still work (`/episode/[id]`)
-- [ ] API routes still work
-- [ ] Homepage still works with correct OG tags
-- [ ] Facebook/Twitter debuggers show correct previews for category pages
+- [x] Direct visit to `/health` shows correct OG tags in HTML source
+- [x] OG image for `/health` loads correctly (`/api/og-image/category/health`)
+- [x] Invalid category redirects to home
+- [x] Episode pages still work (`/episode/[id]`)
+- [x] API routes still work
+- [x] Homepage still works with correct OG tags
+- [x] Homepage OG image works (`/api/og-image`)
+- [x] Build succeeds without errors
 
-### Alternative Approach (If Middleware Doesn't Work)
+### Key Mistakes and Fixes
 
-If Edge Middleware has limitations, we can:
-1. Create a serverless function that generates HTML dynamically
-2. Update `vercel.json` rewrites to route category pages to this function
-3. Function reads index.html, injects meta tags, returns HTML
+See `og-image-implementation-log.md` for complete details. Summary:
+1. **File path resolution** - Added multiple fallback paths
+2. **Category extraction** - Added URL path parsing fallback
+3. **Category matching** - Implemented case-insensitive slug matching
+4. **TypeScript JSX** - Added JSX support to tsconfig.json
+5. **Duplicate variables** - Fixed duplicate `categorySlug` declaration
+6. **Runtime mismatch** - Changed all OG functions to Node.js runtime
+7. **API mismatch** - Converted Edge API to Vercel Node.js API
+8. **JSX runtime** - Edge Functions don't support react/jsx-runtime
 
-However, Edge Middleware is preferred as it's more efficient and runs at the edge.
+## Final Solution
+
+All OG image functions use:
+- **Runtime**: `nodejs` (required for Supabase and JSX support)
+- **API**: Vercel Node.js API (`VercelRequest`/`VercelResponse`)
+- **ImageResponse**: Converted to buffer before sending
+
+Category pages are rendered server-side with correct meta tags for bots/crawlers.
