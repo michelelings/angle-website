@@ -14,20 +14,41 @@ export default async function handler(
   res: VercelResponse
 ): Promise<void> {
   try {
-    // Extract episode ID from query or URL
+    // Extract episode ID from multiple sources
+    // With Vercel file-based routing [id].ts, the parameter should be in req.query.id
+    // When rewriting /episode/:id -> /api/render/episode/[id], Vercel passes it as a query param
     let episodeId = req.query.id as string;
     
-    // If not in query, try extracting from URL path
+    // Fallback: extract from URL pathname if query param not available
     if (!episodeId && req.url) {
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
       const pathParts = url.pathname.split('/').filter(Boolean);
-      // If path is /api/render/episode/123, episodeId is the last part
+      
+      // Pattern 1: /api/render/episode/123 (direct API access with file-based routing)
       if (pathParts.length >= 4 && pathParts[0] === 'api' && pathParts[1] === 'render' && pathParts[2] === 'episode') {
         episodeId = pathParts[3];
-      } else if (pathParts.length === 2 && pathParts[0] === 'episode') {
-        // Direct episode path like /episode/123
+      } 
+      // Pattern 2: /episode/123 (original path - should be rewritten but handle as fallback)
+      else if (pathParts.length === 2 && pathParts[0] === 'episode') {
         episodeId = pathParts[1];
       }
+      // Pattern 3: Check query string from URL
+      else if (url.searchParams.has('id')) {
+        episodeId = url.searchParams.get('id') || undefined;
+      }
+    }
+
+    // Debug logging for troubleshooting
+    if (!episodeId) {
+      console.log('Episode render - no ID found:', {
+        url: req.url,
+        query: req.query,
+        pathname: req.url ? new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname : 'unknown',
+        headers: {
+          host: req.headers.host,
+          'user-agent': req.headers['user-agent']
+        }
+      });
     }
 
     if (!episodeId) {
