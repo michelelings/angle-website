@@ -73,10 +73,14 @@ export default async function handler(
   }
 
   try {
-    const episodes = await fetchEpisodes();
+    // Fetch episodes and categories in parallel
+    const [episodes, categories] = await Promise.all([
+      fetchEpisodes(),
+      fetchCategories().catch(() => [] as string[]), // Fallback to empty array if categories fail
+    ]);
     
     // Generate sitemap XML
-    const sitemapXML = generateSitemapXML(episodes);
+    const sitemapXML = generateSitemapXML(episodes, categories);
 
     // Set cache headers (1 hour)
     res.setHeader('Cache-Control', 'public, max-age=3600');
