@@ -642,38 +642,19 @@
             overflow: hidden;
         }
 
-        /* Detail Page Styles */
-        .detail-page {
-            position: fixed;
+        .modal-header {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            min-height: 100vh;
-            background-color: #1a1a1a;
-            z-index: 2000;
-            overflow-y: auto;
-        }
-
-        .detail-content {
-            max-width: 900px;
-            margin: 0 auto;
-            background-color: #1a1a1a;
-        }
-
-        .detail-header {
+            right: 0;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             padding: 20px;
-            position: sticky;
-            top: 0;
-            background-color: rgba(26, 26, 26, 0.95);
-            backdrop-filter: blur(8px);
-            z-index: 10;
+            z-index: 1002;
         }
 
-        .detail-back-btn,
-        .detail-share-btn {
+        .modal-share-btn {
             padding: 8px 16px;
             border-radius: 8px;
             border: none;
@@ -686,108 +667,13 @@
             color: #ffffff;
         }
 
-        .detail-back-btn:hover,
-        .detail-share-btn:hover {
+        .modal-share-btn:hover {
             background-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
         }
 
-        .detail-back-btn:active,
-        .detail-share-btn:active {
+        .modal-share-btn:active {
             transform: translateY(0);
-        }
-
-        .detail-image {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .detail-body {
-            padding: 40px;
-        }
-
-        .detail-category {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
-            background-color: #2a2a2a;
-            color: #ffffff;
-            margin-bottom: 20px;
-        }
-
-        .detail-title {
-            font-family: 'LTT Recoletta', Georgia, 'Times New Roman', serif;
-            font-size: 48px;
-            font-weight: 400;
-            line-height: 1.1;
-            color: #ffffff;
-            margin: 0 0 24px 0;
-        }
-
-        .detail-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .detail-description {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            font-size: 16px;
-            line-height: 1.6;
-            color: #e0e0e0;
-            margin: 0 0 24px 0;
-        }
-
-        .detail-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 24px;
-        }
-
-        .detail-audio-player {
-            margin-top: 24px;
-            padding: 20px;
-            background-color: #2a2a2a;
-            border-radius: 12px;
-        }
-
-        .detail-date {
-            font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
-            font-size: 10px;
-            color: #b0b0b0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 24px;
-        }
-
-        .detail-error {
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .detail-error h2 {
-            font-size: 32px;
-            margin-bottom: 16px;
-            color: #ffffff;
-        }
-
-        .detail-error p {
-            font-size: 16px;
-            color: #b0b0b0;
-            margin-bottom: 24px;
         }
 
         .share-toast {
@@ -813,42 +699,15 @@
         }
 
         @media (max-width: 768px) {
-            .detail-header {
-                padding: 15px;
+            .modal-header {
+                top: 15px;
+                left: 15px;
+                right: 15px;
             }
 
-            .detail-back-btn,
-            .detail-share-btn {
+            .modal-share-btn {
                 padding: 6px 12px;
                 font-size: 12px;
-            }
-
-            .detail-image {
-                height: 300px;
-            }
-
-            .detail-body {
-                padding: 28px 24px;
-            }
-
-            .detail-title {
-                font-size: 36px;
-                margin-bottom: 20px;
-            }
-
-            .detail-description {
-                font-size: 14px;
-                margin-bottom: 20px;
-            }
-
-            .detail-meta {
-                gap: 12px;
-                margin-bottom: 20px;
-                padding-bottom: 20px;
-            }
-
-            .detail-audio-player {
-                padding: 16px;
             }
         }
 
@@ -1009,7 +868,10 @@
     <!-- Story Detail Modal -->
     <div class="modal-overlay" id="storyModal">
         <div class="modal-content">
-            <button class="modal-close" id="modalClose" aria-label="Close story">×</button>
+            <div class="modal-header">
+                <button class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
+                <button class="modal-close" id="modalClose" aria-label="Close story">×</button>
+            </div>
             <img class="modal-image" id="modalImage" src="" alt="">
             <div class="modal-body">
                 <span class="modal-category" id="modalCategory"></span>
@@ -1045,52 +907,6 @@
         </div>
     </div>
 
-    <!-- Episode Detail Page View -->
-    <div class="detail-page" id="detailPage" style="display: none;">
-        <div class="detail-content">
-            <div class="detail-header">
-                <button class="detail-back-btn" id="detailBackBtn" aria-label="Back to home">← Back</button>
-                <button class="detail-share-btn" id="detailShareBtn" aria-label="Share episode">Share</button>
-            </div>
-            <img class="detail-image" id="detailImage" src="" alt="">
-            <div class="detail-body">
-                <span class="detail-category" id="detailCategory"></span>
-                <h1 class="detail-title" id="detailTitle"></h1>
-                <div class="detail-meta" id="detailMeta"></div>
-                <p class="detail-description" id="detailDescription"></p>
-                <div class="detail-tags" id="detailTags"></div>
-                <div class="detail-audio-player" id="detailAudioPlayer" style="display: none;">
-                    <audio id="detailAudioElement" preload="metadata"></audio>
-                    <div class="audio-controls">
-                        <button class="audio-play-pause" id="detailAudioPlayPause" aria-label="Play audio">
-                            <span class="play-icon">▶</span>
-                            <span class="pause-icon" style="display: none;">⏸</span>
-                        </button>
-                        <div class="audio-progress-container">
-                            <div class="audio-progress-bar" id="detailAudioProgressBar">
-                                <div class="audio-progress-filled" id="detailAudioProgressFilled"></div>
-                            </div>
-                        </div>
-                        <div class="audio-time">
-                            <span class="audio-time-current" id="detailAudioTimeCurrent">0:00</span>
-                            <span class="audio-time-separator">/</span>
-                            <span class="audio-time-duration" id="detailAudioTimeDuration">0:00</span>
-                        </div>
-                        <a href="https://testflight.apple.com/join/p2VQgeun" class="audio-get-angle-btn" target="_blank" rel="noopener noreferrer">Get Angle</a>
-                    </div>
-                    <div class="audio-error" id="detailAudioError" style="display: none;">
-                        Unable to load audio. Please try again later.
-                    </div>
-                </div>
-                <div class="detail-date" id="detailDate"></div>
-            </div>
-        </div>
-        <div class="detail-error" id="detailError" style="display: none;">
-            <h2>Episode Not Found</h2>
-            <p>The episode you're looking for doesn't exist or has been removed.</p>
-            <a href="/" class="button">Back to Home</a>
-        </div>
-    </div>
     
     <script>
         let episodes = [];
@@ -1103,7 +919,6 @@
         let currentAudio = null;
         let countAnimationId = null;
         let currentTargetCount = 0;
-        let currentView = 'gallery'; // 'gallery' or 'detail'
         let currentEpisodeId = null;
 
         // Shuffle array using Fisher-Yates algorithm
@@ -1137,9 +952,9 @@
                 </div>
             `;
             
-            // Add click handler to navigate to detail page
+            // Add click handler to open modal with URL update
             card.addEventListener('click', () => {
-                navigateToEpisode(episode.id);
+                openStoryModal(episode);
             });
             
             return card;
@@ -1476,6 +1291,13 @@
             
             modalDate.textContent = formatDate(episode.createdAt);
 
+            // Update URL without page reload
+            window.history.pushState({ episodeId: episode.id }, '', `/episode/${episode.id}`);
+            currentEpisodeId = episode.id;
+
+            // Update meta tags for social sharing
+            updateMetaTags(episode);
+
             // Show modal
             modal.classList.add('open');
             document.body.classList.add('modal-open');
@@ -1487,6 +1309,13 @@
             const modal = document.getElementById('storyModal');
             modal.classList.remove('open');
             document.body.classList.remove('modal-open');
+            
+            // Update URL to home
+            window.history.pushState({ view: 'gallery' }, '', '/');
+            currentEpisodeId = null;
+            
+            // Reset meta tags
+            resetMetaTags();
         }
 
         // Initialize modal event listeners
@@ -1526,49 +1355,62 @@
             }
         }
 
-        // Initialize detail page event listeners
-        function initDetailPage() {
-            const backBtn = document.getElementById('detailBackBtn');
-            const shareBtn = document.getElementById('detailShareBtn');
-            const playPauseBtn = document.getElementById('detailAudioPlayPause');
-            const progressBar = document.getElementById('detailAudioProgressBar');
+        // Initialize routing and share functionality
+        function initRouting() {
+            const shareBtn = document.getElementById('modalShareBtn');
             const headerLink = document.getElementById('headerLink');
-
-            if (backBtn) {
-                backBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    navigateToHome();
-                });
-            }
 
             if (shareBtn) {
                 shareBtn.addEventListener('click', handleShare);
             }
 
-            if (playPauseBtn) {
-                playPauseBtn.addEventListener('click', handleDetailAudioPlayPause);
-            }
-
-            if (progressBar) {
-                progressBar.addEventListener('click', handleDetailProgressBarClick);
-            }
-
             if (headerLink) {
                 headerLink.addEventListener('click', (e) => {
                     e.preventDefault();
-                    navigateToHome();
+                    if (currentEpisodeId) {
+                        closeStoryModal();
+                    }
                 });
             }
 
             // Handle browser back/forward navigation
-            window.addEventListener('popstate', (e) => {
+            window.addEventListener('popstate', async (e) => {
                 const episodeId = e.state?.episodeId || getEpisodeIdFromUrl();
                 if (episodeId) {
-                    showEpisodeDetail(episodeId);
+                    await openModalFromEpisodeId(episodeId);
                 } else {
-                    showGallery();
+                    closeStoryModal();
                 }
             });
+        }
+
+        // Open modal from episode ID (for URL routing)
+        async function openModalFromEpisodeId(episodeId) {
+            // Try to find episode in already loaded episodes
+            let episode = episodes.find(ep => ep.id === episodeId);
+            
+            // If not found, fetch from API
+            if (!episode) {
+                try {
+                    const response = await fetch(`/api/episodes/${episodeId}`);
+                    const data = await response.json();
+                    
+                    if (!data.success || !data.data) {
+                        // Episode not found - show error or redirect
+                        window.history.replaceState({ view: 'gallery' }, '', '/');
+                        return;
+                    }
+                    
+                    episode = data.data;
+                } catch (error) {
+                    console.error('Error fetching episode:', error);
+                    window.history.replaceState({ view: 'gallery' }, '', '/');
+                    return;
+                }
+            }
+            
+            // Open modal with episode
+            openStoryModal(episode);
         }
 
         // Filter and render episodes (initial render)
@@ -1740,275 +1582,6 @@
             return match ? match[1] : null;
         }
 
-        function navigateToEpisode(episodeId) {
-            window.history.pushState({ episodeId, view: 'detail' }, '', `/episode/${episodeId}`);
-            showEpisodeDetail(episodeId);
-        }
-
-        function navigateToHome() {
-            window.history.pushState({ view: 'gallery' }, '', '/');
-            showGallery();
-        }
-
-        function showGallery() {
-            currentView = 'gallery';
-            currentEpisodeId = null;
-            document.getElementById('detailPage').style.display = 'none';
-            document.querySelector('.header-section').style.display = 'block';
-            document.getElementById('filters').style.display = 'flex';
-            document.querySelector('.gallery-wrapper').style.display = 'block';
-            document.body.classList.remove('modal-open');
-            
-            // Cleanup detail audio
-            const detailAudioElement = document.getElementById('detailAudioElement');
-            if (detailAudioElement) {
-                detailAudioElement.pause();
-                detailAudioElement.src = '';
-                detailAudioElement.load();
-            }
-            
-            // Render episodes if we have them, otherwise they'll be loaded by init
-            if (episodes.length > 0) {
-                renderEpisodes(activeFilter);
-            }
-            
-            // Reset meta tags to default
-            resetMetaTags();
-        }
-
-        async function showEpisodeDetail(episodeId) {
-            currentView = 'detail';
-            currentEpisodeId = episodeId;
-            
-            // Hide gallery
-            document.querySelector('.header-section').style.display = 'none';
-            document.getElementById('filters').style.display = 'none';
-            document.querySelector('.gallery-wrapper').style.display = 'none';
-            
-            // Show detail page
-            const detailPage = document.getElementById('detailPage');
-            const detailError = document.getElementById('detailError');
-            const detailContent = document.querySelector('.detail-content');
-            
-            detailPage.style.display = 'block';
-            detailError.style.display = 'none';
-            detailContent.style.display = 'block';
-            
-            // Show loading state
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            if (loadingSpinner) {
-                loadingSpinner.style.display = 'flex';
-            }
-            
-            try {
-                // Try to find episode in already loaded episodes
-                let episode = episodes.find(ep => ep.id === episodeId);
-                
-                // If not found, fetch from API
-                if (!episode) {
-                    const response = await fetch(`/api/episodes/${episodeId}`);
-                    const data = await response.json();
-                    
-                    if (!data.success || !data.data) {
-                        throw new Error('Episode not found');
-                    }
-                    
-                    episode = data.data;
-                }
-                
-                // Display episode
-                displayEpisodeDetail(episode);
-                
-                // Update meta tags
-                updateMetaTags(episode);
-                
-                // Hide loading
-                if (loadingSpinner) {
-                    loadingSpinner.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Error loading episode:', error);
-                detailContent.style.display = 'none';
-                detailError.style.display = 'block';
-                if (loadingSpinner) {
-                    loadingSpinner.style.display = 'none';
-                }
-                resetMetaTags();
-            }
-        }
-
-        function displayEpisodeDetail(episode) {
-            const detailImage = document.getElementById('detailImage');
-            const detailCategory = document.getElementById('detailCategory');
-            const detailTitle = document.getElementById('detailTitle');
-            const detailMeta = document.getElementById('detailMeta');
-            const detailDescription = document.getElementById('detailDescription');
-            const detailTags = document.getElementById('detailTags');
-            const detailDate = document.getElementById('detailDate');
-            
-            detailImage.src = episode.coverImage || '/images/icon.webp';
-            detailImage.alt = episode.title;
-            
-            if (episode.category) {
-                detailCategory.textContent = episode.category.toUpperCase();
-                detailCategory.style.display = 'inline-block';
-            } else {
-                detailCategory.style.display = 'none';
-            }
-            
-            detailTitle.textContent = episode.title;
-            
-            // Build meta information
-            let metaHTML = '';
-            if (episode.episodeNumber) {
-                metaHTML += `<div class="modal-meta-item"><strong>Episode</strong> ${episode.episodeNumber}</div>`;
-            }
-            if (episode.duration) {
-                const formattedDuration = formatDuration(episode.duration);
-                if (formattedDuration) {
-                    metaHTML += `<div class="modal-meta-item"><strong>Duration</strong> ${formattedDuration}</div>`;
-                }
-            }
-            if (episode.host) {
-                metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${episode.host}</div>`;
-            }
-            detailMeta.innerHTML = metaHTML || '';
-            detailMeta.style.display = metaHTML ? 'flex' : 'none';
-            
-            const descriptionText = episode.fullDescription || episode.description || 'No description available.';
-            detailDescription.textContent = descriptionText;
-            
-            // Display tags if available
-            if (episode.tags && Array.isArray(episode.tags) && episode.tags.length > 0) {
-                detailTags.innerHTML = episode.tags.map(tag => 
-                    `<span class="modal-tag">${tag.toUpperCase()}</span>`
-                ).join('');
-                detailTags.style.display = 'flex';
-            } else {
-                detailTags.innerHTML = '';
-                detailTags.style.display = 'none';
-            }
-            
-            detailDate.textContent = formatDate(episode.createdAt);
-            
-            // Initialize audio player
-            initDetailAudioPlayer(episode.audioUrl || null);
-        }
-
-        function initDetailAudioPlayer(audioUrl) {
-            const audioElement = document.getElementById('detailAudioElement');
-            const audioPlayer = document.getElementById('detailAudioPlayer');
-            const playPauseBtn = document.getElementById('detailAudioPlayPause');
-            const playIcon = playPauseBtn.querySelector('.play-icon');
-            const pauseIcon = playPauseBtn.querySelector('.pause-icon');
-            const progressFilled = document.getElementById('detailAudioProgressFilled');
-            const timeCurrent = document.getElementById('detailAudioTimeCurrent');
-            const timeDuration = document.getElementById('detailAudioTimeDuration');
-            const audioError = document.getElementById('detailAudioError');
-
-            // Reset state
-            audioError.style.display = 'none';
-            audioPlayer.classList.remove('audio-loading');
-            playIcon.style.display = 'inline';
-            pauseIcon.style.display = 'none';
-            playPauseBtn.classList.remove('playing');
-            progressFilled.style.width = '0%';
-            timeCurrent.textContent = '0:00';
-            timeDuration.textContent = '0:00';
-
-            if (!audioUrl) {
-                audioPlayer.style.display = 'none';
-                return;
-            }
-
-            // Set audio source
-            audioElement.src = audioUrl;
-            audioPlayer.style.display = 'block';
-            currentAudio = audioElement;
-
-            // Load metadata
-            audioElement.load();
-
-            // Handle metadata loaded
-            audioElement.addEventListener('loadedmetadata', () => {
-                const duration = audioElement.duration;
-                if (isFinite(duration)) {
-                    timeDuration.textContent = formatTime(duration);
-                }
-            });
-
-            // Handle time updates
-            audioElement.addEventListener('timeupdate', () => {
-                const current = audioElement.currentTime;
-                const duration = audioElement.duration;
-                
-                if (isFinite(duration) && duration > 0) {
-                    const progress = (current / duration) * 100;
-                    progressFilled.style.width = `${progress}%`;
-                    timeCurrent.textContent = formatTime(current);
-                }
-            });
-
-            // Handle play/pause
-            audioElement.addEventListener('play', () => {
-                playIcon.style.display = 'none';
-                pauseIcon.style.display = 'inline';
-                playPauseBtn.classList.add('playing');
-            });
-
-            audioElement.addEventListener('pause', () => {
-                playIcon.style.display = 'inline';
-                pauseIcon.style.display = 'none';
-                playPauseBtn.classList.remove('playing');
-            });
-
-            // Handle errors
-            audioElement.addEventListener('error', () => {
-                audioError.style.display = 'block';
-                audioPlayer.classList.remove('audio-loading');
-                playPauseBtn.disabled = true;
-            });
-
-            // Handle loading
-            audioElement.addEventListener('loadstart', () => {
-                audioPlayer.classList.add('audio-loading');
-            });
-
-            audioElement.addEventListener('canplay', () => {
-                audioPlayer.classList.remove('audio-loading');
-            });
-        }
-
-        function handleDetailAudioPlayPause() {
-            const audioElement = document.getElementById('detailAudioElement');
-            if (!audioElement || !audioElement.src) return;
-
-            if (audioElement.paused) {
-                audioElement.play().catch(err => {
-                    console.error('Error playing audio:', err);
-                    document.getElementById('detailAudioError').style.display = 'block';
-                });
-            } else {
-                audioElement.pause();
-            }
-        }
-
-        function handleDetailProgressBarClick(event) {
-            const audioElement = document.getElementById('detailAudioElement');
-            const progressBar = document.getElementById('detailAudioProgressBar');
-            
-            if (!audioElement || !audioElement.src || audioElement.readyState === 0) return;
-
-            const rect = progressBar.getBoundingClientRect();
-            const clickX = event.clientX - rect.left;
-            const percentage = clickX / rect.width;
-            const duration = audioElement.duration;
-            
-            if (isFinite(duration) && duration > 0) {
-                audioElement.currentTime = percentage * duration;
-            }
-        }
-
         // Meta Tags Functions
         function updateMetaTags(episode) {
             const baseUrl = window.location.origin;
@@ -2118,10 +1691,10 @@
 
         // Fetch and initialize
         async function init() {
-            // Check if we're on a detail page URL
+            // Check if we're on an episode URL
             const episodeId = getEpisodeIdFromUrl();
             
-            // Always load episodes in background (for gallery navigation)
+            // Always load episodes in background
             try {
                 // Fetch categories and episodes in parallel
                 const [categoriesRes, episodesRes] = await Promise.all([
@@ -2143,9 +1716,9 @@
                         animateStoryCount(episodes.length);
                     }
                     
-                    // If we're on a detail page, show it; otherwise show gallery
+                    // If we're on an episode URL, open modal; otherwise show gallery
                     if (episodeId) {
-                        await showEpisodeDetail(episodeId);
+                        await openModalFromEpisodeId(episodeId);
                     } else {
                         renderEpisodes();
                     }
@@ -2166,9 +1739,9 @@
                     loadingSpinner.style.display = 'none';
                 }
                 
-                // If we're on a detail page, try to show it anyway
+                // If we're on an episode URL, try to open modal anyway
                 if (episodeId) {
-                    await showEpisodeDetail(episodeId);
+                    await openModalFromEpisodeId(episodeId);
                 } else {
                     document.getElementById('collectionGrid').innerHTML = 
                         '<div class="loading">Failed to load episodes</div>';
@@ -2194,9 +1767,9 @@
             }, 250);
         });
 
-        // Initialize modal and detail page on page load
+        // Initialize modal and routing on page load
         initModal();
-        initDetailPage();
+        initRouting();
 
         // Start counting immediately (before data loads)
         // Estimate a reasonable starting count - will update to actual count when data loads
