@@ -116,6 +116,36 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 - Category: Small category tag in top-left corner (if available)
 - Logo: Angle logo/branding in bottom-right corner
 
+**⚠️ Learnings from OG Image Implementation Attempt:**
+
+**Issues Encountered:**
+1. **`@vercel/og` requires JSX support**: The library uses JSX syntax which requires:
+   - TypeScript config with `"jsx": "react-jsx"`
+   - Files must be `.tsx` extension (not `.ts`)
+   - `@types/react` dev dependency for TypeScript JSX support
+   - React types for JSX compilation
+
+2. **Runtime compatibility concerns**: 
+   - `@vercel/og` is primarily designed for Edge Runtime
+   - While it should work with Node.js runtime on Vercel, there may be compatibility issues
+   - Local dev server needs special handling for `.tsx` files
+
+3. **Package dependencies**:
+   - Requires `@vercel/og` package installation
+   - Requires `@types/react` for TypeScript JSX support
+   - Adds complexity to the build process
+
+**Alternative Approaches Considered:**
+1. **Static OG images**: Use episode cover images directly as OG images (simplest)
+2. **Canvas API (`node-canvas`)**: More control but requires additional dependencies
+3. **External service**: Use Cloudinary/ImageKit for on-the-fly image generation
+4. **Pre-generate images**: Generate OG images at build time or when episodes are created
+
+**Recommendation:**
+- For MVP: Use episode cover images directly as OG images (set `og:image` to episode cover URL)
+- For future: Consider pre-generating OG images or using a simpler image generation approach
+- If dynamic generation is needed: Use `node-canvas` or an external service rather than `@vercel/og` for better compatibility with Node.js runtime
+
 ### 7. Dynamic Meta Tags for SEO & Social Sharing
 **File:** `public/index.html`
 
@@ -128,11 +158,11 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 **Meta Tags to Update:**
 - `og:title` - Episode title
 - `og:description` - Episode description (use fullDescription if available, otherwise description)
-- `og:image` - Dynamic OG image URL: `https://angle.app/api/og-image/[episode-id]`
+- `og:image` - Episode cover image URL (use episode.coverImage directly, ensure it's absolute URL)
 - `og:url` - Current episode URL (full URL including domain)
 - `og:type` - Set to "article" for episodes
-- `og:image:width` - Set to 1200
-- `og:image:height` - Set to 630
+- `og:image:width` - Set to 1200 (or actual image width)
+- `og:image:height` - Set to 630 (or actual image height)
 - `twitter:card` - Keep as "summary_large_image"
 - `twitter:title`, `twitter:description`, `twitter:image` - Match OG tags
 - Page `<title>` - Format: "Episode Title | Angle"
@@ -141,9 +171,10 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 - Update meta tags using JavaScript when episode loads
 - Use `document.querySelector('meta[property="og:image"]')` to update existing tags
 - Or create new meta tags if they don't exist
-- Set `og:image` to point to the dynamic OG image endpoint: `https://angle.app/api/og-image/[episode-id]`
+- Set `og:image` to episode cover image URL (ensure absolute URL with domain)
 - Ensure meta tags update before page is shared (important for crawlers)
 - Consider server-side rendering for better SEO (future enhancement)
+- **Note**: Using episode cover images directly as OG images (simpler than dynamic generation)
 
 ### 8. Update Vercel Configuration
 **File:** `vercel.json`
@@ -166,13 +197,12 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 {
   "rewrites": [
     { "source": "/episode/:id", "destination": "/public/index.html" },
-    { "source": "/api/og-image/:id", "destination": "/api/og-image/[id]" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
 ```
 
-**Note:** The `/api/og-image/:id` rewrite routes dynamic OG image requests to the API endpoint.
+**Note:** OG image rewrite removed - using episode cover images directly instead of dynamic generation.
 
 ### 9. Add Navigation Controls
 **File:** `public/index.html`
@@ -218,11 +248,11 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 
 ### New Files
 - `api/episodes/[id].ts` - API endpoint for single episode
-- `api/og-image/[id].ts` - Dynamic OG image endpoint (generates episode-specific OG images)
+- ~~`api/og-image/[id].ts`~~ - Dynamic OG image endpoint (deferred - see learnings above)
 
 ### Modified Files
 - `public/index.html` - Add routing, detail view, share functionality, dynamic meta tags
-- `vercel.json` - Add route rewrite for `/episode/*` and `/api/og-image/*`
+- `vercel.json` - Add route rewrite for `/episode/*` (OG image rewrite removed)
 
 ## Testing Checklist
 
@@ -231,13 +261,13 @@ Add shareable URLs for individual episodes (e.g., `/episode/[id]`) so users can 
 - [ ] Browser back button works correctly
 - [ ] Share button copies correct URL
 - [ ] Meta tags update correctly for social sharing
-- [ ] Dynamic OG image endpoint works (`/api/og-image/[id]`)
-- [ ] OG image includes episode cover image and title
-- [ ] og:image displays correctly when sharing (test with Facebook/Twitter debuggers)
+- [ ] ~~Dynamic OG image endpoint works (`/api/og-image/[id]`)~~ - Deferred
+- [ ] ~~OG image includes episode cover image and title~~ - Deferred
+- [ ] og:image displays correctly when sharing (test with Facebook/Twitter debuggers) - Use episode cover images directly
 - [ ] og:image URL is absolute (includes domain)
-- [ ] og:image meets size requirements (1200x630px minimum)
-- [ ] OG image fallback works when episode not found
-- [ ] OG image caching headers are set correctly
+- [ ] og:image meets size requirements (1200x630px minimum) - Ensure episode covers meet this
+- [ ] ~~OG image fallback works when episode not found~~ - Deferred
+- [ ] ~~OG image caching headers are set correctly~~ - Deferred
 - [ ] Episode not found shows error message
 - [ ] Page refresh on detail page loads episode correctly
 - [ ] Mobile responsive design maintained

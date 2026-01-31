@@ -8,8 +8,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "@vercel/og": "^0.6.0"
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

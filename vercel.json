@@ -3,7 +3,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/api/og-image/:id", "destination": "/api/og-image/[id]" },
+    { "source": "/episode/:id", "destination": "/public/index.html" },
+    { "source": "/api/episodes/:id", "destination": "/api/episodes/[id]" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }

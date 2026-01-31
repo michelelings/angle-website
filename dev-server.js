@@ -30,14 +30,12 @@ async function handleApiRoute(pathname, req, res) {
   let routeName = pathname.replace('/api/', '').replace(/\/$/, '');
   let dynamicParam = null;
   
-  // Handle dynamic routes like /api/og-image/[id]
-  if (routeName.startsWith('og-image/')) {
+  // Handle dynamic routes like /api/episodes/[id]
+  if (routeName.startsWith('episodes/')) {
     const parts = routeName.split('/');
     if (parts.length === 2) {
-      routeName = 'og-image/[id]';
+      routeName = 'episodes/[id]';
       dynamicParam = parts[1];
-    } else {
-      routeName = 'og-image';
     }
   }
   
@@ -88,12 +86,7 @@ async function handleApiRoute(pathname, req, res) {
       },
     };
     
-    const result = await handler(vercelReq, vercelRes);
-    // Handle ImageResponse body if returned
-    if (result && result.body) {
-      res.writeHead(vercelRes.statusCode, { 'Content-Type': 'image/png', ...vercelRes.headers });
-      res.end(result.body);
-    }
+    await handler(vercelReq, vercelRes);
   } catch (error) {
     console.error(`API Error [${pathname}]:`, error);
     res.writeHead(500, { 'Content-Type': 'application/json' });
