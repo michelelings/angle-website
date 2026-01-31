@@ -872,8 +872,8 @@
     <div class="modal-overlay" id="storyModal">
         <div class="modal-content">
             <div class="modal-header">
-                <button class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
-                <button class="modal-close" id="modalClose" aria-label="Close story">×</button>
+                <button type="button" class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
+                <button type="button" class="modal-close" id="modalClose" aria-label="Close story">×</button>
             </div>
             <img class="modal-image" id="modalImage" src="" alt="">
             <div class="modal-body">
@@ -1344,6 +1344,7 @@
 
             // Backdrop click (close when clicking outside modal content)
             modal.addEventListener('click', (e) => {
+                // Only close if clicking directly on the modal overlay, not on modal content
                 if (e.target === modal) {
                     closeStoryModal();
                 }
@@ -1372,10 +1373,10 @@
             const headerLink = document.getElementById('headerLink');
 
             if (shareBtn) {
-                shareBtn.addEventListener('click', handleShare);
-                // Also add mousedown to ensure it works
-                shareBtn.addEventListener('mousedown', (e) => {
+                shareBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
+                    handleShare(e);
                 });
             } else {
                 console.warn('Share button not found');
@@ -1782,6 +1783,7 @@
                 : description || title;
             
             console.log('Sharing URL:', url);
+            console.log('Share text:', shareText);
             
             // Try native share API first (mobile)
             if (navigator.share) {
@@ -1791,11 +1793,13 @@
                         text: shareText,
                         url: url
                     });
+                    console.log('Share successful');
                     showShareToast();
                     return;
                 } catch (err) {
                     // User cancelled (error code 20) - don't show error
                     if (err.name === 'AbortError' || err.code === 20) {
+                        console.log('User cancelled share');
                         return;
                     }
                     // Other error - fall through to clipboard
@@ -1808,6 +1812,7 @@
                 // Check if clipboard API is available
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(url);
+                    console.log('URL copied to clipboard');
                     showShareToast();
                 } else {
                     throw new Error('Clipboard API not available');
@@ -1839,6 +1844,7 @@
                     document.body.removeChild(textArea);
                     
                     if (successful) {
+                        console.log('URL copied via fallback method');
                         showShareToast();
                     } else {
                         console.error('execCommand copy failed');
