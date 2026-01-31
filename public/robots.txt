@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Sitemap (uncomment and add your sitemap URL when available)
-# Sitemap: https://angle.app/sitemap.xml
+Sitemap: https://angle.app/sitemap.xml
