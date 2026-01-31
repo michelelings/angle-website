@@ -1755,6 +1755,32 @@
             const url = window.location.href;
             const title = document.title;
             
+            // Get description from current episode
+            let description = '';
+            if (currentEpisodeId) {
+                const episode = episodes.find(ep => ep.id === currentEpisodeId);
+                if (episode) {
+                    description = episode.fullDescription || episode.description || '';
+                } else {
+                    // Try to get from modal description element as fallback
+                    const modalDescription = document.getElementById('modalDescription');
+                    if (modalDescription) {
+                        description = modalDescription.textContent || '';
+                    }
+                }
+            } else {
+                // Fallback: get from modal description element
+                const modalDescription = document.getElementById('modalDescription');
+                if (modalDescription) {
+                    description = modalDescription.textContent || '';
+                }
+            }
+            
+            // Truncate description if too long for share text
+            const shareText = description.length > 200 
+                ? description.substring(0, 197) + '...' 
+                : description || title;
+            
             console.log('Sharing URL:', url);
             
             // Try native share API first (mobile)
@@ -1762,7 +1788,7 @@
                 try {
                     await navigator.share({
                         title: title,
-                        text: title,
+                        text: shareText,
                         url: url
                     });
                     showShareToast();
