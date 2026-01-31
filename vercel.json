@@ -3,6 +3,7 @@
   "framework": null,
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/api/og-image/:id", "destination": "/api/og-image/[id]" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }

@@ -27,7 +27,20 @@ const MIME_TYPES = {
 
 // Dynamic API route handler
 async function handleApiRoute(pathname, req, res) {
-  const routeName = pathname.replace('/api/', '').replace(/\/$/, '');
+  let routeName = pathname.replace('/api/', '').replace(/\/$/, '');
+  let dynamicParam = null;
+  
+  // Handle dynamic routes like /api/og-image/[id]
+  if (routeName.startsWith('og-image/')) {
+    const parts = routeName.split('/');
+    if (parts.length === 2) {
+      routeName = 'og-image/[id]';
+      dynamicParam = parts[1];
+    } else {
+      routeName = 'og-image';
+    }
+  }
+  
   const routePath = join(__dirname, 'api', `${routeName}.ts`);
   
   try {
@@ -35,12 +48,19 @@ async function handleApiRoute(pathname, req, res) {
     const module = await import(`./api/${routeName}.ts`);
     const handler = module.default;
     
+    // Create query params with dynamic parameter
+    const url = new URL(req.url, `http://localhost:${PORT}`);
+    const query = Object.fromEntries(url.searchParams);
+    if (dynamicParam) {
+      query.id = dynamicParam;
+    }
+    
     // Create mock Vercel request/response objects
     const vercelReq = {
       method: req.method,
       url: req.url,
       headers: req.headers,
-      query: Object.fromEntries(new URL(req.url, `http://localhost:${PORT}`).searchParams),
+      query: query,
     };
     
     const vercelRes = {
@@ -58,13 +78,22 @@ async function handleApiRoute(pathname, req, res) {
         res.writeHead(this.statusCode, { 'Content-Type': 'application/json', ...this.headers });
         res.end(JSON.stringify(data));
       },
-      end() {
+      end(data) {
         res.writeHead(this.statusCode, this.headers);
-        res.end();
+        if (data) {
+          res.end(data);
+        } else {
+          res.end();
+        }
       },
     };
     
-    await handler(vercelReq, vercelRes);
+    const result = await handler(vercelReq, vercelRes);
+    // Handle ImageResponse body if returned
+    if (result && result.body) {
+      res.writeHead(vercelRes.statusCode, { 'Content-Type': 'image/png', ...vercelRes.headers });
+      res.end(result.body);
+    }
   } catch (error) {
     console.error(`API Error [${pathname}]:`, error);
     res.writeHead(500, { 'Content-Type': 'application/json' });
