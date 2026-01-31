@@ -3,8 +3,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/episode/:id", "destination": "/public/index.html" },
-    { "source": "/api/episodes/:id", "destination": "/api/episodes/[id]" },
+    { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
+    { "source": "/episode/(.*)", "destination": "/public/index.html" },
     { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
