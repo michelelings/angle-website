@@ -5,6 +5,6 @@
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
     { "source": "/episode/:id", "destination": "/index.html" },
-    { "source": "/:category", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
