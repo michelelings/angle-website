@@ -78,9 +78,21 @@ export default async function handler(
     const episodeUrl = `${baseUrl}/episode/${episodeId}`;
     const ogImageUrl = `${baseUrl}/api/og-image/${episodeId}`;
 
-    // Build meta content
+    // Build meta content - escape HTML entities for safe injection
+    const escapeHtml = (str: string): string => {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
     const title = `${episode.title} | Angle`;
     const description = episode.fullDescription || episode.description || 'Stories worth listening.';
+    const escapedTitle = escapeHtml(episode.title);
+    const escapedDescription = escapeHtml(description);
+    const escapedFullTitle = escapeHtml(title);
 
     // Replace meta tags
     html = html.replace(
@@ -93,11 +105,11 @@ export default async function handler(
     );
     html = html.replace(
       /<meta property="og:title" content="[^"]*">/,
-      `<meta property="og:title" content="${episode.title}">`
+      `<meta property="og:title" content="${escapedTitle}">`
     );
     html = html.replace(
       /<meta property="og:description" content="[^"]*">/,
-      `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}">`
+      `<meta property="og:description" content="${escapedDescription}">`
     );
     html = html.replace(
       /<meta property="og:image" content="[^"]*">/,
@@ -122,11 +134,11 @@ export default async function handler(
     );
     html = html.replace(
       /<meta name="twitter:title" content="[^"]*">/,
-      `<meta name="twitter:title" content="${episode.title}">`
+      `<meta name="twitter:title" content="${escapedTitle}">`
     );
     html = html.replace(
       /<meta name="twitter:description" content="[^"]*">/,
-      `<meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}">`
+      `<meta name="twitter:description" content="${escapedDescription}">`
     );
     html = html.replace(
       /<meta name="twitter:image" content="[^"]*">/,
@@ -134,7 +146,7 @@ export default async function handler(
     );
     html = html.replace(
       /<title>[^<]*<\/title>/,
-      `<title>${title}</title>`
+      `<title>${escapedFullTitle}</title>`
     );
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
