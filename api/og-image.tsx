@@ -1,7 +1,7 @@
 import { ImageResponse } from '@vercel/og';
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs20.x',
 };
 
 export default function handler() {

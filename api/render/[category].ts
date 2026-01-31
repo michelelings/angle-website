@@ -128,8 +128,7 @@ export default async function handler(
                      (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
     const host = req.headers.host || 'newsangle.co';
     const baseUrl = `${protocol}://${host}`;
-    // Use lowercase category for URL (e.g., /health not /Health)
-    const categorySlug = category.toLowerCase();
+    // Use lowercase category for URL (e.g., /health not /Health) - reuse categorySlug from above
     const categoryUrl = `${baseUrl}/${categorySlug}`;
     const ogImageUrl = `${baseUrl}/api/og-image/category/${categorySlug}`;
 

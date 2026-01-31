@@ -2,7 +2,7 @@ import { ImageResponse } from '@vercel/og';
 import { fetchMostRecentEpisodeByCategory } from '../../../lib/supabase.js';
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs20.x',
 };
 
 export default async function handler(req: Request): Promise<Response> {
