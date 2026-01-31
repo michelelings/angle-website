@@ -1,13 +1,17 @@
 import { ImageResponse } from '@vercel/og';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchMostRecentEpisodeByCategory } from '../../../lib/supabase.js';
 
 export const config = {
   runtime: 'nodejs',
 };
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
   try {
-    const url = new URL(req.url);
+    const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     // Extract category from path like /api/og-image/category/sports
     const pathParts = url.pathname.split('/').filter(Boolean);
     const categoryIndex = pathParts.indexOf('category');
@@ -16,10 +20,8 @@ export default async function handler(req: Request): Promise<Response> {
       : null;
 
     if (!category || typeof category !== 'string') {
-      return new Response(JSON.stringify({ error: 'Category is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      res.status(400).json({ error: 'Category is required' });
+      return;
     }
 
     // Fetch the most recent episode for this category
@@ -37,7 +39,7 @@ export default async function handler(req: Request): Promise<Response> {
 
     // If no episode found, use default OG image with category name
     if (!episode || !episode.coverImage) {
-      return new ImageResponse(
+      const imageResponse = new ImageResponse(
         (
           <div
             style={{
@@ -110,6 +112,11 @@ export default async function handler(req: Request): Promise<Response> {
           height: 630,
         }
       );
+      const buffer = await imageResponse.arrayBuffer();
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.status(200).end(Buffer.from(buffer));
+      return;
     }
 
     // Get cover image URL (make it absolute if relative)
@@ -118,7 +125,7 @@ export default async function handler(req: Request): Promise<Response> {
       : `${baseUrl}${episode.coverImage}`;
 
     // Generate OG image with the most recent episode's cover image
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -231,11 +238,12 @@ export default async function handler(req: Request): Promise<Response> {
         height: 630,
       }
     );
+    const buffer = await imageResponse.arrayBuffer();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.status(200).end(Buffer.from(buffer));
   } catch (error) {
     console.error('Error generating category OG image:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate OG image' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    res.status(500).json({ error: 'Failed to generate OG image' });
   }
 }

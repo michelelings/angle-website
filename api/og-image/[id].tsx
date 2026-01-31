@@ -1,30 +1,30 @@
 import { ImageResponse } from '@vercel/og';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchEpisodeById } from '../../lib/supabase.js';
 
 export const config = {
   runtime: 'nodejs',
 };
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
   try {
-    const url = new URL(req.url);
+    const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     const pathParts = url.pathname.split('/');
     const id = pathParts[pathParts.length - 1];
 
     if (!id || typeof id !== 'string') {
-      return new Response(JSON.stringify({ error: 'Episode ID is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      res.status(400).json({ error: 'Episode ID is required' });
+      return;
     }
 
     const episode = await fetchEpisodeById(id);
 
     if (!episode) {
-      return new Response(JSON.stringify({ error: 'Episode not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      res.status(404).json({ error: 'Episode not found' });
+      return;
     }
 
     // Get base URL from request
@@ -46,7 +46,7 @@ export default async function handler(req: Request): Promise<Response> {
       : description;
 
     // Generate OG image
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -161,11 +161,14 @@ export default async function handler(req: Request): Promise<Response> {
         height: 630,
       }
     );
+
+    // Convert Response to buffer and send
+    const buffer = await imageResponse.arrayBuffer();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.status(200).end(Buffer.from(buffer));
   } catch (error) {
     console.error('Error generating OG image:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate OG image' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    res.status(500).json({ error: 'Failed to generate OG image' });
   }
 }
