@@ -665,6 +665,9 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: rgba(255, 255, 255, 0.1);
             color: #ffffff;
+            pointer-events: auto;
+            position: relative;
+            z-index: 1003;
         }
 
         .modal-share-btn:hover {
@@ -1362,6 +1365,12 @@
 
             if (shareBtn) {
                 shareBtn.addEventListener('click', handleShare);
+                // Also add mousedown to ensure it works
+                shareBtn.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+            } else {
+                console.warn('Share button not found');
             }
 
             if (headerLink) {
@@ -1649,42 +1658,83 @@
             }, 2000);
         }
 
-        async function handleShare() {
+        async function handleShare(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            console.log('Share button clicked');
             const url = window.location.href;
+            const title = document.title;
+            
+            console.log('Sharing URL:', url);
             
             // Try native share API first (mobile)
             if (navigator.share) {
                 try {
                     await navigator.share({
-                        title: document.title,
+                        title: title,
+                        text: title,
                         url: url
                     });
+                    showShareToast();
                     return;
                 } catch (err) {
-                    // User cancelled or error, fall back to clipboard
+                    // User cancelled (error code 20) - don't show error
+                    if (err.name === 'AbortError' || err.code === 20) {
+                        return;
+                    }
+                    // Other error - fall through to clipboard
+                    console.log('Native share failed, falling back to clipboard:', err);
                 }
             }
             
             // Fall back to clipboard
             try {
-                await navigator.clipboard.writeText(url);
-                showShareToast();
-            } catch (err) {
-                console.error('Failed to copy link:', err);
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = url;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
+                // Check if clipboard API is available
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(url);
                     showShareToast();
+                } else {
+                    throw new Error('Clipboard API not available');
+                }
+            } catch (err) {
+                console.error('Clipboard API failed, using fallback:', err);
+                // Fallback for older browsers or when clipboard API fails
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    textArea.style.position = 'fixed';
+                    textArea.style.top = '0';
+                    textArea.style.left = '0';
+                    textArea.style.width = '2em';
+                    textArea.style.height = '2em';
+                    textArea.style.padding = '0';
+                    textArea.style.border = 'none';
+                    textArea.style.outline = 'none';
+                    textArea.style.boxShadow = 'none';
+                    textArea.style.background = 'transparent';
+                    textArea.style.opacity = '0';
+                    textArea.readOnly = true;
+                    
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showShareToast();
+                    } else {
+                        console.error('execCommand copy failed');
+                        alert('Failed to copy link. Please copy manually: ' + url);
+                    }
                 } catch (e) {
                     console.error('Fallback copy failed:', e);
+                    alert('Failed to copy link. Please copy manually: ' + url);
                 }
-                document.body.removeChild(textArea);
             }
         }
 
