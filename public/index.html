@@ -1586,21 +1586,20 @@
         function updateMetaTags(episode) {
             const baseUrl = window.location.origin;
             const episodeUrl = `${baseUrl}/episode/${episode.id}`;
-            const imageUrl = episode.coverImage 
-                ? (episode.coverImage.startsWith('http') ? episode.coverImage : `${baseUrl}${episode.coverImage}`)
-                : `${baseUrl}/images/icon.webp`;
+            // Use dynamic OG image endpoint that includes cover image + title/description
+            const ogImageUrl = `${baseUrl}/api/og-image/${episode.id}`;
             const description = episode.fullDescription || episode.description || 'Stories worth listening.';
 
             updateMetaTag('property', 'og:title', episode.title);
             updateMetaTag('property', 'og:description', description);
-            updateMetaTag('property', 'og:image', imageUrl);
+            updateMetaTag('property', 'og:image', ogImageUrl);
             updateMetaTag('property', 'og:url', episodeUrl);
             updateMetaTag('property', 'og:type', 'article');
             
             updateMetaTag('name', 'twitter:card', 'summary_large_image');
             updateMetaTag('name', 'twitter:title', episode.title);
             updateMetaTag('name', 'twitter:description', description);
-            updateMetaTag('name', 'twitter:image', imageUrl);
+            updateMetaTag('name', 'twitter:image', ogImageUrl);
             updateMetaTag('name', 'twitter:url', episodeUrl);
             
             document.title = `${episode.title} | Angle`;
