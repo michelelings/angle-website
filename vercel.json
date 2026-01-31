@@ -4,7 +4,7 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
-    { "source": "/episode/:id", "destination": "/index.html" },
+    { "source": "/episode/:id", "destination": "/api/render/episode/[id]" },
     { "source": "/:category", "destination": "/api/render/[category]" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
