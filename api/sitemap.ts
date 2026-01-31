@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchEpisodes } from '../lib/supabase.js';
 
-const BASE_URL = 'https://angle.app';
+const BASE_URL = 'https://newsangle.co';
 
 function formatDate(dateString: string): string {
   // Convert ISO date string to YYYY-MM-DD format

@@ -69,6 +69,40 @@ export async function fetchEpisodes(): Promise<Episode[]> {
   }));
 }
 
+export async function fetchEpisodeById(id: string): Promise<Episode | null> {
+  const { data, error } = await supabase
+    .from('episodes')
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'completed')
+    .single();
+
+  if (error) {
+    console.error('Error fetching episode:', error);
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.excerpt,
+    coverImage: data.cover_url,
+    createdAt: data.created_at,
+    category: data.category,
+    duration: data.duration || data.length || null,
+    audioUrl: data.audio_url || data.audio || null,
+    transcript: data.transcript || null,
+    host: data.host || data.author || null,
+    episodeNumber: data.episode_number || data.number || null,
+    tags: data.tags || null,
+    fullDescription: data.description || data.full_description || null,
+  };
+}
+
 export async function fetchCategories(): Promise<string[]> {
   const { data, error } = await supabase
     .from('episodes')
