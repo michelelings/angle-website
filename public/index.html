@@ -923,6 +923,7 @@
         let countAnimationId = null;
         let currentTargetCount = 0;
         let currentEpisodeId = null;
+        let filterBeforeModal = 'all'; // Track filter state before opening modal
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -1244,6 +1245,9 @@
             const modalTags = document.getElementById('modalTags');
             const modalDate = document.getElementById('modalDate');
 
+            // Store current filter state before opening modal
+            filterBeforeModal = activeFilter;
+
             // Populate modal with episode data
             modalImage.src = episode.coverImage || '/images/icon.webp';
             modalImage.alt = episode.title;
@@ -1313,8 +1317,12 @@
             modal.classList.remove('open');
             document.body.classList.remove('modal-open');
             
-            // Update URL to home
-            window.history.pushState({ view: 'gallery' }, '', '/');
+            // Restore filter state and URL
+            activeFilter = filterBeforeModal;
+            updateCategoryUrl(activeFilter);
+            updateTagStates(activeFilter);
+            renderEpisodes(activeFilter);
+            
             currentEpisodeId = null;
             
             // Reset meta tags
@@ -1388,6 +1396,20 @@
                 if (episodeId) {
                     await openModalFromEpisodeId(episodeId);
                 } else {
+                    // Check if we need to update category filter
+                    const categoryFromUrl = getCategoryFromUrl();
+                    if (categoryFromUrl) {
+                        activeFilter = categoryFromUrl;
+                        updateCategoryMetaTags(categoryFromUrl);
+                        updateTagStates(activeFilter);
+                        renderEpisodes(activeFilter);
+                    } else {
+                        // No category, show all
+                        activeFilter = 'all';
+                        resetMetaTags();
+                        updateTagStates(activeFilter);
+                        renderEpisodes(activeFilter);
+                    }
                     closeStoryModal();
                 }
             });
@@ -1577,6 +1599,16 @@
                 activeFilter = category;
             }
             
+            // Update URL to reflect the active filter
+            updateCategoryUrl(activeFilter);
+            
+            // Update meta tags for category pages
+            if (activeFilter === 'all') {
+                resetMetaTags();
+            } else {
+                updateCategoryMetaTags(activeFilter);
+            }
+            
             // Update tag states
             updateTagStates(activeFilter);
             
@@ -1589,6 +1621,29 @@
         function getEpisodeIdFromUrl() {
             const match = window.location.pathname.match(/^\/episode\/([^\/]+)$/);
             return match ? match[1] : null;
+        }
+
+        // Get category from URL (e.g., /sports)
+        function getCategoryFromUrl() {
+            const path = window.location.pathname;
+            // Don't match if it's an episode URL, API route, or root
+            if (path === '/' || path.startsWith('/episode/') || path.startsWith('/api/') || path.startsWith('/images/') || path.startsWith('/fonts/')) {
+                return null;
+            }
+            // Match single-segment paths (e.g., /sports, /popular)
+            const match = path.match(/^\/([^\/]+)$/);
+            return match ? match[1] : null;
+        }
+
+        // Update URL to reflect active category filter
+        function updateCategoryUrl(filter) {
+            if (filter === 'all') {
+                // Remove category from URL, go back to home
+                window.history.pushState({ view: 'gallery', filter: 'all' }, '', '/');
+            } else {
+                // Update URL to include category (e.g., /sports)
+                window.history.pushState({ view: 'gallery', filter: filter }, '', `/${filter}`);
+            }
         }
 
         // Meta Tags Functions
@@ -1622,6 +1677,38 @@
                 document.head.appendChild(tag);
             }
             tag.setAttribute('content', content);
+        }
+
+        function updateCategoryMetaTags(category) {
+            const baseUrl = window.location.origin;
+            const categoryUrl = `${baseUrl}/${category}`;
+            
+            // Format category name for display
+            const categoryLabel = category === 'new' ? 'New' : 
+                                 category === 'popular' ? 'Popular' : 
+                                 category.charAt(0).toUpperCase() + category.slice(1);
+            
+            const title = `${categoryLabel} Stories | Angle`;
+            const description = category === 'new' ? 'Latest stories worth listening.' :
+                               category === 'popular' ? 'Popular stories worth listening.' :
+                               `${categoryLabel} stories worth listening.`;
+            
+            // Use category-specific OG image endpoint
+            const ogImageUrl = `${baseUrl}/api/og-image/category/${category}`;
+            
+            updateMetaTag('property', 'og:title', title);
+            updateMetaTag('property', 'og:description', description);
+            updateMetaTag('property', 'og:image', ogImageUrl);
+            updateMetaTag('property', 'og:url', categoryUrl);
+            updateMetaTag('property', 'og:type', 'website');
+            
+            updateMetaTag('name', 'twitter:card', 'summary_large_image');
+            updateMetaTag('name', 'twitter:title', title);
+            updateMetaTag('name', 'twitter:description', description);
+            updateMetaTag('name', 'twitter:image', ogImageUrl);
+            updateMetaTag('name', 'twitter:url', categoryUrl);
+            
+            document.title = title;
         }
 
         function resetMetaTags() {
@@ -1754,6 +1841,26 @@
                 const categoriesData = await categoriesRes.json();
                 const episodesData = await episodesRes.json();
 
+                // Check if we're on a category URL and validate it
+                const categoryFromUrl = getCategoryFromUrl();
+                if (categoryFromUrl && !episodeId) {
+                    // Validate category exists (including special filters)
+                    const validCategories = categoriesData.success ? categoriesData.data : [];
+                    const specialFilters = ['new', 'popular'];
+                    const isValidCategory = validCategories.includes(categoryFromUrl) || specialFilters.includes(categoryFromUrl);
+                    
+                    if (isValidCategory) {
+                        activeFilter = categoryFromUrl;
+                        // Update meta tags for category page
+                        updateCategoryMetaTags(categoryFromUrl);
+                    } else {
+                        // Invalid category, redirect to home
+                        activeFilter = 'all';
+                        resetMetaTags();
+                        window.history.replaceState({ view: 'gallery', filter: 'all' }, '', '/');
+                    }
+                }
+
                 if (categoriesData.success) {
                     initFilters(categoriesData.data);
                 }
@@ -1769,7 +1876,8 @@
                     if (episodeId) {
                         await openModalFromEpisodeId(episodeId);
                     } else {
-                        renderEpisodes();
+                        // Render with the active filter (from URL or default 'all')
+                        renderEpisodes(activeFilter);
                     }
                 } else {
                     const loadingSpinner = document.getElementById('loadingSpinner');

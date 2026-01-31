@@ -119,3 +119,46 @@ export async function fetchCategories(): Promise<string[]> {
     .filter((category): category is string => category !== null)
     .sort();
 }
+
+export async function fetchMostRecentEpisodeByCategory(category: string): Promise<Episode | null> {
+  let query = supabase
+    .from('episodes')
+    .select('*')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  // For special filters, get most recent overall
+  // For actual categories, filter by category
+  if (category !== 'new' && category !== 'popular') {
+    query = query.eq('category', category);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching most recent episode by category:', error);
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const episode = data[0];
+  return {
+    id: episode.id,
+    title: episode.title,
+    description: episode.excerpt,
+    coverImage: episode.cover_url,
+    createdAt: episode.created_at,
+    category: episode.category,
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: episode.transcript || null,
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: episode.description || episode.full_description || null,
+  };
+}

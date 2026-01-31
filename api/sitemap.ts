@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchEpisodes } from '../lib/supabase.js';
+import { fetchEpisodes, fetchCategories } from '../lib/supabase.js';
 
 const BASE_URL = 'https://newsangle.co';
 
@@ -9,7 +9,10 @@ function formatDate(dateString: string): string {
   return date.toISOString().split('T')[0];
 }
 
-function generateSitemapXML(episodes: Array<{ id: string; createdAt: string }>): string {
+function generateSitemapXML(
+  episodes: Array<{ id: string; createdAt: string }>,
+  categories: string[]
+): string {
   const urls: string[] = [];
 
   // Home page
@@ -19,6 +22,19 @@ function generateSitemapXML(episodes: Array<{ id: string; createdAt: string }>):
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>`);
+
+  // Category pages (including special filters)
+  const specialFilters = ['new', 'popular'];
+  const allCategories = [...specialFilters, ...categories];
+  
+  allCategories.forEach((category) => {
+    urls.push(`  <url>
+    <loc>${BASE_URL}/${category}</loc>
+    <lastmod>${formatDate(new Date().toISOString())}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>`);
+  });
 
   // Episode pages
   episodes.forEach((episode) => {
