@@ -1,16 +1,15 @@
 import { ImageResponse } from '@vercel/og';
-import type { VercelRequest } from '@vercel/node';
 import { fetchEpisodeById } from '../../lib/supabase.js';
 
 export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(
-  req: VercelRequest
-): Promise<Response> {
+export default async function handler(req: Request): Promise<Response> {
   try {
-    const { id } = req.query;
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 1];
 
     if (!id || typeof id !== 'string') {
       return new Response(JSON.stringify({ error: 'Episode ID is required' }), {
@@ -28,9 +27,10 @@ export default async function handler(
       });
     }
 
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'https://newsangle.co';
+    // Get base URL from request
+    const protocol = url.protocol;
+    const host = url.host;
+    const baseUrl = `${protocol}//${host}`;
 
     // Get cover image URL (make it absolute if relative)
     const coverImageUrl = episode.coverImage
@@ -56,12 +56,24 @@ export default async function handler(
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundImage: `url(${coverImageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             position: 'relative',
+            backgroundColor: '#000000',
           }}
         >
+          {/* Background image */}
+          <img
+            src={coverImageUrl}
+            alt=""
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+          
           {/* Dark overlay for text readability */}
           <div
             style={{
