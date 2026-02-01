@@ -11,9 +11,23 @@ export default async function handler(
   res: VercelResponse
 ): Promise<void> {
   try {
-    const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    // Extract episode ID from query (Vercel file-based routing)
+    let id = req.query.id as string;
+    
+    // Fallback: extract from URL pathname if query param not available
+    if (!id && req.url) {
+      const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      
+      // Pattern 1: /api/og-image/123 (direct API access with file-based routing)
+      if (pathParts.length >= 3 && pathParts[0] === 'api' && pathParts[1] === 'og-image') {
+        id = pathParts[2];
+      }
+      // Pattern 2: Check query string from URL
+      else if (url.searchParams.has('id')) {
+        id = url.searchParams.get('id') || undefined;
+      }
+    }
 
     if (!id || typeof id !== 'string') {
       res.status(400).json({ error: 'Episode ID is required' });
@@ -27,10 +41,11 @@ export default async function handler(
       return;
     }
 
-    // Get base URL from request
-    const protocol = url.protocol;
-    const host = url.host;
-    const baseUrl = `${protocol}//${host}`;
+    // Get base URL from request headers (handle both localhost and production)
+    const protocol = req.headers['x-forwarded-proto'] || 
+                     (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
+    const host = req.headers.host || 'newsangle.co';
+    const baseUrl = `${protocol}://${host}`;
 
     // Get cover image URL (make it absolute if relative)
     const coverImageUrl = episode.coverImage
