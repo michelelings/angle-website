@@ -319,6 +319,41 @@
             opacity: 0.9;
         }
 
+        .episode-share-btn {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .episode-share-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+
+        .episode-share-btn:active {
+            transform: scale(0.95);
+        }
+
+        .episode-share-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
         #loadingSpinner {
             position: fixed;
             top: 50%;
@@ -790,6 +825,18 @@
                 padding: 28px;
             }
 
+            .episode-share-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .episode-share-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
             .episode-gradient {
                 height: 65%;
             }
@@ -963,11 +1010,24 @@
                     ${episode.host ? `<div class="episode-host">Host: ${episode.host}</div>` : ''}
                     ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
                 </div>
+                <button class="episode-share-btn" aria-label="Share episode" type="button">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+                    </svg>
+                </button>
             `;
             
             // Add click handler to open modal with URL update
             card.addEventListener('click', () => {
                 openStoryModal(episode);
+            });
+            
+            // Add share button click handler (prevent card click)
+            const shareBtn = card.querySelector('.episode-share-btn');
+            shareBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCardShare(episode);
             });
             
             return card;
@@ -1997,6 +2057,72 @@
                     }
                 } catch (e) {
                     console.error('Fallback copy failed:', e);
+                    alert('Failed to copy link. Please copy manually: ' + url);
+                }
+            }
+        }
+
+        // Handle share from card
+        async function handleCardShare(episode) {
+            const baseUrl = window.location.origin;
+            const url = `${baseUrl}/episode/${episode.id}`;
+            
+            // Try native share API first (mobile)
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        url: url
+                    });
+                    showShareToast();
+                    return;
+                } catch (err) {
+                    // User cancelled - don't show error
+                    if (err.name === 'AbortError' || err.code === 20) {
+                        return;
+                    }
+                    // Other error - fall through to clipboard
+                }
+            }
+            
+            // Fall back to clipboard
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    showShareToast();
+                } else {
+                    throw new Error('Clipboard API not available');
+                }
+            } catch (err) {
+                // Fallback for older browsers
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    textArea.style.position = 'fixed';
+                    textArea.style.top = '0';
+                    textArea.style.left = '0';
+                    textArea.style.width = '2em';
+                    textArea.style.height = '2em';
+                    textArea.style.padding = '0';
+                    textArea.style.border = 'none';
+                    textArea.style.outline = 'none';
+                    textArea.style.boxShadow = 'none';
+                    textArea.style.background = 'transparent';
+                    textArea.style.opacity = '0';
+                    textArea.readOnly = true;
+                    
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showShareToast();
+                    } else {
+                        alert('Failed to copy link. Please copy manually: ' + url);
+                    }
+                } catch (e) {
                     alert('Failed to copy link. Please copy manually: ' + url);
                 }
             }
