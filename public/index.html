@@ -182,6 +182,13 @@
             overflow: hidden;
             width: 100%;
             position: relative;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .gallery-wrapper.scrolling {
+            cursor: grabbing;
         }
 
         .collection-grid {
@@ -924,6 +931,8 @@
         let currentTargetCount = 0;
         let currentEpisodeId = null;
         let filterBeforeModal = 'all'; // Track filter state before opening modal
+        let isUserScrolling = false;
+        let scrollTimeout = null;
 
         // Shuffle array using Fisher-Yates algorithm
         function shuffleArray(array) {
@@ -967,6 +976,7 @@
         // Animation loop using requestAnimationFrame
         function animate(currentTime) {
             const grid = document.getElementById('collectionGrid');
+            const wrapper = document.querySelector('.gallery-wrapper');
             
             if (lastTime === null) {
                 lastTime = currentTime;
@@ -975,8 +985,8 @@
             const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
             lastTime = currentTime;
             
-            // Only animate if we have content
-            if (scrollDistance > 0) {
+            // Only animate if we have content and user is not scrolling
+            if (scrollDistance > 0 && !isUserScrolling) {
                 // Update scroll position
                 scrollPosition += scrollSpeed * deltaTime;
                 
@@ -1008,6 +1018,136 @@
                 animationFrameId = null;
                 lastTime = null;
             }
+        }
+
+        // Handle user scrolling - pause auto-scroll
+        function handleUserScroll(deltaX = 0) {
+            const wrapper = document.querySelector('.gallery-wrapper');
+            const grid = document.getElementById('collectionGrid');
+            
+            if (!wrapper || !grid) return;
+            
+            isUserScrolling = true;
+            wrapper.classList.add('scrolling');
+            
+            // Update scroll position
+            if (deltaX !== 0) {
+                scrollPosition = Math.max(0, Math.min(scrollPosition - deltaX, scrollDistance));
+            }
+            
+            // Sync transform with scroll position
+            grid.style.transform = `translateX(-${scrollPosition}px)`;
+            
+            // Loop back when we've scrolled one set width
+            if (scrollPosition >= scrollDistance) {
+                scrollPosition = scrollPosition % scrollDistance;
+                grid.style.transform = `translateX(-${scrollPosition}px)`;
+            }
+            
+            // Clear existing timeout
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            
+            // Resume auto-scroll after user stops scrolling
+            scrollTimeout = setTimeout(() => {
+                isUserScrolling = false;
+                wrapper.classList.remove('scrolling');
+                
+                // Ensure animation is running
+                if (animationFrameId === null) {
+                    startAnimation();
+                }
+            }, 1500); // Resume after 1.5 seconds of no scrolling
+        }
+
+        // Initialize scroll handlers
+        function initScrollHandlers() {
+            const wrapper = document.querySelector('.gallery-wrapper');
+            if (!wrapper) return;
+            
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchLastX = 0;
+            let isDragging = false;
+            let isMouseDown = false;
+            let startX = 0;
+            let lastScrollPosition = 0;
+            
+            // Touch events for mobile swipe
+            wrapper.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchLastX = touchStartX;
+                isDragging = false;
+                lastScrollPosition = scrollPosition;
+            }, { passive: true });
+            
+            wrapper.addEventListener('touchmove', (e) => {
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const deltaX = currentX - touchLastX;
+                const deltaY = Math.abs(currentY - touchStartY);
+                const absDeltaX = Math.abs(currentX - touchStartX);
+                
+                // Determine if this is a horizontal swipe
+                if (!isDragging && absDeltaX > 10) {
+                    if (absDeltaX > deltaY) {
+                        isDragging = true;
+                    }
+                }
+                
+                if (isDragging) {
+                    e.preventDefault();
+                    handleUserScroll(deltaX);
+                    touchLastX = currentX;
+                }
+            }, { passive: false });
+            
+            wrapper.addEventListener('touchend', () => {
+                isDragging = false;
+            }, { passive: true });
+            
+            // Mouse wheel for desktop horizontal scrolling
+            wrapper.addEventListener('wheel', (e) => {
+                // Handle horizontal scrolling or shift+wheel for vertical wheel
+                const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+                const isShiftWheel = e.shiftKey && Math.abs(e.deltaY) > 0;
+                
+                if (isHorizontal || isShiftWheel) {
+                    e.preventDefault();
+                    const delta = isHorizontal ? e.deltaX : e.deltaY;
+                    handleUserScroll(delta);
+                }
+            }, { passive: false });
+            
+            // Mouse drag for desktop
+            wrapper.addEventListener('mousedown', (e) => {
+                isMouseDown = true;
+                startX = e.pageX;
+                lastScrollPosition = scrollPosition;
+                wrapper.classList.add('scrolling');
+                e.preventDefault();
+            });
+            
+            wrapper.addEventListener('mouseleave', () => {
+                isMouseDown = false;
+                wrapper.classList.remove('scrolling');
+            });
+            
+            wrapper.addEventListener('mouseup', () => {
+                isMouseDown = false;
+                wrapper.classList.remove('scrolling');
+            });
+            
+            wrapper.addEventListener('mousemove', (e) => {
+                if (!isMouseDown) return;
+                e.preventDefault();
+                const deltaX = (e.pageX - startX) * 2; // Scroll speed multiplier
+                const newPosition = lastScrollPosition - deltaX;
+                scrollPosition = Math.max(0, Math.min(newPosition, scrollDistance));
+                handleUserScroll(0); // Update transform without changing position
+            });
         }
 
         // Format date for display
@@ -1964,6 +2104,7 @@
         // Initialize modal and routing on page load
         initModal();
         initRouting();
+        initScrollHandlers();
 
         // Start counting immediately (before data loads)
         // Estimate a reasonable starting count - will update to actual count when data loads
