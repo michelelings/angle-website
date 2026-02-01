@@ -1515,7 +1515,11 @@
             modalDate.textContent = formatDate(episode.createdAt);
 
             // Update URL without page reload
-            window.history.pushState({ episodeId: episode.id }, '', `/episode/${episode.id}`);
+            window.history.pushState(
+                { episodeId: episode.id, view: 'episode' },
+                '',
+                `/episode/${episode.id}`
+            );
             currentEpisodeId = episode.id;
 
             // Update meta tags for social sharing
@@ -1962,79 +1966,51 @@
             }, 2000);
         }
 
+        // Helper to build canonical episode share URL
+        function getCanonicalEpisodeShareUrl() {
+            const baseUrl = window.location.origin;
+
+            const episodeId =
+                window.history.state?.episodeId ??
+                currentEpisodeId ??
+                null;
+
+            return episodeId ? `${baseUrl}/episode/${episodeId}` : `${baseUrl}/`;
+        }
+
         async function handleShare(e) {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
             }
-            
-            console.log('Share button clicked');
-            // Ensure we're using the full absolute URL for proper link preview generation
-            let url = window.location.href;
-            // If for some reason href is relative, construct absolute URL
-            if (!url.startsWith('http')) {
-                url = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
-            }
-            const title = document.title;
-            
-            // Get description from current episode
-            let description = '';
-            if (currentEpisodeId) {
-                const episode = episodes.find(ep => ep.id === currentEpisodeId);
-                if (episode) {
-                    description = episode.fullDescription || episode.description || '';
-                } else {
-                    // Try to get from modal description element as fallback
-                    const modalDescription = document.getElementById('modalDescription');
-                    if (modalDescription) {
-                        description = modalDescription.textContent || '';
-                    }
-                }
-            } else {
-                // Fallback: get from modal description element
-                const modalDescription = document.getElementById('modalDescription');
-                if (modalDescription) {
-                    description = modalDescription.textContent || '';
-                }
-            }
-            
-            // Truncate description if too long for share text
-            const shareText = description.length > 200 
-                ? description.substring(0, 197) + '...' 
-                : description || title;
-            
-            console.log('Sharing URL:', url);
-            console.log('Share text:', shareText);
-            
+
+            const url = getCanonicalEpisodeShareUrl();
+            console.log("SHARE URL", url);
+
             // Try native share API first (mobile)
             // Note: Omitting title and text allows Messages/Mail to fetch og:meta tags from the page
             // This ensures proper og:image preview generation
             if (navigator.share) {
                 try {
-                    await navigator.share({
-                        url: url
-                    });
-                    console.log('Share successful');
+                    await navigator.share({ url });
                     showShareToast();
                     return;
                 } catch (err) {
-                    // User cancelled (error code 20) - don't show error
-                    if (err.name === 'AbortError' || err.code === 20) {
-                        console.log('User cancelled share');
+                    // User cancelled - don't show error
+                    if (err?.name === 'AbortError' || err?.code === 20) {
                         return;
                     }
                     // Other error - fall through to clipboard
-                    console.log('Native share failed, falling back to clipboard:', err);
                 }
             }
-            
+
             // Fall back to clipboard
             try {
                 // Check if clipboard API is available
-                if (navigator.clipboard && navigator.clipboard.writeText) {
+                if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(url);
-                    console.log('URL copied to clipboard');
                     showShareToast();
+                    return;
                 } else {
                     throw new Error('Clipboard API not available');
                 }
@@ -2082,29 +2058,29 @@
         async function handleCardShare(episode) {
             const baseUrl = window.location.origin;
             const url = `${baseUrl}/episode/${episode.id}`;
-            
+            console.log("SHARE URL", url);
+
             // Try native share API first (mobile)
             if (navigator.share) {
                 try {
-                    await navigator.share({
-                        url: url
-                    });
+                    await navigator.share({ url });
                     showShareToast();
                     return;
                 } catch (err) {
                     // User cancelled - don't show error
-                    if (err.name === 'AbortError' || err.code === 20) {
+                    if (err?.name === 'AbortError' || err?.code === 20) {
                         return;
                     }
                     // Other error - fall through to clipboard
                 }
             }
-            
+
             // Fall back to clipboard
             try {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
+                if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(url);
                     showShareToast();
+                    return;
                 } else {
                     throw new Error('Clipboard API not available');
                 }
