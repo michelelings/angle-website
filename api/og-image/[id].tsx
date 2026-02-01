@@ -10,9 +10,11 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
+  let id: string | undefined;
+
   try {
     // Extract episode ID from query (Vercel file-based routing)
-    let id = req.query.id as string;
+    id = req.query.id as string;
     
     // Fallback: extract from URL pathname if query param not available
     if (!id && req.url) {
@@ -48,11 +50,22 @@ export default async function handler(
     const baseUrl = `${protocol}://${host}`;
 
     // Get cover image URL (make it absolute if relative)
-    const coverImageUrl = episode.coverImage
-      ? (episode.coverImage.startsWith('http') 
-          ? episode.coverImage 
-          : `${baseUrl}${episode.coverImage}`)
-      : `${baseUrl}/images/icon.webp`;
+    // Avoid WebP for OG rendering (common crash cause)
+    let coverImageUrl = `${baseUrl}/images/icon.webp`;
+
+    if (episode.coverImage) {
+      const abs = episode.coverImage.startsWith('http')
+        ? episode.coverImage
+        : `${baseUrl}${episode.coverImage}`;
+
+      // Avoid webp for OG rendering (common crash)
+      if (abs.toLowerCase().endsWith('.webp')) {
+        // Fallback to default icon (use webp as fallback since we don't have PNG)
+        coverImageUrl = `${baseUrl}/images/icon.webp`;
+      } else {
+        coverImageUrl = abs;
+      }
+    }
 
     // Get description text (truncate if too long)
     const description = episode.fullDescription || episode.description || '';
@@ -68,7 +81,7 @@ export default async function handler(
       baseUrl
     });
 
-    // Generate OG image - use backgroundImage instead of img tag for better compatibility
+    // Generate OG image - use absolutely positioned img instead of backgroundImage
     try {
       const imageResponse = new ImageResponse(
         (
@@ -77,40 +90,44 @@ export default async function handler(
               height: '100%',
               width: '100%',
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              justifyContent: 'center',
-              padding: '80px',
               position: 'relative',
-              backgroundColor: '#000000',
-              backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : `url(${baseUrl}/images/icon.webp)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              backgroundColor: '#000',
+              overflow: 'hidden',
             }}
           >
-            {/* Dark overlay for text readability */}
+            {/* Background image */}
+            <img
+              src={coverImageUrl}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+
+            {/* Dark overlay */}
             <div
               style={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                inset: 0,
+                backgroundColor: 'rgba(0,0,0,0.65)',
               }}
             />
-            
-            {/* Content container */}
+
+            {/* Content */}
             <div
               style={{
+                position: 'relative',
+                zIndex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 justifyContent: 'center',
+                padding: '80px',
                 width: '100%',
                 height: '100%',
-                position: 'relative',
-                zIndex: 1,
               }}
             >
               {/* Category tag (if available) */}
@@ -181,7 +198,8 @@ export default async function handler(
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
       res.status(200).end(Buffer.from(buffer));
     } catch (imageError) {
-      console.error('ImageResponse error:', imageError);
+      console.error('ImageResponse error raw:', String(imageError));
+      console.error('ImageResponse error obj:', imageError);
       throw imageError;
     }
   } catch (error) {
@@ -193,7 +211,8 @@ export default async function handler(
     });
     res.status(500).json({ 
       error: 'Failed to generate OG image',
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
+      raw: String(error)
     });
   }
 }
