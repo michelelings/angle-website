@@ -690,13 +690,16 @@
             left: 0;
             right: 0;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: flex-start;
             padding: 20px;
             z-index: 1002;
         }
 
         .modal-share-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
             padding: 8px 16px;
             border-radius: 8px;
             border: none;
@@ -708,7 +711,6 @@
             background-color: rgba(255, 255, 255, 0.1);
             color: #ffffff;
             pointer-events: auto;
-            position: relative;
             z-index: 1003;
         }
 
@@ -751,6 +753,8 @@
             }
 
             .modal-share-btn {
+                bottom: 15px;
+                right: 15px;
                 padding: 6px 12px;
                 font-size: 12px;
             }
@@ -926,9 +930,9 @@
     <div class="modal-overlay" id="storyModal">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
                 <button type="button" class="modal-close" id="modalClose" aria-label="Close story">×</button>
             </div>
+            <button type="button" class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
             <img class="modal-image" id="modalImage" src="" alt="">
             <div class="modal-body">
                 <span class="modal-category" id="modalCategory"></span>
