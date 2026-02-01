@@ -51,7 +51,8 @@ export default async function handler(
 
     // Get cover image URL (make it absolute if relative)
     // Avoid WebP for OG rendering (common crash cause)
-    let coverImageUrl = `${baseUrl}/images/icon.webp`;
+    let coverImageUrl: string | undefined;
+    const fallbackPng = `${baseUrl}/images/icon.png`; // Use PNG fallback when available
 
     if (episode.coverImage) {
       const abs = episode.coverImage.startsWith('http')
@@ -60,12 +61,18 @@ export default async function handler(
 
       // Avoid webp for OG rendering (common crash)
       if (abs.toLowerCase().endsWith('.webp')) {
-        // Fallback to default icon (use webp as fallback since we don't have PNG)
-        coverImageUrl = `${baseUrl}/images/icon.webp`;
+        // Skip WebP - will render without background image
+        coverImageUrl = undefined;
       } else {
         coverImageUrl = abs;
       }
+    } else {
+      // No cover image - use fallback if PNG exists, otherwise render without image
+      coverImageUrl = undefined; // Will check for PNG fallback in rendering
     }
+
+    // Check if we have a WebP image (to skip rendering it)
+    const isWebp = coverImageUrl?.toLowerCase().endsWith('.webp') ?? false;
 
     // Get description text (truncate if too long)
     const description = episode.fullDescription || episode.description || '';
@@ -78,10 +85,12 @@ export default async function handler(
       id,
       title: episode.title,
       coverImageUrl,
+      isWebp,
       baseUrl
     });
 
     // Generate OG image - use absolutely positioned img instead of backgroundImage
+    // Skip WebP images to avoid renderer crashes
     try {
       const imageResponse = new ImageResponse(
         (
@@ -93,19 +102,22 @@ export default async function handler(
               position: 'relative',
               backgroundColor: '#000',
               overflow: 'hidden',
+              backgroundImage: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
             }}
           >
-            {/* Background image */}
-            <img
-              src={coverImageUrl}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
+            {/* Background image - only render if not WebP */}
+            {coverImageUrl && !isWebp && (
+              <img
+                src={coverImageUrl}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            )}
 
             {/* Dark overlay */}
             <div
