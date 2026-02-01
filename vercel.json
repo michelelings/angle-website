@@ -6,6 +6,6 @@
     { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
     { "source": "/episode/:id", "destination": "/api/render/episode/[id]" },
     { "source": "/:category", "destination": "/api/render/[category]" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/:path((?!/api).*)", "destination": "/index.html" }
   ]
 }

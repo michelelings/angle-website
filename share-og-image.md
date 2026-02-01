@@ -416,6 +416,53 @@ function openStoryModal(episode) {
 10. Confirm OG image preview appears correctly in target app
 11. Use social platform debuggers to verify OG tags
 
+## Critical Issue Found: OG Image Endpoint Returning HTML
+
+### Problem Identified
+
+**Root Cause:** The catch-all rewrite rule in `vercel.json` is intercepting `/api/og-image/[id]` requests and serving `index.html` instead of the PNG image.
+
+**Evidence:**
+- `curl -I https://www.newsangle.co/api/og-image/[id]` returns:
+  - `content-type: text/html; charset=utf-8` (should be `image/png`)
+  - `content-disposition: inline; filename="index.html"` (should be PNG)
+
+**Why This Breaks iMessage:**
+- iMessage fetches the OG image URL from meta tags
+- Receives HTML instead of PNG
+- Cannot display the image preview
+
+### Fix Applied
+
+Updated `vercel.json` to exclude `/api/*` routes from the catch-all rewrite:
+
+```json
+{
+  "rewrites": [
+    { "source": "/:path((?!/api).*)", "destination": "/index.html" }
+  ]
+}
+```
+
+This uses a negative lookahead pattern to ensure API routes pass through to Vercel's API routing instead of being caught by the SPA fallback.
+
+### Testing After Fix
+
+After deploying, verify:
+```bash
+curl -I https://www.newsangle.co/api/og-image/[EPISODE_ID]
+```
+
+Should return:
+- `content-type: image/png`
+- Status 200
+- PNG image data (not HTML)
+
 ## Summary
 
-The "works when pasted, fails when shared" pattern strongly suggests the share button is sharing a non-canonical URL that doesn't match your Vercel rewrites. The fix is to always construct the canonical URL from the episode ID stored in state, rather than relying on `window.location.href`.
+The "works when pasted, fails when shared" pattern had two root causes:
+
+1. **Share button sharing non-canonical URL** - Fixed by using episode ID from state
+2. **OG image endpoint returning HTML** - Fixed by excluding `/api/*` from catch-all rewrite
+
+Both fixes are now implemented. After deployment, iMessage should display OG images correctly.
