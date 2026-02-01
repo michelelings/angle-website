@@ -52,27 +52,17 @@ export default async function handler(
     // Get cover image URL (make it absolute if relative)
     // Avoid WebP for OG rendering (common crash cause)
     let coverImageUrl: string | undefined;
-    const fallbackPng = `${baseUrl}/images/icon.png`; // Use PNG fallback when available
 
     if (episode.coverImage) {
       const abs = episode.coverImage.startsWith('http')
         ? episode.coverImage
         : `${baseUrl}${episode.coverImage}`;
 
-      // Avoid webp for OG rendering (common crash)
-      if (abs.toLowerCase().endsWith('.webp')) {
-        // Skip WebP - will render without background image
-        coverImageUrl = undefined;
-      } else {
-        coverImageUrl = abs;
-      }
-    } else {
-      // No cover image - use fallback if PNG exists, otherwise render without image
-      coverImageUrl = undefined; // Will check for PNG fallback in rendering
+      // Skip WebP - will render without background image
+      const isWebp = abs.toLowerCase().endsWith('.webp');
+      coverImageUrl = isWebp ? undefined : abs;
     }
-
-    // Check if we have a WebP image (to skip rendering it)
-    const isWebp = coverImageUrl?.toLowerCase().endsWith('.webp') ?? false;
+    // If no cover image, coverImageUrl stays undefined (will render with solid background)
 
     // Get description text (truncate if too long)
     const description = episode.fullDescription || episode.description || '';
@@ -85,7 +75,6 @@ export default async function handler(
       id,
       title: episode.title,
       coverImageUrl,
-      isWebp,
       baseUrl
     });
 
@@ -100,13 +89,12 @@ export default async function handler(
               width: '100%',
               display: 'flex',
               position: 'relative',
-              backgroundColor: '#000',
+              backgroundColor: '#0b0b0b',
               overflow: 'hidden',
-              backgroundImage: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
             }}
           >
-            {/* Background image - only render if not WebP */}
-            {coverImageUrl && !isWebp && (
+            {/* Background image - only render if available and not WebP */}
+            {coverImageUrl && (
               <img
                 src={coverImageUrl}
                 style={{
