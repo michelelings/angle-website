@@ -68,7 +68,7 @@ export default async function handler(
       baseUrl
     });
 
-    // Generate OG image
+    // Generate OG image - use backgroundImage instead of img tag for better compatibility
     try {
       const imageResponse = new ImageResponse(
         (
@@ -78,26 +78,16 @@ export default async function handler(
               width: '100%',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               justifyContent: 'center',
+              padding: '80px',
               position: 'relative',
               backgroundColor: '#000000',
+              backgroundImage: coverImageUrl ? `url(${coverImageUrl})` : `url(${baseUrl}/images/icon.webp)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }}
           >
-            {/* Background image */}
-            <img
-              src={coverImageUrl}
-              alt=""
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-            
             {/* Dark overlay for text readability */}
             <div
               style={{
@@ -117,7 +107,6 @@ export default async function handler(
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 justifyContent: 'center',
-                padding: '80px',
                 width: '100%',
                 height: '100%',
                 position: 'relative',
