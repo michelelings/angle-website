@@ -91,11 +91,9 @@ export default async function handler(
       throw new Error('Could not find index.html');
     }
 
-    // Build URLs - handle both localhost and production
-    const protocol = req.headers['x-forwarded-proto'] || 
-                     (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
-    const host = req.headers.host || 'newsangle.co';
-    const baseUrl = `${protocol}://${host}`;
+    // Use canonical base URL to avoid www vs non-www mismatches
+    // This ensures OG meta tags always use the same host, preventing crawler cache issues
+    const baseUrl = 'https://www.newsangle.co';
     const episodeUrl = `${baseUrl}/episode/${episodeId}`;
     const ogImageUrl = `${baseUrl}/api/og-image/${episodeId}`;
 

@@ -43,11 +43,9 @@ export default async function handler(
       return;
     }
 
-    // Get base URL from request headers (handle both localhost and production)
-    const protocol = req.headers['x-forwarded-proto'] || 
-                     (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
-    const host = req.headers.host || 'newsangle.co';
-    const baseUrl = `${protocol}://${host}`;
+    // Use canonical base URL to avoid www vs non-www mismatches
+    // This ensures OG images always use the same host, preventing crawler cache issues
+    const baseUrl = 'https://www.newsangle.co';
 
     // Get cover image URL (make it absolute if relative)
     // Avoid WebP for OG rendering (common crash cause)
