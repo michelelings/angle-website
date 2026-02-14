@@ -917,7 +917,7 @@
             <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
         </a>
         <p class="intro">0 stories worth listening.</p>
-        <a href="https://testflight.apple.com/join/p2VQgeun" class="button">Get Angle (Beta)</a>
+        <a href="https://testflight.apple.com/join/p2VQgeun" class="button" id="getAngleHeaderBtn">Get Angle (Beta)</a>
     </div>
     <div class="filters" id="filters"></div>
     <div class="loading" id="loadingSpinner"><div class="spinner"></div></div>
@@ -1591,6 +1591,21 @@
         function initRouting() {
             const shareBtn = document.getElementById('modalShareBtn');
             const headerLink = document.getElementById('headerLink');
+            const getAngleHeaderBtn = document.getElementById('getAngleHeaderBtn');
+            const getAngleModalBtn = document.querySelector('.audio-get-angle-btn');
+
+            if (typeof gtag === 'function') {
+                if (getAngleHeaderBtn) {
+                    getAngleHeaderBtn.addEventListener('click', () => {
+                        gtag('event', 'download_click', { link_location: 'header' });
+                    });
+                }
+                if (getAngleModalBtn) {
+                    getAngleModalBtn.addEventListener('click', () => {
+                        gtag('event', 'download_click', { link_location: 'modal' });
+                    });
+                }
+            }
 
             if (shareBtn) {
                 shareBtn.addEventListener('click', (e) => {
