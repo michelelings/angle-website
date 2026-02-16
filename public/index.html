@@ -942,6 +942,27 @@
                 font-size: 11px;
             }
         }
+
+        /* iPhone widths (375-430px) and up: keep header CTAs on one row */
+        @media (min-width: 375px) and (max-width: 768px) {
+            .cta-buttons {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                width: 100%;
+            }
+
+            .cta-buttons .button {
+                flex: 1 1 0;
+                min-width: 0;
+                width: auto;
+                max-width: none;
+                padding: 10px 16px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
