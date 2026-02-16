@@ -1628,6 +1628,7 @@
             const shareBtn = document.getElementById('modalShareBtn');
             const headerLink = document.getElementById('headerLink');
             const getAngleHeaderBtn = document.getElementById('getAngleHeaderBtn');
+            const followXHeaderBtn = document.getElementById('followXHeaderBtn');
             const getAngleModalBtn = document.querySelector('.audio-get-angle-btn');
 
             if (typeof gtag === 'function') {
@@ -1635,6 +1636,25 @@
                     getAngleHeaderBtn.addEventListener('click', () => {
                         gtag('event', 'download_click', { link_location: 'header' });
                     });
+                }
+                if (followXHeaderBtn) {
+                    // Keep navigation behavior (target=_blank) and just fire an event in the background.
+                    followXHeaderBtn.addEventListener(
+                        'click',
+                        () => {
+                            gtag('event', 'cta_click', {
+                                cta: 'follow_on_x',
+                                placement: 'header',
+                                outbound: true,
+                                destination: 'https://x.com/angle_newsapp',
+                                // Enable GA4 DebugView on localhost or when explicitly requested.
+                                debug_mode:
+                                    window.location.hostname === 'localhost' ||
+                                    window.location.search.includes('ga_debug=1'),
+                            });
+                        },
+                        { once: true }
+                    );
                 }
                 if (getAngleModalBtn) {
                     getAngleModalBtn.addEventListener('click', () => {
