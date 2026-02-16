@@ -178,6 +178,28 @@
             background-color: #cccccc;
         }
 
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .button.secondary {
+            background-color: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+
+        .button.secondary:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .button.secondary:active {
+            background-color: rgba(255, 255, 255, 0.18);
+        }
+
         .gallery-wrapper {
             overflow: hidden;
             width: 100%;
@@ -785,6 +807,17 @@
                 font-size: 14px;
             }
 
+            .cta-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .cta-buttons .button {
+                width: 100%;
+                max-width: 320px;
+                text-align: center;
+            }
+
             .filters {
                 flex-wrap: nowrap !important;
                 overflow-x: auto;
@@ -917,7 +950,10 @@
             <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
         </a>
         <p class="intro">0 stories worth listening.</p>
-        <a href="https://testflight.apple.com/join/p2VQgeun" class="button" id="getAngleHeaderBtn">Get Angle (Beta)</a>
+        <div class="cta-buttons">
+            <a href="https://testflight.apple.com/join/p2VQgeun" class="button" id="getAngleHeaderBtn">Get Angle (Beta)</a>
+            <a href="https://x.com/angle_newsapp" class="button secondary" id="followXHeaderBtn" target="_blank" rel="noopener noreferrer">Follow on X</a>
+        </div>
     </div>
     <div class="filters" id="filters"></div>
     <div class="loading" id="loadingSpinner"><div class="spinner"></div></div>
