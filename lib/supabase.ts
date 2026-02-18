@@ -38,6 +38,11 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+function sanitizeText(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  return value.replace(/\u2014/g, '-');
+}
+
 // Fetch functions
 export async function fetchEpisodes(): Promise<Episode[]> {
   const { data, error } = await supabase
@@ -53,19 +58,19 @@ export async function fetchEpisodes(): Promise<Episode[]> {
 
   return (data as any[]).map((episode) => ({
     id: episode.id,
-    title: episode.title,
-    description: episode.excerpt,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
     category: episode.category,
     // Include any additional fields that might exist
     duration: episode.duration || episode.length || null,
     audioUrl: episode.audio_url || episode.audio || null,
-    transcript: episode.transcript || null,
+    transcript: sanitizeText(episode.transcript || null),
     host: episode.host || episode.author || null,
     episodeNumber: episode.episode_number || episode.number || null,
     tags: episode.tags || null,
-    fullDescription: episode.description || episode.full_description || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
   }));
 }
 
@@ -88,18 +93,18 @@ export async function fetchEpisodeById(id: string): Promise<Episode | null> {
 
   return {
     id: data.id,
-    title: data.title,
-    description: data.excerpt,
+    title: sanitizeText(data.title) || '',
+    description: sanitizeText(data.excerpt),
     coverImage: data.cover_url,
     createdAt: data.created_at,
     category: data.category,
     duration: data.duration || data.length || null,
     audioUrl: data.audio_url || data.audio || null,
-    transcript: data.transcript || null,
+    transcript: sanitizeText(data.transcript || null),
     host: data.host || data.author || null,
     episodeNumber: data.episode_number || data.number || null,
     tags: data.tags || null,
-    fullDescription: data.description || data.full_description || null,
+    fullDescription: sanitizeText(data.description || data.full_description || null),
   };
 }
 
@@ -148,17 +153,17 @@ export async function fetchMostRecentEpisodeByCategory(category: string): Promis
   const episode = data[0];
   return {
     id: episode.id,
-    title: episode.title,
-    description: episode.excerpt,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
     category: episode.category,
     duration: episode.duration || episode.length || null,
     audioUrl: episode.audio_url || episode.audio || null,
-    transcript: episode.transcript || null,
+    transcript: sanitizeText(episode.transcript || null),
     host: episode.host || episode.author || null,
     episodeNumber: episode.episode_number || episode.number || null,
     tags: episode.tags || null,
-    fullDescription: episode.description || episode.full_description || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
   };
 }
