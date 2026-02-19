@@ -207,6 +207,15 @@ export default async function handler(
       `<title>${escapedFullTitle}</title>`
     );
 
+    const canonicalTag = `<link rel="canonical" href="${episodeUrl}">`;
+    html = html.replace(
+      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?\s*>/i,
+      canonicalTag
+    );
+    if (!/rel=["']canonical["']/i.test(html)) {
+      html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
+    }
+
     // Keep only one NewsArticle JSON-LD block and inject it into <head>
     html = html.replace(/\s*<script id="newsarticle-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
     html = html.replace(
