@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Angle</title>
     <link rel="icon" type="image/webp" href="/images/icon.webp">
+    <link rel="canonical" href="https://www.newsangle.co/">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -1942,6 +1943,7 @@
             updateMetaTag('name', 'twitter:description', description);
             updateMetaTag('name', 'twitter:image', ogImageUrl);
             updateMetaTag('name', 'twitter:url', episodeUrl);
+            updateCanonicalLink(episodeUrl);
             
             document.title = `${episode.title} | Angle`;
         }
@@ -1954,6 +1956,16 @@
                 document.head.appendChild(tag);
             }
             tag.setAttribute('content', content);
+        }
+
+        function updateCanonicalLink(url) {
+            let tag = document.querySelector('link[rel="canonical"]');
+            if (!tag) {
+                tag = document.createElement('link');
+                tag.setAttribute('rel', 'canonical');
+                document.head.appendChild(tag);
+            }
+            tag.setAttribute('href', url);
         }
 
         function updateCategoryMetaTags(category) {
@@ -1984,6 +1996,7 @@
             updateMetaTag('name', 'twitter:description', description);
             updateMetaTag('name', 'twitter:image', ogImageUrl);
             updateMetaTag('name', 'twitter:url', categoryUrl);
+            updateCanonicalLink(categoryUrl);
             
             document.title = title;
         }
@@ -2001,6 +2014,7 @@
             updateMetaTag('name', 'twitter:description', 'Stories worth listening.');
             updateMetaTag('name', 'twitter:image', `${baseUrl}/api/og-image`);
             updateMetaTag('name', 'twitter:url', baseUrl);
+            updateCanonicalLink(`${baseUrl}/`);
             
             document.title = 'Angle';
         }
