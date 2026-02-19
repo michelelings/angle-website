@@ -1,12 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchEpisodes, fetchCategories } from '../lib/supabase.js';
 
-const BASE_URL = 'https://newsangle.co';
+const BASE_URL = 'https://www.newsangle.co';
 
 function formatDate(dateString: string): string {
   // Convert ISO date string to YYYY-MM-DD format
   const date = new Date(dateString);
   return date.toISOString().split('T')[0];
+}
+
+function categoryToPathSegment(category: string): string {
+  return encodeURIComponent(category.trim());
+}
+
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 function generateSitemapXML(
@@ -17,7 +30,7 @@ function generateSitemapXML(
 
   // Home page
   urls.push(`  <url>
-    <loc>${BASE_URL}/</loc>
+    <loc>${xmlEscape(`${BASE_URL}/`)}</loc>
     <lastmod>${formatDate(new Date().toISOString())}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -28,8 +41,12 @@ function generateSitemapXML(
   const allCategories = [...specialFilters, ...categories];
   
   allCategories.forEach((category) => {
+    const categoryPath = specialFilters.includes(category)
+      ? category
+      : categoryToPathSegment(category);
+
     urls.push(`  <url>
-    <loc>${BASE_URL}/${category}</loc>
+    <loc>${xmlEscape(`${BASE_URL}/${categoryPath}`)}</loc>
     <lastmod>${formatDate(new Date().toISOString())}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -39,7 +56,7 @@ function generateSitemapXML(
   // Episode pages
   episodes.forEach((episode) => {
     urls.push(`  <url>
-    <loc>${BASE_URL}/episode/${episode.id}</loc>
+    <loc>${xmlEscape(`${BASE_URL}/episode/${episode.id}`)}</loc>
     <lastmod>${formatDate(episode.createdAt)}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -93,7 +110,7 @@ export default async function handler(
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>${BASE_URL}/</loc>
+    <loc>${xmlEscape(`${BASE_URL}/`)}</loc>
     <lastmod>${formatDate(new Date().toISOString())}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
