@@ -1904,7 +1904,12 @@
             }
             // Match single-segment paths (e.g., /sports, /popular)
             const match = path.match(/^\/([^\/]+)$/);
-            return match ? match[1] : null;
+            if (!match) return null;
+            try {
+                return decodeURIComponent(match[1]);
+            } catch {
+                return match[1];
+            }
         }
 
         // Update URL to reflect active category filter
