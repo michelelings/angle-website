@@ -17,7 +17,7 @@ export default async function handler(
     // Extract episode ID from multiple sources
     // With Vercel file-based routing [id].ts, the parameter should be in req.query.id
     // When rewriting /episode/:id -> /api/render/episode/[id], Vercel passes it as a query param
-    let episodeId = req.query.id as string;
+    let episodeId = req.query.id as string | undefined;
     
     // Fallback: extract from URL pathname if query param not available
     if (!episodeId && req.url) {
@@ -113,6 +113,45 @@ export default async function handler(
     const escapedDescription = escapeHtml(description);
     const escapedFullTitle = escapeHtml(title);
 
+    const toAbsoluteUrl = (value: string | null | undefined): string | null => {
+      if (!value) return null;
+      if (value.startsWith('http://') || value.startsWith('https://')) return value;
+      return `${baseUrl}${value.startsWith('/') ? '' : '/'}${value}`;
+    };
+
+    const articleImageUrl = toAbsoluteUrl(episode.coverImage) || `${baseUrl}/images/icon.webp`;
+    const authorName = (episode.host || '').trim() || 'Angle';
+    const datePublished = episode.createdAt;
+    const dateModified = episode.updatedAt || episode.createdAt;
+
+    const newsArticleJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: episode.title,
+      datePublished,
+      dateModified,
+      author: {
+        '@type': 'Person',
+        name: authorName,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Angle',
+        logo: {
+          '@type': 'ImageObject',
+          url: `${baseUrl}/images/icon.webp`,
+        },
+      },
+      image: [articleImageUrl],
+      url: episodeUrl,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': episodeUrl,
+      },
+    };
+
+    const escapedJsonLd = JSON.stringify(newsArticleJsonLd).replace(/</g, '\\u003c');
+
     // Replace meta tags
     html = html.replace(
       /<meta property="og:type" content="[^"]*">/,
@@ -166,6 +205,13 @@ export default async function handler(
     html = html.replace(
       /<title>[^<]*<\/title>/,
       `<title>${escapedFullTitle}</title>`
+    );
+
+    // Keep only one NewsArticle JSON-LD block and inject it into <head>
+    html = html.replace(/\s*<script id="newsarticle-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
+    html = html.replace(
+      /<\/head>/,
+      `  <script id="newsarticle-jsonld" type="application/ld+json">${escapedJsonLd}</script>\n</head>`
     );
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

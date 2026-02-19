@@ -13,6 +13,7 @@ export interface Episode {
   description: string | null;
   coverImage: string | null;
   createdAt: string;
+  updatedAt?: string | null;
   category: string | null;
   duration?: number | null;
   audioUrl?: string | null;
@@ -62,6 +63,7 @@ export async function fetchEpisodes(): Promise<Episode[]> {
     description: sanitizeText(episode.excerpt),
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
     category: episode.category,
     // Include any additional fields that might exist
     duration: episode.duration || episode.length || null,
@@ -97,6 +99,7 @@ export async function fetchEpisodeById(id: string): Promise<Episode | null> {
     description: sanitizeText(data.excerpt),
     coverImage: data.cover_url,
     createdAt: data.created_at,
+    updatedAt: data.updated_at || data.created_at,
     category: data.category,
     duration: data.duration || data.length || null,
     audioUrl: data.audio_url || data.audio || null,
@@ -157,6 +160,7 @@ export async function fetchMostRecentEpisodeByCategory(category: string): Promis
     description: sanitizeText(episode.excerpt),
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
     category: episode.category,
     duration: episode.duration || episode.length || null,
     audioUrl: episode.audio_url || episode.audio || null,
