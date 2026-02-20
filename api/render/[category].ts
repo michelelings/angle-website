@@ -6,6 +6,7 @@ import { dirname } from 'path';
 import { fetchCategories } from '../../lib/supabase.js';
 
 const SPECIAL_FILTERS = ['new', 'popular'];
+const BASE_URL = 'https://www.newsangle.co';
 
 // Paths that should not be treated as categories
 const EXCLUDED_PATHS = ['api', 'episode', 'images', 'fonts', 'robots.txt', 'favicon.ico', 'sitemap.xml'];
@@ -14,6 +15,16 @@ const EXCLUDED_PATHS = ['api', 'episode', 'images', 'fonts', 'robots.txt', 'favi
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+function categoryToSlug(category: string): string {
+  return category
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -21,7 +32,7 @@ export default async function handler(
   try {
     // Extract category from query or URL
     let category = req.query.category as string;
-    
+
     // If not in query, try extracting from URL path
     if (!category && req.url) {
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -40,9 +51,12 @@ export default async function handler(
       return;
     }
 
+    const categoryValue = decodeURIComponent(category).trim();
+    const categorySlug = categoryValue.toLowerCase();
+
     // Exclude certain paths that shouldn't be categories
     // These should be handled by Vercel's static file serving or API routing
-    if (EXCLUDED_PATHS.includes(category.toLowerCase())) {
+    if (EXCLUDED_PATHS.includes(categorySlug)) {
       // Return 404 to let Vercel handle it normally
       res.status(404).end('Not Found');
       return;
@@ -50,37 +64,26 @@ export default async function handler(
 
     // Validate category exists - handle case-insensitive matching
     const categories = await fetchCategories();
-    
-    // Helper function to convert category display name to URL slug
-    const categoryToSlug = (cat: string): string => {
-      return cat.toLowerCase().replace(/\s+/g, '-').replace(/[&]/g, 'and').replace(/[^a-z0-9-]/g, '');
-    };
-    
+
     // Helper function to convert URL slug back to display name
     const slugToCategory = (slug: string): string | null => {
+      const normalizedSlug = slug.toLowerCase();
+
       // Try exact match first (case-insensitive)
-      const exactMatch = categories.find(c => c.toLowerCase() === slug.toLowerCase());
+      const exactMatch = categories.find((c) => c.toLowerCase() === normalizedSlug);
       if (exactMatch) return exactMatch;
-      
+
       // Try slug match
-      const slugMatch = categories.find(c => categoryToSlug(c) === slug.toLowerCase());
+      const slugMatch = categories.find((c) => categoryToSlug(c) === normalizedSlug);
       if (slugMatch) return slugMatch;
-      
-      // Try partial match (handle "business-economy" -> "Business & Economy")
-      const normalizedSlug = slug.toLowerCase().replace(/-/g, '');
-      const partialMatch = categories.find(c => 
-        c.toLowerCase().replace(/\s+/g, '').replace(/[&]/g, '').replace(/[^a-z0-9]/g, '') === normalizedSlug
-      );
-      if (partialMatch) return partialMatch;
-      
+
       return null;
     };
-    
-    const categorySlug = category.toLowerCase();
+
     const matchingCategory = slugToCategory(categorySlug);
-    
-    const isValidCategory = 
-      matchingCategory !== null || 
+
+    const isValidCategory =
+      matchingCategory !== null ||
       SPECIAL_FILTERS.includes(categorySlug);
 
     if (!isValidCategory) {
@@ -88,9 +91,12 @@ export default async function handler(
       res.redirect(302, '/');
       return;
     }
-    
-    // Use the matched category name (with proper casing) for display
-    const displayCategory = matchingCategory || category;
+
+    const isSpecialFilter = SPECIAL_FILTERS.includes(categorySlug);
+    const displayCategory = matchingCategory || categoryValue;
+    const canonicalCategorySegment = isSpecialFilter
+      ? categorySlug
+      : categoryToSlug(displayCategory);
 
     // Read index.html - try multiple possible paths
     const possiblePaths = [
@@ -101,7 +107,7 @@ export default async function handler(
 
     let html: string | null = null;
     let lastError: Error | null = null;
-    
+
     for (const indexPath of possiblePaths) {
       try {
         html = await readFile(indexPath, 'utf-8');
@@ -119,31 +125,27 @@ export default async function handler(
     }
 
     // Format category name for display
-    const categoryLabel = displayCategory === 'new' ? 'New' : 
-                         displayCategory === 'popular' ? 'Popular' : 
-                         displayCategory;
+    const categoryLabel = categorySlug === 'new'
+      ? 'New'
+      : categorySlug === 'popular'
+        ? 'Popular'
+        : displayCategory;
 
-    // Build URLs - handle both localhost and production
-    const protocol = req.headers['x-forwarded-proto'] || 
-                     (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
-    const host = req.headers.host || 'newsangle.co';
-    const baseUrl = `${protocol}://${host}`;
-    // Use lowercase category for URL (e.g., /health not /Health) - reuse categorySlug from above
-    const categoryUrl = `${baseUrl}/${categorySlug}`;
-    const ogImageUrl = `${baseUrl}/api/og-image/category/${categorySlug}`;
+    const categoryUrl = `${BASE_URL}/${encodeURIComponent(canonicalCategorySegment)}`;
+    const ogImageUrl = `${BASE_URL}/api/og-image/category/${encodeURIComponent(canonicalCategorySegment)}`;
 
     // Build meta content
     const title = `${categoryLabel} Stories | Angle`;
-    const description = category === 'new' 
-      ? 'Latest stories worth listening.' 
-      : category === 'popular' 
-      ? 'Popular stories worth listening.' 
-      : `${categoryLabel} stories worth listening.`;
+    const description = categorySlug === 'new'
+      ? 'Latest stories worth listening.'
+      : categorySlug === 'popular'
+        ? 'Popular stories worth listening.'
+        : `${categoryLabel} stories worth listening.`;
 
     // Replace meta tags
     html = html.replace(
       /<meta property="og:type" content="website">/,
-      `<meta property="og:type" content="website">`
+      '<meta property="og:type" content="website">'
     );
     html = html.replace(
       /<meta property="og:url" content="[^"]*">/,
@@ -163,7 +165,7 @@ export default async function handler(
     );
     html = html.replace(
       /<meta name="twitter:card" content="summary_large_image">/,
-      `<meta name="twitter:card" content="summary_large_image">`
+      '<meta name="twitter:card" content="summary_large_image">'
     );
     html = html.replace(
       /<meta name="twitter:url" content="[^"]*">/,
@@ -186,6 +188,15 @@ export default async function handler(
       `<title>${title}</title>`
     );
 
+    const canonicalTag = `<link rel="canonical" href="${categoryUrl}">`;
+    html = html.replace(
+      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?\s*>/i,
+      canonicalTag
+    );
+    if (!/rel=["']canonical["']/i.test(html)) {
+      html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).end(html);
   } catch (error) {
@@ -193,7 +204,7 @@ export default async function handler(
     console.error('Error stack:', (error as Error).stack);
     console.error('Request URL:', req.url);
     console.error('Request query:', req.query);
-    
+
     // Return error details in development, redirect in production
     if (process.env.VERCEL_ENV === 'development' || process.env.NODE_ENV === 'development') {
       res.status(500).json({

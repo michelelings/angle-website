@@ -9,19 +9,19 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://newsangle.co/">
+    <meta property="og:url" content="https://www.newsangle.co/">
     <meta property="og:title" content="Angle">
     <meta property="og:description" content="Stories worth listening.">
-    <meta property="og:image" content="https://newsangle.co/api/og-image">
+    <meta property="og:image" content="https://www.newsangle.co/api/og-image">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://newsangle.co/">
+    <meta name="twitter:url" content="https://www.newsangle.co/">
     <meta name="twitter:title" content="Angle">
     <meta name="twitter:description" content="Stories worth listening.">
-    <meta name="twitter:image" content="https://newsangle.co/api/og-image">
+    <meta name="twitter:image" content="https://www.newsangle.co/api/og-image">
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRQ8EPNMPQ"></script>
@@ -1021,6 +1021,47 @@
         let filterBeforeModal = 'all'; // Track filter state before opening modal
         let isUserScrolling = false;
         let scrollTimeout = null;
+        let availableCategories = [];
+
+        const CANONICAL_BASE_URL = 'https://www.newsangle.co';
+        const SPECIAL_FILTERS = new Set(['new', 'popular']);
+
+        function normalizeCategoryValue(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
+        function categoryToSlug(category) {
+            return normalizeCategoryValue(category)
+                .replace(/&/g, ' and ')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .replace(/-+/g, '-');
+        }
+
+        function getCategoryPathSegment(category) {
+            const normalized = normalizeCategoryValue(category);
+            if (SPECIAL_FILTERS.has(normalized)) {
+                return normalized;
+            }
+            return categoryToSlug(category);
+        }
+
+        function resolveCategoryFromUrlSegment(segment, categories = availableCategories) {
+            const normalizedSegment = normalizeCategoryValue(segment);
+            if (!normalizedSegment) return null;
+
+            if (SPECIAL_FILTERS.has(normalizedSegment)) {
+                return normalizedSegment;
+            }
+
+            const exactMatch = categories.find(category => normalizeCategoryValue(category) === normalizedSegment);
+            if (exactMatch) {
+                return exactMatch;
+            }
+
+            const slugMatch = categories.find(category => categoryToSlug(category) === normalizedSegment);
+            return slugMatch || null;
+        }
 
         // Load SVG icon and inject into element
         async function loadShareIcon(buttonElement) {
@@ -1671,9 +1712,13 @@
                 } else {
                     // Check if we need to update category filter
                     const categoryFromUrl = getCategoryFromUrl();
-                    if (categoryFromUrl) {
-                        activeFilter = categoryFromUrl;
-                        updateCategoryMetaTags(categoryFromUrl);
+                    const resolvedCategory = categoryFromUrl
+                        ? resolveCategoryFromUrlSegment(categoryFromUrl)
+                        : null;
+
+                    if (resolvedCategory) {
+                        activeFilter = resolvedCategory;
+                        updateCategoryMetaTags(resolvedCategory);
                         updateTagStates(activeFilter);
                         renderEpisodes(activeFilter);
                     } else {
@@ -1919,14 +1964,15 @@
                 // Remove category from URL, go back to home
                 window.history.pushState({ view: 'gallery', filter: 'all' }, '', '/');
             } else {
-                // Update URL to include category (e.g., /sports)
-                window.history.pushState({ view: 'gallery', filter: filter }, '', `/${filter}`);
+                const pathSegment = getCategoryPathSegment(filter);
+                // Update URL to include canonical category slug (e.g., /business-and-economy)
+                window.history.pushState({ view: 'gallery', filter: filter }, '', `/${encodeURIComponent(pathSegment)}`);
             }
         }
 
         // Meta Tags Functions
         function updateMetaTags(episode) {
-            const baseUrl = window.location.origin;
+            const baseUrl = CANONICAL_BASE_URL;
             const episodeUrl = `${baseUrl}/episode/${episode.id}`;
             // Use dynamic OG image endpoint that includes cover image + title/description
             const ogImageUrl = `${baseUrl}/api/og-image/${episode.id}`;
@@ -1969,21 +2015,23 @@
         }
 
         function updateCategoryMetaTags(category) {
-            const baseUrl = window.location.origin;
-            const categoryUrl = `${baseUrl}/${category}`;
+            const baseUrl = CANONICAL_BASE_URL;
+            const pathSegment = getCategoryPathSegment(category);
+            const categoryUrl = `${baseUrl}/${encodeURIComponent(pathSegment)}`;
             
             // Format category name for display
-            const categoryLabel = category === 'new' ? 'New' : 
-                                 category === 'popular' ? 'Popular' : 
-                                 category.charAt(0).toUpperCase() + category.slice(1);
+            const normalizedCategory = normalizeCategoryValue(category);
+            const categoryLabel = normalizedCategory === 'new' ? 'New' : 
+                                 normalizedCategory === 'popular' ? 'Popular' : 
+                                 category;
             
             const title = `${categoryLabel} Stories | Angle`;
-            const description = category === 'new' ? 'Latest stories worth listening.' :
-                               category === 'popular' ? 'Popular stories worth listening.' :
+            const description = normalizedCategory === 'new' ? 'Latest stories worth listening.' :
+                               normalizedCategory === 'popular' ? 'Popular stories worth listening.' :
                                `${categoryLabel} stories worth listening.`;
             
             // Use category-specific OG image endpoint
-            const ogImageUrl = `${baseUrl}/api/og-image/category/${category}`;
+            const ogImageUrl = `${baseUrl}/api/og-image/category/${encodeURIComponent(pathSegment)}`;
             
             updateMetaTag('property', 'og:title', title);
             updateMetaTag('property', 'og:description', description);
@@ -2002,7 +2050,7 @@
         }
 
         function resetMetaTags() {
-            const baseUrl = window.location.origin;
+            const baseUrl = CANONICAL_BASE_URL;
             updateMetaTag('property', 'og:title', 'Angle');
             updateMetaTag('property', 'og:description', 'Stories worth listening.');
             updateMetaTag('property', 'og:image', `${baseUrl}/api/og-image`);
@@ -2038,7 +2086,7 @@
 
         // Helper to build canonical episode share URL
         function getCanonicalEpisodeShareUrl() {
-            const baseUrl = window.location.origin;
+            const baseUrl = CANONICAL_BASE_URL;
 
             const episodeId =
                 window.history.state?.episodeId ??
@@ -2126,7 +2174,7 @@
 
         // Handle share from card
         async function handleCardShare(episode) {
-            const baseUrl = window.location.origin;
+            const baseUrl = CANONICAL_BASE_URL;
             const url = `${baseUrl}/episode/${episode.id}`;
             console.log("SHARE URL", url);
 
@@ -2206,18 +2254,17 @@
                 const categoriesData = await categoriesRes.json();
                 const episodesData = await episodesRes.json();
 
+                availableCategories = categoriesData.success ? categoriesData.data : [];
+
                 // Check if we're on a category URL and validate it
                 const categoryFromUrl = getCategoryFromUrl();
                 if (categoryFromUrl && !episodeId) {
-                    // Validate category exists (including special filters)
-                    const validCategories = categoriesData.success ? categoriesData.data : [];
-                    const specialFilters = ['new', 'popular'];
-                    const isValidCategory = validCategories.includes(categoryFromUrl) || specialFilters.includes(categoryFromUrl);
-                    
-                    if (isValidCategory) {
-                        activeFilter = categoryFromUrl;
+                    const resolvedCategory = resolveCategoryFromUrlSegment(categoryFromUrl, availableCategories);
+
+                    if (resolvedCategory) {
+                        activeFilter = resolvedCategory;
                         // Update meta tags for category page
-                        updateCategoryMetaTags(categoryFromUrl);
+                        updateCategoryMetaTags(resolvedCategory);
                     } else {
                         // Invalid category, redirect to home
                         activeFilter = 'all';
@@ -2227,7 +2274,7 @@
                 }
 
                 if (categoriesData.success) {
-                    initFilters(categoriesData.data);
+                    initFilters(availableCategories);
                 }
 
                 if (episodesData.success) {
