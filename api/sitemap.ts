@@ -10,7 +10,13 @@ function formatDate(dateString: string): string {
 }
 
 function categoryToPathSegment(category: string): string {
-  return encodeURIComponent(category.trim());
+  return category
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
 }
 
 function xmlEscape(value: string): string {
@@ -38,15 +44,14 @@ function generateSitemapXML(
 
   // Category pages (including special filters)
   const specialFilters = ['new', 'popular'];
-  const allCategories = [...specialFilters, ...categories];
-  
-  allCategories.forEach((category) => {
-    const categoryPath = specialFilters.includes(category)
-      ? category
-      : categoryToPathSegment(category);
+  const normalizedCategorySegments = Array.from(
+    new Set(categories.map((category) => categoryToPathSegment(category)).filter(Boolean))
+  );
+  const allCategorySegments = [...specialFilters, ...normalizedCategorySegments];
 
+  allCategorySegments.forEach((categorySegment) => {
     urls.push(`  <url>
-    <loc>${xmlEscape(`${BASE_URL}/${categoryPath}`)}</loc>
+    <loc>${xmlEscape(`${BASE_URL}/${encodeURIComponent(categorySegment)}`)}</loc>
     <lastmod>${formatDate(new Date().toISOString())}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -95,7 +100,7 @@ export default async function handler(
       fetchEpisodes(),
       fetchCategories().catch(() => [] as string[]), // Fallback to empty array if categories fail
     ]);
-    
+
     // Generate sitemap XML
     const sitemapXML = generateSitemapXML(episodes, categories);
 
@@ -105,7 +110,7 @@ export default async function handler(
     res.status(200).end(sitemapXML);
   } catch (error) {
     console.error('Error in /api/sitemap:', error);
-    
+
     // Return minimal valid sitemap with just home page on error
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -116,7 +121,7 @@ export default async function handler(
     <priority>1.0</priority>
   </url>
 </urlset>`;
-    
+
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.status(200).end(fallbackSitemap);
   }

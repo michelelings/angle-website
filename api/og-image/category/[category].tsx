@@ -1,10 +1,20 @@
 import { ImageResponse } from '@vercel/og';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchMostRecentEpisodeByCategory } from '../../../lib/supabase.js';
+import { fetchMostRecentEpisodeByCategory, fetchCategories } from '../../../lib/supabase.js';
 
 export const config = {
   runtime: 'nodejs',
 };
+
+function categoryToSlug(category: string): string {
+  return category
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -15,17 +25,35 @@ export default async function handler(
     // Extract category from path like /api/og-image/category/sports
     const pathParts = url.pathname.split('/').filter(Boolean);
     const categoryIndex = pathParts.indexOf('category');
-    const category = categoryIndex !== -1 && categoryIndex < pathParts.length - 1 
-      ? pathParts[categoryIndex + 1] 
+    const categoryParam = categoryIndex !== -1 && categoryIndex < pathParts.length - 1
+      ? decodeURIComponent(pathParts[categoryIndex + 1])
       : null;
 
-    if (!category || typeof category !== 'string') {
+    if (!categoryParam || typeof categoryParam !== 'string') {
       res.status(400).json({ error: 'Category is required' });
       return;
     }
 
+    const normalizedCategory = categoryParam.toLowerCase();
+    const isSpecialFilter = normalizedCategory === 'new' || normalizedCategory === 'popular';
+
+    let resolvedCategory = categoryParam;
+    if (!isSpecialFilter) {
+      const categories = await fetchCategories().catch(() => [] as string[]);
+      const matchedCategory = categories.find(
+        (candidate) =>
+          candidate.toLowerCase() === normalizedCategory ||
+          categoryToSlug(candidate) === normalizedCategory
+      );
+      if (matchedCategory) {
+        resolvedCategory = matchedCategory;
+      }
+    }
+
     // Fetch the most recent episode for this category
-    const episode = await fetchMostRecentEpisodeByCategory(category);
+    const episode = await fetchMostRecentEpisodeByCategory(
+      isSpecialFilter ? normalizedCategory : resolvedCategory
+    );
 
     // Get base URL from request
     const protocol = url.protocol;
@@ -33,9 +61,11 @@ export default async function handler(
     const baseUrl = `${protocol}//${host}`;
 
     // Format category name for display
-    const categoryLabel = category === 'new' ? 'New' : 
-                          category === 'popular' ? 'Popular' : 
-                          category.charAt(0).toUpperCase() + category.slice(1);
+    const categoryLabel = normalizedCategory === 'new'
+      ? 'New'
+      : normalizedCategory === 'popular'
+        ? 'Popular'
+        : resolvedCategory;
 
     // If no episode found, use default OG image with category name
     if (!episode || !episode.coverImage) {
@@ -120,8 +150,8 @@ export default async function handler(
     }
 
     // Get cover image URL (make it absolute if relative)
-    const coverImageUrl = episode.coverImage.startsWith('http') 
-      ? episode.coverImage 
+    const coverImageUrl = episode.coverImage.startsWith('http')
+      ? episode.coverImage
       : `${baseUrl}${episode.coverImage}`;
 
     // Generate OG image with the most recent episode's cover image
@@ -152,7 +182,7 @@ export default async function handler(
               objectFit: 'cover',
             }}
           />
-          
+
           {/* Dark overlay for text readability */}
           <div
             style={{
@@ -164,7 +194,7 @@ export default async function handler(
               backgroundColor: 'rgba(0, 0, 0, 0.65)',
             }}
           />
-          
+
           {/* Content container */}
           <div
             style={{
@@ -226,9 +256,11 @@ export default async function handler(
                 textShadow: '0 2px 4px rgba(0, 0, 0, 0.7)',
               }}
             >
-              {category === 'new' ? 'Latest stories worth listening.' :
-               category === 'popular' ? 'Popular stories worth listening.' :
-               `${categoryLabel} stories worth listening.`}
+              {normalizedCategory === 'new'
+                ? 'Latest stories worth listening.'
+                : normalizedCategory === 'popular'
+                  ? 'Popular stories worth listening.'
+                  : `${categoryLabel} stories worth listening.`}
             </p>
           </div>
         </div>
