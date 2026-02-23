@@ -977,6 +977,7 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div class="header-section">
         <a href="/" class="header-link" id="headerLink" style="text-decoration: none; color: inherit; display: block;">
             <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
@@ -989,10 +990,12 @@
     </div>
     <div class="filters" id="filters"></div>
     <div class="loading" id="loadingSpinner"><div class="spinner"></div></div>
+    <main id="main-content">
     <div class="gallery-wrapper">
         <div class="collection-grid" id="collectionGrid">
         </div>
     </div>
+    </main>
 
     <!-- Story Detail Modal -->
     <div class="modal-overlay" id="storyModal">
@@ -2381,3 +2384,26 @@
     </script>
 </body>
 </html>
+
+    /* Accessibility: Skip link */
+    .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #000;
+        color: #fff;
+        padding: 8px 16px;
+        z-index: 10000;
+        text-decoration: none;
+        font-weight: 600;
+        transition: top 0.2s ease;
+    }
+    .skip-link:focus {
+        top: 0;
+    }
+
+    /* Accessibility: Focus visible */
+    *:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+    }

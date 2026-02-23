@@ -183,6 +183,16 @@ export default async function handler(
       /<meta name="twitter:image" content="[^"]*">/,
       `<meta name="twitter:image" content="${ogImageUrl}">`
     );
+    // Add meta description if not present
+    if (!html.includes('name="description"')) {
+      html = html.replace('</head>', `  <meta name="description" content="${description}">\n</head>`);
+    } else {
+      html = html.replace(
+        /<meta name="description" content="[^"]*">/,
+        `<meta name="description" content="${description}">`
+      );
+    }
+
     html = html.replace(
       /<title>[^<]*<\/title>/,
       `<title>${title}</title>`
