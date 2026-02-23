@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npx tsx dev-server.js",
     "type-check": "tsc --noEmit",
+    "validate:transcript-seo": "node scripts/validate-transcript-seo.mjs",
     "sitemap:check": "node scripts/check-sitemap-coverage.mjs"
   },
   "dependencies": {

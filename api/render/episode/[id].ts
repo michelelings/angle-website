@@ -216,6 +216,15 @@ export default async function handler(
       html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
     }
 
+    const robotsTag = '<meta name="robots" content="index, follow">';
+    html = html.replace(
+      /<meta\s+name=["']robots["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      robotsTag
+    );
+    if (!/name=["']robots["']/i.test(html)) {
+      html = html.replace(/<\/head>/, `  ${robotsTag}\n</head>`);
+    }
+
     // Keep only one NewsArticle JSON-LD block and inject it into <head>
     html = html.replace(/\s*<script id="newsarticle-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
     html = html.replace(
