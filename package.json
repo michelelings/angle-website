@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "npx tsx dev-server.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sitemap:check": "node scripts/check-sitemap-coverage.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
