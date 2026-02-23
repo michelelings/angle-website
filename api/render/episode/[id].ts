@@ -4,6 +4,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { fetchEpisodeById } from '../../../lib/supabase.js';
+import { getTranscriptV1RetrofitById } from '../../../lib/transcriptV1Retrofit.js';
 
 // Get __dirname equivalent for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -107,9 +108,13 @@ export default async function handler(
         .replace(/'/g, '&#039;');
     };
     
-    const title = `${episode.title} | Angle`;
-    const description = episode.fullDescription || episode.description || 'Stories worth listening.';
-    const escapedTitle = escapeHtml(episode.title);
+    const retrofit = getTranscriptV1RetrofitById(episodeId);
+
+    const title = retrofit?.seoTitle || `${episode.title} | Angle`;
+    const description = retrofit?.metaDescription || episode.fullDescription || episode.description || 'Stories worth listening.';
+    const headline = retrofit?.h1 || episode.title;
+
+    const escapedTitle = escapeHtml(headline);
     const escapedDescription = escapeHtml(description);
     const escapedFullTitle = escapeHtml(title);
 
@@ -127,7 +132,7 @@ export default async function handler(
     const newsArticleJsonLd = {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
-      headline: episode.title,
+      headline,
       datePublished,
       dateModified,
       author: {
@@ -152,6 +157,24 @@ export default async function handler(
 
     const escapedJsonLd = JSON.stringify(newsArticleJsonLd).replace(/</g, '\\u003c');
 
+    const retrofitSectionHtml = (() => {
+      if (!retrofit) return '';
+
+      const links = retrofit.internalLinks
+        .map((link) => {
+          const href = link.href.startsWith('http') ? link.href : `${baseUrl}${link.href.startsWith('/') ? '' : '/'}${link.href}`;
+          return `<a href="${href}" style="color:#cfe4ff;text-decoration:underline;">${escapeHtml(link.label)}</a>`;
+        })
+        .join(' · ');
+
+      return `
+    <section id="transcript-v1-retrofit" style="max-width:820px;margin:0 auto;padding:8px 20px 12px;color:#f5f5f5;">
+      <h1 style="font-size:28px;line-height:1.2;font-weight:600;margin:0 0 10px;">${escapeHtml(retrofit.h1)}</h1>
+      <p style="font-size:16px;line-height:1.6;color:#d9d9d9;margin:0 0 10px;">${escapeHtml(retrofit.summaryOpener)}</p>
+      <p style="font-size:13px;line-height:1.5;color:#b7b7b7;margin:0;">Related coverage: ${links}</p>
+    </section>`;
+    })();
+
     // Replace meta tags
     html = html.replace(
       /<meta property="og:type" content="[^"]*">/,
@@ -169,6 +192,13 @@ export default async function handler(
       /<meta property="og:description" content="[^"]*">/,
       `<meta property="og:description" content="${escapedDescription}">`
     );
+    html = html.replace(
+      /<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta name="description" content="${escapedDescription}">`
+    );
+    if (!/meta\s+name=["']description["']/i.test(html)) {
+      html = html.replace(/<\/head>/, `  <meta name="description" content="${escapedDescription}">\n</head>`);
+    }
     html = html.replace(
       /<meta property="og:image" content="[^"]*">/,
       `<meta property="og:image" content="${ogImageUrl}">`
@@ -231,6 +261,13 @@ export default async function handler(
       /<\/head>/,
       `  <script id="newsarticle-jsonld" type="application/ld+json">${escapedJsonLd}</script>\n</head>`
     );
+
+    if (retrofitSectionHtml && !html.includes('id="transcript-v1-retrofit"')) {
+      html = html.replace(
+        /(<div class="header-section">[\s\S]*?<\/div>)/,
+        (matched) => `${matched}\n${retrofitSectionHtml}`
+      );
+    }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).end(html);
