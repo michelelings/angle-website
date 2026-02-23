@@ -197,6 +197,15 @@ export default async function handler(
       html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
     }
 
+    const robotsTag = '<meta name="robots" content="index, follow">';
+    html = html.replace(
+      /<meta\s+name=["']robots["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      robotsTag
+    );
+    if (!/name=["']robots["']/i.test(html)) {
+      html = html.replace(/<\/head>/, `  ${robotsTag}\n</head>`);
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).end(html);
   } catch (error) {
