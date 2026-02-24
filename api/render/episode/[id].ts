@@ -96,7 +96,18 @@ export default async function handler(
     // This ensures OG meta tags always use the same host, preventing crawler cache issues
     const baseUrl = 'https://www.newsangle.co';
     const episodeUrl = `${baseUrl}/episode/${episodeId}`;
-    const ogImageUrl = `${baseUrl}/api/og-image/${episodeId}`;
+
+    // Use the story's actual cover image directly as the og:image.
+    // All cover images are Supabase public URLs (WebP) — using them directly is
+    // simpler, more reliable, and shows the actual story image to crawlers.
+    // The dynamic /api/og-image endpoint was skipping WebP images so crawlers
+    // were getting a blank dark background instead of the story's photo.
+    const ogImageUrl = (() => {
+      const ci = episode.coverImage;
+      if (!ci) return `${baseUrl}/images/og-image.png`;
+      if (ci.startsWith('http://') || ci.startsWith('https://')) return ci;
+      return `${baseUrl}${ci.startsWith('/') ? '' : '/'}${ci}`;
+    })();
 
     // Build meta content - escape HTML entities for safe injection
     const escapeHtml = (str: string): string => {

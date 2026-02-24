@@ -2006,8 +2006,14 @@
         function updateMetaTags(episode) {
             const baseUrl = CANONICAL_BASE_URL;
             const episodeUrl = `${baseUrl}/episode/${episode.id}`;
-            // Use dynamic OG image endpoint that includes cover image + title/description
-            const ogImageUrl = `${baseUrl}/api/og-image/${episode.id}`;
+            // Use the story's actual cover image directly as og:image.
+            // All cover images are publicly accessible Supabase CDN URLs (WebP).
+            // The /api/og-image dynamic generator was skipping WebP, so crawlers
+            // saw a blank background instead of the story's actual photo.
+            const _ci = episode.coverImage;
+            const ogImageUrl = _ci && _ci.startsWith('http')
+                ? _ci
+                : (_ci ? `${baseUrl}${_ci.startsWith('/') ? '' : '/'}${_ci}` : `${baseUrl}/images/og-image.png`);
             const description = episode.fullDescription || episode.description || 'Stories worth listening.';
 
             updateMetaTag('property', 'og:title', episode.title);
@@ -2085,16 +2091,18 @@
 
         function resetMetaTags() {
             const baseUrl = CANONICAL_BASE_URL;
+            // Use the static PNG for the homepage — no dynamic generation needed.
+            const homeOgImage = `${baseUrl}/images/og-image.png`;
             updateMetaTag('property', 'og:title', 'Angle');
             updateMetaTag('property', 'og:description', 'Stories worth listening.');
-            updateMetaTag('property', 'og:image', `${baseUrl}/api/og-image`);
+            updateMetaTag('property', 'og:image', homeOgImage);
             updateMetaTag('property', 'og:url', baseUrl);
             updateMetaTag('property', 'og:type', 'website');
             
             updateMetaTag('name', 'twitter:card', 'summary_large_image');
             updateMetaTag('name', 'twitter:title', 'Angle');
             updateMetaTag('name', 'twitter:description', 'Stories worth listening.');
-            updateMetaTag('name', 'twitter:image', `${baseUrl}/api/og-image`);
+            updateMetaTag('name', 'twitter:image', homeOgImage);
             updateMetaTag('name', 'twitter:image:alt', 'Stories worth listening.');
             updateMetaTag('name', 'twitter:url', baseUrl);
             updateCanonicalLink(`${baseUrl}/`);
