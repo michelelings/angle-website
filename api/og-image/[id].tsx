@@ -47,8 +47,9 @@ export default async function handler(
     // This ensures OG images always use the same host, preventing crawler cache issues
     const baseUrl = 'https://www.newsangle.co';
 
-    // Get cover image URL (make it absolute if relative)
-    // WebP is supported by @vercel/og — no need to skip it.
+    // Get cover image URL (make it absolute if relative).
+    // Some source formats (notably certain WebP variants) can fail in @vercel/og,
+    // so we attempt rendering with cover first and gracefully retry without it.
     let coverImageUrl: string | undefined;
 
     if (episode.coverImage) {
@@ -73,10 +74,15 @@ export default async function handler(
       baseUrl
     });
 
-    // Generate OG image - use absolutely positioned img instead of backgroundImage
-    // Skip WebP images to avoid renderer crashes
-    try {
-      const imageResponse = new ImageResponse(
+    const sendImage = async (imageResponse: ImageResponse): Promise<void> => {
+      const buffer = await imageResponse.arrayBuffer();
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+      res.status(200).end(Buffer.from(buffer));
+    };
+
+    const makeImageResponse = (showCover: boolean): ImageResponse =>
+      new ImageResponse(
         (
           <div
             style={{
@@ -88,10 +94,11 @@ export default async function handler(
               overflow: 'hidden',
             }}
           >
-            {/* Background image - only render if available and not WebP */}
-            {coverImageUrl && (
+            {showCover && coverImageUrl && (
               <img
                 src={coverImageUrl}
+                width={1200}
+                height={630}
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -102,7 +109,6 @@ export default async function handler(
               />
             )}
 
-            {/* Dark overlay */}
             <div
               style={{
                 position: 'absolute',
@@ -111,7 +117,6 @@ export default async function handler(
               }}
             />
 
-            {/* Content */}
             <div
               style={{
                 position: 'relative',
@@ -125,7 +130,6 @@ export default async function handler(
                 height: '100%',
               }}
             >
-              {/* Category tag (if available) */}
               {episode.category && (
                 <div
                   style={{
@@ -145,7 +149,6 @@ export default async function handler(
                 </div>
               )}
 
-              {/* Title */}
               <h1
                 style={{
                   fontSize: episode.title.length > 60 ? '48px' : '64px',
@@ -162,7 +165,6 @@ export default async function handler(
                 {episode.title}
               </h1>
 
-              {/* Description */}
               {truncatedDescription && (
                 <p
                   style={{
@@ -187,15 +189,11 @@ export default async function handler(
         }
       );
 
-      // Convert Response to buffer and send
-      const buffer = await imageResponse.arrayBuffer();
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
-      res.status(200).end(Buffer.from(buffer));
+    try {
+      await sendImage(makeImageResponse(true));
     } catch (imageError) {
-      console.error('ImageResponse error raw:', String(imageError));
-      console.error('ImageResponse error obj:', imageError);
-      throw imageError;
+      console.error('ImageResponse with cover failed, retrying without cover:', String(imageError));
+      await sendImage(makeImageResponse(false));
     }
   } catch (error) {
     console.error('Error generating OG image:', error);
