@@ -97,17 +97,13 @@ export default async function handler(
     const baseUrl = 'https://www.newsangle.co';
     const episodeUrl = `${baseUrl}/episode/${episodeId}`;
 
-    // Use the story's actual cover image directly as the og:image.
-    // All cover images are Supabase public URLs (WebP) — using them directly is
-    // simpler, more reliable, and shows the actual story image to crawlers.
-    // The dynamic /api/og-image endpoint was skipping WebP images so crawlers
-    // were getting a blank dark background instead of the story's photo.
-    const ogImageUrl = (() => {
-      const ci = episode.coverImage;
-      if (!ci) return `${baseUrl}/images/og-image.png`;
-      if (ci.startsWith('http://') || ci.startsWith('https://')) return ci;
-      return `${baseUrl}${ci.startsWith('/') ? '' : '/'}${ci}`;
-    })();
+    const datePublished = episode.createdAt;
+    const dateModified = episode.updatedAt || episode.createdAt;
+
+    // Keep OG + Twitter image URLs in sync and point them to a first-party endpoint.
+    // The image URL is cache-busted per-episode update so social crawlers can refresh.
+    const socialImageVersion = encodeURIComponent(dateModified || datePublished || episodeId);
+    const ogImageUrl = `${baseUrl}/api/og-image/${encodeURIComponent(episodeId)}?v=${socialImageVersion}`;
 
     // Build meta content - escape HTML entities for safe injection
     const escapeHtml = (str: string): string => {
@@ -137,8 +133,6 @@ export default async function handler(
 
     const articleImageUrl = toAbsoluteUrl(episode.coverImage) || `${baseUrl}/images/icon.webp`;
     const authorName = (episode.host || '').trim() || 'Angle';
-    const datePublished = episode.createdAt;
-    const dateModified = episode.updatedAt || episode.createdAt;
 
     const newsArticleJsonLd = {
       '@context': 'https://schema.org',
@@ -186,89 +180,58 @@ export default async function handler(
     </section>`;
     })();
 
-    // Replace meta tags
-    html = html.replace(
-      /<meta property="og:type" content="[^"]*">/,
-      `<meta property="og:type" content="article">`
-    );
-    html = html.replace(
-      /<meta property="og:url" content="[^"]*">/,
-      `<meta property="og:url" content="${episodeUrl}">`
-    );
-    html = html.replace(
-      /<meta property="og:title" content="[^"]*">/,
-      `<meta property="og:title" content="${escapedTitle}">`
-    );
-    html = html.replace(
-      /<meta property="og:description" content="[^"]*">/,
-      `<meta property="og:description" content="${escapedDescription}">`
-    );
-    html = html.replace(
-      /<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
-      `<meta name="description" content="${escapedDescription}">`
-    );
-    if (!/meta\s+name=["']description["']/i.test(html)) {
-      html = html.replace(/<\/head>/, `  <meta name="description" content="${escapedDescription}">\n</head>`);
-    }
-    html = html.replace(
-      /<meta property="og:image" content="[^"]*">/,
-      `<meta property="og:image" content="${ogImageUrl}">`
-    );
-    // Update og:image dimensions (they should already exist in the HTML)
-    html = html.replace(
-      /<meta property="og:image:width" content="[^"]*">/,
-      `<meta property="og:image:width" content="1200">`
-    );
-    html = html.replace(
-      /<meta property="og:image:height" content="[^"]*">/,
-      `<meta property="og:image:height" content="630">`
-    );
-    html = html.replace(
-      /<meta name="twitter:card" content="[^"]*">/,
-      `<meta name="twitter:card" content="summary_large_image">`
-    );
-    html = html.replace(
-      /<meta name="twitter:url" content="[^"]*">/,
-      `<meta name="twitter:url" content="${episodeUrl}">`
-    );
-    html = html.replace(
-      /<meta name="twitter:title" content="[^"]*">/,
-      `<meta name="twitter:title" content="${escapedTitle}">`
-    );
-    html = html.replace(
-      /<meta name="twitter:description" content="[^"]*">/,
-      `<meta name="twitter:description" content="${escapedDescription}">`
-    );
-    html = html.replace(
-      /<meta name="twitter:image" content="[^"]*">/,
-      `<meta name="twitter:image" content="${ogImageUrl}">`
-    );
-    html = html.replace(
-      /<meta name="twitter:image:alt" content="[^"]*">/,
-      `<meta name="twitter:image:alt" content="${escapedDescription}">`
-    );
-    html = html.replace(
-      /<title>[^<]*<\/title>/,
-      `<title>${escapedFullTitle}</title>`
-    );
+    const upsertMetaTag = (inputHtml: string, key: 'name' | 'property', metaName: string, content: string): string => {
+      const escapedMetaName = metaName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`<meta\\s+[^>]*${key}=["']${escapedMetaName}["'][^>]*>`, 'i');
+      const tag = `<meta ${key}="${metaName}" content="${content}">`;
 
-    const canonicalTag = `<link rel="canonical" href="${episodeUrl}">`;
-    html = html.replace(
-      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?\s*>/i,
-      canonicalTag
-    );
-    if (!/rel=["']canonical["']/i.test(html)) {
-      html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
-    }
+      if (pattern.test(inputHtml)) {
+        return inputHtml.replace(pattern, tag);
+      }
 
-    const robotsTag = '<meta name="robots" content="index, follow">';
-    html = html.replace(
-      /<meta\s+name=["']robots["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
-      robotsTag
-    );
-    if (!/name=["']robots["']/i.test(html)) {
-      html = html.replace(/<\/head>/, `  ${robotsTag}\n</head>`);
-    }
+      return inputHtml.replace(/<\/head>/i, `  ${tag}\n</head>`);
+    };
+
+    const upsertCanonical = (inputHtml: string, href: string): string => {
+      const canonicalTag = `<link rel="canonical" href="${href}">`;
+      const canonicalPattern = /<link\s+[^>]*rel=["']canonical["'][^>]*>/i;
+
+      if (canonicalPattern.test(inputHtml)) {
+        return inputHtml.replace(canonicalPattern, canonicalTag);
+      }
+
+      return inputHtml.replace(/<\/head>/i, `  ${canonicalTag}\n</head>`);
+    };
+
+    const upsertTitle = (inputHtml: string, titleText: string): string => {
+      if (/<title>[\s\S]*?<\/title>/i.test(inputHtml)) {
+        return inputHtml.replace(/<title>[\s\S]*?<\/title>/i, `<title>${titleText}</title>`);
+      }
+
+      return inputHtml.replace(/<\/head>/i, `  <title>${titleText}</title>\n</head>`);
+    };
+
+    html = upsertTitle(html, escapedFullTitle);
+
+    html = upsertMetaTag(html, 'name', 'description', escapedDescription);
+    html = upsertMetaTag(html, 'name', 'robots', 'index, follow');
+
+    html = upsertMetaTag(html, 'property', 'og:type', 'article');
+    html = upsertMetaTag(html, 'property', 'og:url', episodeUrl);
+    html = upsertMetaTag(html, 'property', 'og:title', escapedTitle);
+    html = upsertMetaTag(html, 'property', 'og:description', escapedDescription);
+    html = upsertMetaTag(html, 'property', 'og:image', ogImageUrl);
+    html = upsertMetaTag(html, 'property', 'og:image:width', '1200');
+    html = upsertMetaTag(html, 'property', 'og:image:height', '630');
+
+    html = upsertMetaTag(html, 'name', 'twitter:card', 'summary_large_image');
+    html = upsertMetaTag(html, 'name', 'twitter:url', episodeUrl);
+    html = upsertMetaTag(html, 'name', 'twitter:title', escapedTitle);
+    html = upsertMetaTag(html, 'name', 'twitter:description', escapedDescription);
+    html = upsertMetaTag(html, 'name', 'twitter:image', ogImageUrl);
+    html = upsertMetaTag(html, 'name', 'twitter:image:alt', escapedDescription);
+
+    html = upsertCanonical(html, episodeUrl);
 
     // Keep only one NewsArticle JSON-LD block and inject it into <head>
     html = html.replace(/\s*<script id="newsarticle-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
