@@ -48,17 +48,14 @@ export default async function handler(
     const baseUrl = 'https://www.newsangle.co';
 
     // Get cover image URL (make it absolute if relative)
-    // Avoid WebP for OG rendering (common crash cause)
+    // WebP is supported by @vercel/og — no need to skip it.
     let coverImageUrl: string | undefined;
 
     if (episode.coverImage) {
       const abs = episode.coverImage.startsWith('http')
         ? episode.coverImage
         : `${baseUrl}${episode.coverImage}`;
-
-      // Skip WebP - will render without background image
-      const isWebp = abs.toLowerCase().endsWith('.webp');
-      coverImageUrl = isWebp ? undefined : abs;
+      coverImageUrl = abs;
     }
     // If no cover image, coverImageUrl stays undefined (will render with solid background)
 
