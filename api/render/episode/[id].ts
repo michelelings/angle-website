@@ -233,6 +233,10 @@ export default async function handler(
       `<meta name="twitter:image" content="${ogImageUrl}">`
     );
     html = html.replace(
+      /<meta name="twitter:image:alt" content="[^"]*">/,
+      `<meta name="twitter:image:alt" content="${escapedDescription}">`
+    );
+    html = html.replace(
       /<title>[^<]*<\/title>/,
       `<title>${escapedFullTitle}</title>`
     );

@@ -210,6 +210,7 @@ export default async function handler(
     res.status(500).json({ 
       error: 'Failed to generate OG image',
       details: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
       raw: String(error)
     });
   }
