@@ -2335,6 +2335,11 @@
                     episodes = shuffleArray(episodesData.data);
                     // Update to actual count (will smoothly transition from current count)
                     if (episodes.length > 0) {
+                        try {
+                            localStorage.setItem('angle_story_count', String(episodes.length));
+                        } catch (e) {
+                            // Ignore localStorage write failures (e.g., private mode)
+                        }
                         animateStoryCount(episodes.length);
                     }
                     
@@ -2396,8 +2401,17 @@
         initScrollHandlers();
 
         // Start counting immediately (before data loads)
-        // Estimate a reasonable starting count - will update to actual count when data loads
-        animateStoryCount(167); // Start counting to a reasonable estimate
+        // Use last-known count from localStorage; fall back to 189 if unavailable
+        let fallbackStoryCount = 189;
+        try {
+            const cachedCount = parseInt(localStorage.getItem('angle_story_count'), 10);
+            if (Number.isFinite(cachedCount) && cachedCount > 0) {
+                fallbackStoryCount = cachedCount;
+            }
+        } catch (e) {
+            // Ignore localStorage read failures (e.g., private mode)
+        }
+        animateStoryCount(fallbackStoryCount);
 
         // Start
         init();
