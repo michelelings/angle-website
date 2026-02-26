@@ -1,9 +1,6 @@
 {
   "version": 2,
   "framework": null,
-  "redirects": [
-    { "source": "/((?!www).*)", "destination": "https://www.newsangle.co/$1", "statusCode": 301 }
-  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
