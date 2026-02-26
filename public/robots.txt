@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://newsangle.co/sitemap.xml
+Sitemap: https://www.newsangle.co/sitemap.xml
