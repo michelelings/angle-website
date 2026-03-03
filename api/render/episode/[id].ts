@@ -162,23 +162,89 @@ export default async function handler(
 
     const escapedJsonLd = JSON.stringify(newsArticleJsonLd).replace(/</g, '\\u003c');
 
-    const retrofitSectionHtml = (() => {
-      if (!retrofit) return '';
+    const normalizeText = (value: string | null | undefined): string =>
+      String(value || '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-      const links = retrofit.internalLinks
-        .map((link) => {
-          const href = link.href.startsWith('http') ? link.href : `${baseUrl}${link.href.startsWith('/') ? '' : '/'}${link.href}`;
-          return `<a href="${href}" style="color:#cfe4ff;text-decoration:underline;">${escapeHtml(link.label)}</a>`;
-        })
-        .join(' · ');
+    const truncateWords = (value: string, maxWords: number): string => {
+      const words = value.split(/\s+/).filter(Boolean);
+      if (words.length <= maxWords) return value;
+      return `${words.slice(0, maxWords).join(' ')}…`;
+    };
 
-      return `
-    <section id="transcript-v1-retrofit" style="max-width:820px;margin:0 auto;padding:8px 20px 12px;color:#f5f5f5;">
-      <h1 style="font-size:28px;line-height:1.2;font-weight:600;margin:0 0 10px;">${escapeHtml(retrofit.h1)}</h1>
-      <p style="font-size:16px;line-height:1.6;color:#d9d9d9;margin:0 0 10px;">${escapeHtml(retrofit.summaryOpener)}</p>
-      <p style="font-size:13px;line-height:1.5;color:#b7b7b7;margin:0;">Related coverage: ${links}</p>
+    const countWords = (value: string): number =>
+      value.split(/\s+/).filter(Boolean).length;
+
+    const introText = normalizeText(retrofit?.summaryOpener || episode.fullDescription || episode.description);
+    const fallbackDescriptionText = normalizeText(episode.fullDescription || episode.description);
+    const transcriptText = normalizeText(episode.transcript);
+
+    const bodyParagraphs: string[] = [];
+    if (introText) bodyParagraphs.push(introText);
+    if (fallbackDescriptionText && fallbackDescriptionText !== introText) {
+      bodyParagraphs.push(fallbackDescriptionText);
+    }
+
+    if (countWords(bodyParagraphs.join(' ')) < 50 && transcriptText) {
+      bodyParagraphs.push(truncateWords(transcriptText, 180));
+    }
+
+    if (bodyParagraphs.length === 0) {
+      bodyParagraphs.push('Stories worth listening. Explore this Angle episode for key context, takeaways, and related coverage.');
+    }
+
+    if (countWords(bodyParagraphs.join(' ')) < 50) {
+      const categoryText = normalizeText(episode.category);
+      const fallbackContext = [
+        `Episode context: ${headline}.`,
+        categoryText ? `Category: ${categoryText}.` : '',
+        authorName ? `Host: ${authorName}.` : '',
+        'This server-rendered summary is included so readers and search crawlers can understand the story without running JavaScript.',
+        'For the full listening experience, open this episode in Angle and explore related coverage on newsangle.co.'
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      bodyParagraphs.push(fallbackContext);
+    }
+
+    const ssrBodyWordCount = countWords(bodyParagraphs.join(' '));
+
+    const relatedCoverageHtml = retrofit && retrofit.internalLinks.length > 0
+      ? `<p style="font-size:13px;line-height:1.5;color:#b7b7b7;margin:8px 0 0;">Related coverage: ${retrofit.internalLinks
+          .map((link) => {
+            const href = link.href.startsWith('http')
+              ? link.href
+              : `${baseUrl}${link.href.startsWith('/') ? '' : '/'}${link.href}`;
+            return `<a href="${href}" style="color:#cfe4ff;text-decoration:underline;">${escapeHtml(link.label)}</a>`;
+          })
+          .join(' · ')}</p>`
+      : '';
+
+    const episodeBodySectionHtml = `
+    <section id="episode-ssr-content" data-ssr-words="${ssrBodyWordCount}" style="max-width:820px;margin:0 auto;padding:8px 20px 12px;color:#f5f5f5;">
+      <h1 style="font-size:28px;line-height:1.2;font-weight:600;margin:0 0 10px;">${escapedTitle}</h1>
+      ${bodyParagraphs.map((paragraph) => `<p style="font-size:16px;line-height:1.6;color:#d9d9d9;margin:0 0 10px;">${escapeHtml(paragraph)}</p>`).join('\n      ')}
+      ${relatedCoverageHtml}
     </section>`;
-    })();
+
+    const injectEpisodeBody = (inputHtml: string, sectionHtml: string): string => {
+      if (inputHtml.includes('id="episode-ssr-content"')) return inputHtml;
+
+      const headerSectionPattern = /(<div class="header-section">[\s\S]*?<\/div>)/i;
+      if (headerSectionPattern.test(inputHtml)) {
+        return inputHtml.replace(headerSectionPattern, `$1\n${sectionHtml}`);
+      }
+
+      const filtersPattern = /(<div class="filters"[^>]*>)/i;
+      if (filtersPattern.test(inputHtml)) {
+        return inputHtml.replace(filtersPattern, `${sectionHtml}\n$1`);
+      }
+
+      return inputHtml.replace(/<\/body>/i, `${sectionHtml}\n</body>`);
+    };
 
     const upsertMetaTag = (inputHtml: string, key: 'name' | 'property', metaName: string, content: string): string => {
       const escapedMetaName = metaName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -240,12 +306,7 @@ export default async function handler(
       `  <script id="newsarticle-jsonld" type="application/ld+json">${escapedJsonLd}</script>\n</head>`
     );
 
-    if (retrofitSectionHtml && !html.includes('id="transcript-v1-retrofit"')) {
-      html = html.replace(
-        /(<div class="header-section">[\s\S]*?<\/div>)/,
-        (matched) => `${matched}\n${retrofitSectionHtml}`
-      );
-    }
+    html = injectEpisodeBody(html, episodeBodySectionHtml);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).end(html);
