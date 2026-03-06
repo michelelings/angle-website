@@ -206,6 +206,7 @@ export default async function handler(
 
     const introText = normalizeText(retrofit?.summaryOpener || episode.fullDescription || episode.description);
     const fallbackDescriptionText = normalizeText(episode.fullDescription || episode.description);
+    // script_full / script_segments is now mapped to episode.transcript via fetchEpisodeById
     const transcriptText = normalizeText(episode.transcript);
 
     const bodyParagraphs: string[] = [];
@@ -214,8 +215,11 @@ export default async function handler(
       bodyParagraphs.push(fallbackDescriptionText);
     }
 
-    if (countWords(bodyParagraphs.join(' ')) < 50 && transcriptText) {
-      bodyParagraphs.push(truncateWords(transcriptText, 180));
+    // Always inject transcript when available — do not gate on word count.
+    // Limit to 600 words to keep response size reasonable while providing
+    // ample content for search indexing (well above the 500-word CI threshold).
+    if (transcriptText) {
+      bodyParagraphs.push(truncateWords(transcriptText, 600));
     }
 
     if (bodyParagraphs.length === 0) {
@@ -335,6 +339,14 @@ export default async function handler(
     );
 
     html = injectEpisodeBody(html, episodeBodySectionHtml);
+
+    // Replace the SPA shell's generic "0 stories worth listening." placeholder
+    // in the header-section <p class="intro"> with the episode title.
+    // This prevents Googlebot from seeing the error/empty-state string in raw HTML.
+    html = html.replace(
+      '<p class="intro">0 stories worth listening.</p>',
+      `<p class="intro">${escapedTitle}</p>`
+    );
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).end(html);
