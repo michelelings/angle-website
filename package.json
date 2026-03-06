@@ -8,7 +8,8 @@
     "type-check": "tsc --noEmit",
     "validate:transcript-seo": "node scripts/validate-transcript-seo.mjs",
     "sitemap:check": "node scripts/check-sitemap-coverage.mjs",
-    "transcript:v1:check": "node scripts/check-transcript-v1-retrofit.mjs"
+    "transcript:v1:check": "node scripts/check-transcript-v1-retrofit.mjs",
+    "check:episode-ssr": "node --input-type=module scripts/check-episode-ssr.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

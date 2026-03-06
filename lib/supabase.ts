@@ -76,6 +76,18 @@ export async function fetchEpisodes(): Promise<Episode[]> {
   }));
 }
 
+/**
+ * Reconstruct a plain-text transcript from script_segments array.
+ * script_segments is [{text, speaker, voice_id}]. We join all texts in order.
+ */
+function transcriptFromSegments(segments: unknown): string | null {
+  if (!Array.isArray(segments) || segments.length === 0) return null;
+  return (segments as Array<{ text?: string }>)
+    .map((s) => (typeof s.text === 'string' ? s.text.trim() : ''))
+    .filter(Boolean)
+    .join(' ');
+}
+
 export async function fetchEpisodeById(id: string): Promise<Episode | null> {
   const { data, error } = await supabase
     .from('episodes')
@@ -93,6 +105,14 @@ export async function fetchEpisodeById(id: string): Promise<Episode | null> {
     return null;
   }
 
+  // Prefer script_full (the complete podcast script text) as transcript source.
+  // Fall back to reconstructing from script_segments dialogue array.
+  // Note: the DB column is named `script_full`, not `transcript`.
+  const transcript =
+    sanitizeText(data.script_full || null) ||
+    sanitizeText(transcriptFromSegments(data.script_segments)) ||
+    null;
+
   return {
     id: data.id,
     title: sanitizeText(data.title) || '',
@@ -103,7 +123,7 @@ export async function fetchEpisodeById(id: string): Promise<Episode | null> {
     category: data.category,
     duration: data.duration || data.length || null,
     audioUrl: data.audio_url || data.audio || null,
-    transcript: sanitizeText(data.transcript || null),
+    transcript,
     host: data.host || data.author || null,
     episodeNumber: data.episode_number || data.number || null,
     tags: data.tags || null,
