@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { fetchCategories } from '../../lib/supabase.js';
+import { fetchCategories, fetchEpisodesByCategory } from '../../lib/supabase.js';
 
 const SPECIAL_FILTERS = ['new', 'popular'];
 const BASE_URL = 'https://www.newsangle.co';
@@ -208,6 +208,41 @@ export default async function handler(
     );
     if (!/name=["']robots["']/i.test(html)) {
       html = html.replace(/<\/head>/, `  ${robotsTag}\n</head>`);
+    }
+
+    // Inject static episode list for Googlebot (fixes soft-404: category pages show "0 stories")
+    try {
+      const episodes = await fetchEpisodesByCategory(isSpecialFilter ? categorySlug : displayCategory);
+      if (episodes.length > 0) {
+        const episodeItems = episodes
+          .map((ep) => {
+            const safeTitle = ep.title
+              ? ep.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+              : 'Untitled';
+            const safeDesc = ep.description
+              ? ep.description.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').slice(0, 160)
+              : '';
+            return `<li><a href="/episode/${ep.id}"><strong>${safeTitle}</strong>${safeDesc ? ` — ${safeDesc}` : ''}</a></li>`;
+          })
+          .join('\n          ');
+
+        const episodeListHtml = `
+    <main id="category-seo-content" style="max-width:820px;margin:0 auto;padding:12px 20px 20px;color:#f5f5f5;">
+      <h1 style="font-size:24px;font-weight:600;margin:0 0 8px;">${categoryLabel} Stories</h1>
+      <p style="font-size:14px;color:#b0b0b0;margin:0 0 16px;">${episodes.length} stories worth listening.</p>
+      <ul id="episode-list" style="list-style:none;padding:0;margin:0;">
+          ${episodeItems}
+      </ul>
+    </main>`;
+
+        // Inject before </body>
+        if (!html.includes('id="category-seo-content"')) {
+          html = html.replace('</body>', `${episodeListHtml}\n</body>`);
+        }
+      }
+    } catch (episodeError) {
+      // Non-fatal: log and continue serving page without injected episodes
+      console.error('Failed to fetch episodes for SSR injection:', episodeError);
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

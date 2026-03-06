@@ -128,6 +128,45 @@ export async function fetchCategories(): Promise<string[]> {
     .sort();
 }
 
+
+export async function fetchEpisodesByCategory(category: string, limit = 30): Promise<Episode[]> {
+  let query = supabase
+    .from('episodes')
+    .select('id, title, description, category, created_at, episode_number')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (category !== 'new' && category !== 'popular') {
+    query = query.eq('category', category);
+  } else if (category === 'popular') {
+    // popular = order by play count proxy; fall back to recent for now
+    query = query.order('created_at', { ascending: false });
+  }
+  // 'new' = already ordered by created_at desc
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching episodes by category:', error);
+    return [];
+  }
+
+  return (data || []).map((episode: Record<string, unknown>) => ({
+    id: episode.id as string,
+    title: episode.title as string,
+    description: episode.description as string | null,
+    fullDescription: null,
+    coverImage: null,
+    category: episode.category as string | null,
+    host: null,
+    transcript: null,
+    createdAt: episode.created_at as string,
+    updatedAt: episode.created_at as string,
+    duration: null,
+    audioUrl: null,
+    episodeNumber: episode.episode_number as number | null,
+    tags: null,
+  }));
+}
 export async function fetchMostRecentEpisodeByCategory(category: string): Promise<Episode | null> {
   let query = supabase
     .from('episodes')
