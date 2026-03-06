@@ -150,19 +150,18 @@ export async function fetchCategories(): Promise<string[]> {
 
 
 export async function fetchEpisodesByCategory(category: string, limit = 30): Promise<Episode[]> {
+  // NOTE: Use select('*') to avoid silent failures when column names drift.
+  // Category SSR injection is best-effort; return [] on error.
   let query = supabase
     .from('episodes')
-    .select('id, title, description, category, created_at, episode_number')
+    .select('*')
+    .eq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (category !== 'new' && category !== 'popular') {
     query = query.eq('category', category);
-  } else if (category === 'popular') {
-    // popular = order by play count proxy; fall back to recent for now
-    query = query.order('created_at', { ascending: false });
   }
-  // 'new' = already ordered by created_at desc
 
   const { data, error } = await query;
   if (error) {
@@ -170,23 +169,24 @@ export async function fetchEpisodesByCategory(category: string, limit = 30): Pro
     return [];
   }
 
-  return (data || []).map((episode: Record<string, unknown>) => ({
-    id: episode.id as string,
-    title: episode.title as string,
-    description: episode.description as string | null,
-    fullDescription: null,
-    coverImage: null,
-    category: episode.category as string | null,
-    host: null,
-    transcript: null,
-    createdAt: episode.created_at as string,
-    updatedAt: episode.created_at as string,
-    duration: null,
-    audioUrl: null,
-    episodeNumber: episode.episode_number as number | null,
-    tags: null,
+  return (data as any[]).map((episode) => ({
+    id: episode.id,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
+    coverImage: episode.cover_url,
+    createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
+    category: episode.category,
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: sanitizeText(episode.transcript || null),
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
   }));
 }
+
 export async function fetchMostRecentEpisodeByCategory(category: string): Promise<Episode | null> {
   let query = supabase
     .from('episodes')
