@@ -146,7 +146,7 @@ export default async function handler(
       },
       publisher: {
         '@type': 'Organization',
-        name: 'Angle',
+        name: 'NewsAngle',
         logo: {
           '@type': 'ImageObject',
           url: `${baseUrl}/images/icon.webp`,
@@ -161,6 +161,33 @@ export default async function handler(
     };
 
     const escapedJsonLd = JSON.stringify(newsArticleJsonLd).replace(/</g, '\\u003c');
+
+    // BreadcrumbList JSON-LD
+    const categorySlug = (episode.category || '').trim().toLowerCase().replace(/\s+/g, '-');
+    const categoryName = (episode.category || '').trim();
+    const breadcrumbItems: Array<{ '@type': string; position: number; name: string; item: string }> = [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
+    ];
+    if (categorySlug && categoryName) {
+      breadcrumbItems.push({
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryName,
+        item: `${baseUrl}/${categorySlug}`,
+      });
+    }
+    breadcrumbItems.push({
+      '@type': 'ListItem',
+      position: breadcrumbItems.length + 1,
+      name: headline,
+      item: episodeUrl,
+    });
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbItems,
+    };
+    const escapedBreadcrumbJsonLd = JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c');
 
     const normalizeText = (value: string | null | undefined): string =>
       String(value || '')
@@ -299,11 +326,12 @@ export default async function handler(
 
     html = upsertCanonical(html, episodeUrl);
 
-    // Keep only one NewsArticle JSON-LD block and inject it into <head>
+    // Keep only one of each JSON-LD block and inject into <head>
     html = html.replace(/\s*<script id="newsarticle-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
+    html = html.replace(/\s*<script id="breadcrumb-jsonld" type="application\/ld\+json">[\s\S]*?<\/script>/, '');
     html = html.replace(
       /<\/head>/,
-      `  <script id="newsarticle-jsonld" type="application/ld+json">${escapedJsonLd}</script>\n</head>`
+      `  <script id="newsarticle-jsonld" type="application/ld+json">${escapedJsonLd}</script>\n  <script id="breadcrumb-jsonld" type="application/ld+json">${escapedBreadcrumbJsonLd}</script>\n</head>`
     );
 
     html = injectEpisodeBody(html, episodeBodySectionHtml);
