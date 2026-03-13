@@ -1,6 +1,19 @@
 {
   "version": 2,
   "framework": null,
+  "redirects": [
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "https://www.newsangle.co/sitemap.xml",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "newsangle.co" }],
+      "destination": "https://www.newsangle.co/:path*",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
