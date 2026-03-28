@@ -201,7 +201,7 @@ export default async function handler(
       html = html.replace(/<\/head>/, `  ${canonicalTag}\n</head>`);
     }
 
-    const robotsTag = '<meta name="robots" content="index, follow">';
+    const robotsTag = '<meta name="robots" content="noindex, follow">'; // OCHO-746 stopgap: revert when OCHO-744 (episode SSR injection) ships
     html = html.replace(
       /<meta\s+name=["']robots["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
       robotsTag
