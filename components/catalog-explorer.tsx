@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { flushSync } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Header } from './header';
+import { SiteFooter } from './site-footer';
 import { Gallery } from './gallery';
 import { categorySlug, filterEpisodes, type Episode } from '@/lib/episodes';
 import { createSearchIndex, type SearchDocument } from '@/lib/search';
@@ -62,22 +63,22 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
     <div className="quick-search-input">
       <button ref={searchToggle} className="search-toggle" type="button"
         aria-label={expanded ? 'Focus search' : 'Open search'} aria-expanded={expanded} aria-controls={id}
-        onClick={() => { flushSync(() => setSearchOpen(true)); input.current?.focus(); }}>
+        onClick={() => { flushSync(() => setSearchOpen(true)); input.current?.focus({ preventScroll: true }); }}>
       <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
       </button>
-      <input ref={input} id={id} type="search" value={query} autoComplete="off" hidden={!expanded} tabIndex={expanded ? 0 : -1}
+      <input ref={input} id={id} type="search" value={query} autoComplete="off" aria-hidden={!expanded} tabIndex={expanded ? 0 : -1}
         placeholder="Search stories…" aria-controls="catalog-results"
         onChange={event => update(event.target.value, true)}
         onBlur={() => { editing.current = false; }}
         onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeSearch(); } }} />
-      {expanded && <button type="button" aria-label="Close search" onClick={closeSearch}>×</button>}
+      <button className="search-close" type="button" aria-label="Close search" aria-hidden={!expanded} tabIndex={expanded ? 0 : -1} onClick={closeSearch}>×</button>
     </div>
   </div>;
   return <main>
     <Header count={visible.length} search={null} />
     <div className={`catalog-toolbar${expanded ? ' is-searching' : ''}`}>
-    {search}
-    {!expanded && <nav className="filters" aria-label="Story categories">
+    <div className="catalog-search-slot">{search}</div>
+    <nav className="filters" aria-label="Story categories" inert={expanded} aria-hidden={expanded}>
       {filters.map(category => {
         const path = category === 'all' ? '/' : '/' + categorySlug(category);
         const allowed = new Set(filterEpisodes(episodes, category).map(e => e.id));
@@ -88,7 +89,7 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
           {category}{!pending && <span className="filter-count">{count}</span>}
         </Link>;
       })}
-    </nav>}
+    </nav>
     </div>
     <section className="catalog-refinements" aria-label="Refine stories">
       {(filtering || active !== 'all') && <div className="selected-filters">
@@ -114,5 +115,6 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
       </div>}
       <div hidden={!visible.length}><Gallery episodes={visible} paused={filtering} /></div>
     </div>
+    <SiteFooter showStream />
   </main>;
 }

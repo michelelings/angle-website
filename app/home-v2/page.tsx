@@ -1,4 +1,5 @@
 import { Header } from '@/components/header';
+import { SiteFooter } from '@/components/site-footer';
 import { EpisodeCard } from '@/components/episode-card';
 import { getCatalog } from '@/lib/server/catalog';
 import { categoriesFor, filterEpisodes } from '@/lib/episodes';
@@ -16,5 +17,5 @@ export default async function Stream() {
         <div className="rail-track">{items.map(episode => <EpisodeCard key={episode.id} episode={episode} />)}</div>
       </section> : null;
     })}
-  </div></main>;
+  </div><SiteFooter /></main>;
 }

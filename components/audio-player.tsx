@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { formatTime } from '@/lib/episodes';
-import { APP_URL } from '@/lib/site';
+import { GetAngleLink } from './get-angle-link';
 export function AudioPlayer({ src }: { src: string }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -29,7 +29,7 @@ export function AudioPlayer({ src }: { src: string }) {
         aria-valuetext={`${formatTime(time)} of ${formatTime(duration)}`} onChange={e => { if (audio.current) audio.current.currentTime = Number(e.target.value); setTime(Number(e.target.value)); }} /></div>
       <div className="audio-time"><span>{formatTime(time)}</span><span>/</span><span>{formatTime(duration)}</span></div>
     </div>
-    <a className="audio-get-angle-btn" href={APP_URL} target="_blank" rel="noopener noreferrer">Get Angle</a>
+    <GetAngleLink location="modal" />
     {error && <p className="audio-error" role="alert">Unable to play audio. Please try again.</p>}
   </div>;
 }

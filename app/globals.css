@@ -12,6 +12,9 @@
  --font-sans: var(--sans);
 }
 .category-tag { text-decoration: none; }
+.rail-card-link { display: flex; flex: 1; flex-direction: column; color: inherit; text-decoration: none; }
+.rail-card-link:focus-visible { outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
 .episode-page { margin: 24px auto 48px; max-height: none; overflow: visible; }
 .episode-page .modal-body { padding-top: 36px; }
 input[type="range"] { accent-color: var(--blue); width: 100%; min-height: 44px; }
@@ -58,24 +61,25 @@ dialog.modal-overlay::backdrop { background: transparent; }
 .catalog-empty a { display: inline-block; margin: 12px; color: var(--blue); text-decoration: underline; }
 @media (max-width: 600px) { .selected-filters button, .selected-filters a { max-width: 100%; overflow-wrap: anywhere; } }
 
-.catalog-toolbar { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; max-width: 1400px; margin: 12px auto 16px; padding: 0 20px; }
-.catalog-toolbar .catalog-search { flex: 0 0 auto; width: 44px; max-width: none; margin: 0; z-index: 1; transition: width 220ms ease; }
-.catalog-toolbar .filters { flex: 0 1 auto; min-width: 0; align-items: center; justify-content: flex-start; padding: 0; }
-.catalog-toolbar.is-searching .catalog-search { width: min(100%, 540px); }
+.catalog-toolbar { position: relative; display: flex; align-items: center; justify-content: center; gap: 16px; width: fit-content; max-width: calc(100% - 40px); min-width: 44px; height: 44px; margin: 12px auto 16px; }
+.catalog-search-slot { flex: 0 0 44px; width: 44px; height: 44px; }
+.catalog-toolbar .catalog-search { position: absolute; top: 0; left: 0; width: 44px; max-width: none; margin: 0; z-index: 1; transition: width 360ms cubic-bezier(.22, 1, .36, 1), left 360ms cubic-bezier(.22, 1, .36, 1); }
+.catalog-toolbar .filters { flex: 0 1 auto; min-width: 0; align-items: center; justify-content: flex-start; padding: 0; opacity: 1; transform: translateX(0); transition: opacity 160ms ease 120ms, transform 260ms cubic-bezier(.22, 1, .36, 1) 80ms; }
+.catalog-toolbar.is-searching .catalog-search { left: max(0px, calc(50% - 270px)); width: min(100%, 540px); }
+.catalog-toolbar.is-searching .filters { opacity: 0; transform: translateX(8px); pointer-events: none; transition-delay: 0ms; }
 .catalog-search-status:empty { display: none; }
-@media (max-width: 600px) {
-  .catalog-toolbar { gap: 10px; padding: 0 16px; }
-}
-
-.catalog-toolbar .quick-search-input { height: 44px; border-radius: 6px; }
-.catalog-toolbar .quick-search-input input { height: 42px; min-height: 42px; padding: 0; line-height: 22px; }
+@media (max-width: 600px) { .catalog-toolbar { gap: 10px; max-width: calc(100% - 32px); } }
+.catalog-toolbar .quick-search-input { height: 44px; border-radius: 6px; padding: 0; gap: 0; overflow: hidden; }
+.catalog-toolbar .quick-search-input input { flex: 1 1 auto; height: 42px; min-height: 42px; padding: 0; line-height: 22px; }
 .catalog-toolbar .quick-search-input button { height: 42px; min-height: 42px; display: grid; place-items: center; line-height: 1; }
 .catalog-toolbar .search-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--secondary); }
 .catalog-toolbar .category-tag { height: 44px; box-sizing: border-box; }
-
-.catalog-toolbar .quick-search-input { padding: 0; gap: 0; overflow: hidden; }
 .catalog-toolbar .quick-search-input .search-toggle { flex: 0 0 42px; width: 42px; min-width: 42px; }
-.catalog-toolbar .quick-search-input input { flex: 1 1 auto; }
-.catalog-toolbar .quick-search-input input[hidden] { display: none; }
-.catalog-toolbar .quick-search-input button:last-child:not(.search-toggle) { flex: 0 0 42px; }
-@media (prefers-reduced-motion: reduce) { .catalog-toolbar .catalog-search { transition: none; } }
+.catalog-toolbar .quick-search-input .search-close { flex: 0 0 42px; }
+.catalog-toolbar input, .catalog-toolbar .search-close { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 100ms ease, visibility 0s linear 100ms; }
+.catalog-toolbar.is-searching input, .catalog-toolbar.is-searching .search-close { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 180ms ease 80ms, visibility 0s; }
+@media (prefers-reduced-motion: reduce) {
+  .catalog-toolbar .catalog-search, .catalog-toolbar .filters, .catalog-toolbar input, .catalog-toolbar .search-close { transition: none; }
+}
+/* The containing field provides the focus ring throughout the transition. */
+.catalog-toolbar .quick-search-input input:focus-visible { outline: none; }

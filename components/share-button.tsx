@@ -3,7 +3,12 @@ import { useState } from 'react';
 import { ORIGIN } from '@/lib/site';
 export async function shareEpisode(id: string) {
   const url = `${ORIGIN}/episode/${encodeURIComponent(id)}`;
-  if (navigator.share) { await navigator.share({ url }); return 'Shared'; }
+  if (navigator.share) {
+    try { await navigator.share({ url }); return 'Shared'; }
+    catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
+    }
+  }
   await navigator.clipboard.writeText(url);
   return 'Link copied';
 }
