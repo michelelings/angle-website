@@ -44,6 +44,7 @@ function setup(t, count = 1000) {
     for (const [key, value] of Object.entries(globals)) { originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key)); Object.defineProperty(globalThis, key, { configurable: true, writable: true, value }); }
     const wrapper = window.document.querySelector('.gallery-wrapper');
     Object.defineProperty(wrapper, 'clientWidth', { configurable: true, value: 1280 });
+    wrapper.setPointerCapture = () => {};
     let created = 0;
     const opened = [], shared = [];
     const gallery = new ContinuousGallery(wrapper, item => {
@@ -66,6 +67,107 @@ function setup(t, count = 1000) {
     return { gallery, wrapper, window, frames, opened, shared, created: () => created,
         tick(time) { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(time)); } };
 }
+
+function pointer(h, target, type, x, time, overrides = {}) {
+    const event = new h.window.Event(type, { bubbles: true });
+    Object.assign(event, { isPrimary: true, button: 0, pointerId: 1,
+        pointerType: 'touch', clientX: x, clientY: 100, ...overrides });
+    Object.defineProperty(event, 'timeStamp', { value: time });
+    target.dispatchEvent(event);
+}
+
+test('touch capture can transfer from a card to the gallery without ending the swipe', t => {
+    const h = setup(t);
+    const link = h.wrapper.querySelectorAll('.episode-card a')[2];
+    pointer(h, link, 'pointerdown', 200, 0);
+    pointer(h, link, 'pointermove', 180, 20);
+    assert.equal(h.gallery.pointer.dragging, true);
+    // Browsers emit this from the old implicit capture target during transfer.
+    pointer(h, link, 'lostpointercapture', 180, 21);
+    pointer(h, h.wrapper, 'pointermove', 100, 100);
+    h.tick(100);
+    assert.equal(h.gallery.position, 100);
+    link.click();
+    assert.deepEqual(h.opened, [], 'a swipe does not open a story');
+    pointer(h, h.wrapper, 'pointerup', 100, 110);
+    assert.equal(h.gallery.pointer, null);
+});
+
+for (const direction of [-1, 1]) {
+    test(`touch flick glides and settles in direction ${direction}`, t => {
+        const h = setup(t);
+        pointer(h, h.wrapper, 'pointerdown', 200, 0);
+        pointer(h, h.wrapper, 'pointermove', 200 - direction * 40, 40);
+        h.tick(40);
+        pointer(h, h.wrapper, 'pointerup', 200 - direction * 40, 50);
+        h.tick(50); h.tick(66);
+        assert.ok(direction * h.gallery.position > 40);
+        for (let time = 82; time < 1300; time += 16) h.tick(time);
+        assert.equal(h.gallery.velocity, 0);
+        assert.equal(h.frames.size, 0, 'glide settles instead of animating forever');
+    });
+}
+
+for (const ending of ['pointercancel', 'lostpointercapture', 'held', 'reduced-motion', 'mouse']) {
+    test(`${ending} ends dragging without momentum`, t => {
+        const h = setup(t);
+        if (ending === 'reduced-motion') h.gallery.motion.matches = true;
+        const options = ending === 'mouse' ? { pointerType: 'mouse' } : {};
+        pointer(h, h.wrapper, 'pointerdown', 200, 0, options);
+        pointer(h, h.wrapper, 'pointermove', 160, 40, options);
+        h.tick(40);
+        pointer(h, h.wrapper, ['pointercancel', 'lostpointercapture'].includes(ending) ? ending : 'pointerup',
+            160, ending === 'held' ? 200 : 50, options);
+        h.tick(200);
+        assert.equal(h.gallery.position, 40);
+        assert.equal(h.gallery.velocity, 0);
+        assert.equal(h.gallery.pointer, null);
+    });
+}
+
+test('new touches and opening a dialog stop an ongoing glide', t => {
+    const h = setup(t);
+    for (const stop of ['touch', 'modal']) {
+        pointer(h, h.wrapper, 'pointerdown', 200, 0);
+        pointer(h, h.wrapper, 'pointermove', 160, 40);
+        h.tick(40);
+        pointer(h, h.wrapper, 'pointerup', 160, 50);
+        assert.ok(h.gallery.velocity > 0);
+        if (stop === 'touch') pointer(h, h.wrapper, 'pointerdown', 160, 60);
+        else h.gallery.pause('modal', true);
+        assert.equal(h.gallery.velocity, 0);
+        assert.equal(h.frames.size, 0);
+    }
+});
+
+test('touch momentum stops at the finite catalog boundary', t => {
+    const h = setup(t, 3);
+    Object.defineProperty(h.wrapper, 'clientWidth', { value: 390 });
+    h.gallery.measure();
+    h.gallery.position = h.gallery.maxPosition - 50;
+    pointer(h, h.wrapper, 'pointerdown', 200, 0);
+    pointer(h, h.wrapper, 'pointermove', 160, 40);
+    h.tick(40);
+    pointer(h, h.wrapper, 'pointerup', 160, 50);
+    h.tick(50); h.tick(66);
+    assert.equal(h.gallery.position, h.gallery.maxPosition);
+    assert.equal(h.gallery.velocity, 0);
+    assert.equal(h.frames.size, 0);
+});
+
+test('taps still open cards and vertical gestures do not move the gallery', t => {
+    const h = setup(t);
+    const link = h.wrapper.querySelectorAll('.episode-card a')[2];
+    pointer(h, link, 'pointerdown', 200, 0);
+    pointer(h, link, 'pointerup', 200, 20);
+    link.click();
+    assert.deepEqual(h.opened, [0]);
+    pointer(h, link, 'pointerdown', 200, 30);
+    pointer(h, link, 'pointermove', 195, 50, { clientY: 160 });
+    pointer(h, link, 'pointercancel', 195, 60);
+    assert.equal(h.gallery.pendingDelta, 0);
+    assert.equal(h.gallery.velocity, 0);
+});
 
 test('recycles in both directions, including multi-card jumps, without growing DOM', t => {
     const h = setup(t);

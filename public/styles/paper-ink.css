@@ -184,6 +184,9 @@ h1 {
 .gallery-wrapper[data-gallery-mode="static"] {
   cursor: default;
 }
+.gallery-wrapper.catalog-fallback {
+  touch-action: pan-x pan-y pinch-zoom;
+}
 .gallery-wrapper.scrolling {
   cursor: grabbing;
 }

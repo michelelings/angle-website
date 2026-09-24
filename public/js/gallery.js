@@ -26,6 +26,7 @@ export class ContinuousGallery {
         this.nodes = new Map();
         this.position = 0;
         this.pendingDelta = 0;
+        this.velocity = 0;
         this.frame = null;
         this.lastTime = null;
         this.pauses = new Set();
@@ -69,7 +70,8 @@ export class ContinuousGallery {
         this.listen(wrapper, 'pointerdown', e => {
             if (!e.isPrimary || e.button !== 0 || this.mode === 'static') return;
             this.suppressClick = false;
-            this.pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, last: e.clientX, dragging: false };
+            this.pointer = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY,
+                last: e.clientX, time: e.timeStamp, velocity: 0, dragging: false };
             if (document.activeElement === wrapper) this.pause('focus', false);
             this.pause('pointer', true);
         });
@@ -86,15 +88,26 @@ export class ContinuousGallery {
                 this.pause('focus', false);
             }
             if (p.dragging) {
-                this.move(p.last - e.clientX);
+                const delta = p.last - e.clientX;
+                const elapsed = e.timeStamp - p.time;
+                if (elapsed > 0) p.velocity = Math.max(-2.5, Math.min(2.5, delta / elapsed));
+                this.move(delta);
                 p.last = e.clientX;
+                p.time = e.timeStamp;
             }
         });
         const release = e => {
-            if (this.pointer?.id !== e.pointerId) return;
+            const p = this.pointer;
+            if (p?.id !== e.pointerId) return;
             this.pointer = null;
             wrapper.classList.remove('scrolling');
             this.pause('pointer', false);
+            if (e.type === 'pointerup' && p.dragging && p.type === 'touch' &&
+                e.timeStamp - p.time < 80 && !this.motion.matches &&
+                [...this.pauses].every(reason => reason === 'interaction')) {
+                this.velocity = Math.abs(p.velocity) >= 0.02 ? p.velocity : 0;
+                this.schedule();
+            }
             // The synthetic click from pointerup must be suppressed, but not
             // later keyboard activation or a fresh tap.
             clearTimeout(this.clickTimer);
@@ -102,7 +115,11 @@ export class ContinuousGallery {
         };
         this.listen(window, 'pointerup', release);
         this.listen(window, 'pointercancel', release);
-        this.listen(wrapper, 'lostpointercapture', release);
+        this.listen(wrapper, 'lostpointercapture', e => {
+            // Touch implicitly captures the card. Its capture-loss event bubbles
+            // here when we transfer capture to the wrapper; the drag is still active.
+            if (e.target === wrapper) release(e);
+        });
         this.listen(document, 'visibilitychange', () => this.pause('hidden', document.hidden));
         this.listen(this.motion, 'change', () => this.pause('motion', this.motion.matches));
         this.pause('hidden', document.hidden);
@@ -127,6 +144,7 @@ export class ContinuousGallery {
     }
 
     measure() {
+        this.velocity = 0;
         const oldStride = this.stride;
         this.width = this.wrapper.clientWidth;
         // Keep CSS and JS geometry aligned without a layout read on each frame.
@@ -176,6 +194,7 @@ export class ContinuousGallery {
         this.items = items;
         this.position = 0;
         this.pendingDelta = 0;
+        this.velocity = 0;
         this.nodes.clear();
         this.renderedStart = null;
         this.track.replaceChildren();
@@ -230,10 +249,11 @@ export class ContinuousGallery {
     }
 
     pause(reason, paused) {
+        if (paused && reason !== 'interaction') this.velocity = 0;
         if (paused) this.pauses.add(reason);
         else this.pauses.delete(reason);
         this.lastTime = null;
-        if (this.pauses.size && this.frame !== null && !this.pendingDelta) {
+        if (this.pauses.size && this.frame !== null && !this.pendingDelta && !this.velocity) {
             cancelAnimationFrame(this.frame);
             this.frame = null;
         }
@@ -242,6 +262,7 @@ export class ContinuousGallery {
 
     move(delta) {
         if (!this.items.length || this.mode === 'static') return;
+        this.velocity = 0;
         this.pendingDelta += delta;
         this.pause('interaction', true);
         clearTimeout(this.resumeTimer);
@@ -250,12 +271,23 @@ export class ContinuousGallery {
     }
 
     schedule() {
-        if (this.destroyed || this.frame !== null || !this.items.length || ((this.pauses.size || this.mode !== 'loop') && !this.pendingDelta)) return;
+        if (this.destroyed || this.frame !== null || !this.items.length || ((this.pauses.size || this.mode !== 'loop') && !this.pendingDelta && !this.velocity)) return;
         this.frame = requestAnimationFrame(time => {
             this.frame = null;
             if (this.pendingDelta) {
                 this.position += this.pendingDelta;
                 this.pendingDelta = 0;
+            } else if (this.velocity && this.lastTime !== null) {
+                const elapsed = Math.min(time - this.lastTime, 50);
+                const decay = Math.exp(-elapsed / 220);
+                this.position += this.velocity * 220 * (1 - decay);
+                this.velocity *= decay;
+                if (Math.abs(this.velocity) < 0.02 || (this.mode !== 'loop' &&
+                    (this.position <= 0 || this.position >= this.maxPosition))) {
+                    this.velocity = 0;
+                    // Give the reader a full pause after the glide finishes.
+                    this.move(0);
+                }
             } else if (!this.pauses.size && this.lastTime !== null) {
                 // Ignore catch-up after suspension or a long task.
                 this.position += 15 * Math.min((time - this.lastTime) / 1000, 0.05);
