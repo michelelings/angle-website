@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ORIGIN, DESCRIPTION } from './site';
 import type { Episode } from './episodes';
 export function pageMetadata(path = '/', title = 'Angle', description = DESCRIPTION, image = '/api/og-image'): Metadata {
-  const socialImage = `${ORIGIN}${image}?v=artwork-2`;
+  const socialImage = `${ORIGIN}${image}?v=artwork-3`;
   return { title, description, robots: { index: true, follow: true }, alternates: { canonical: ORIGIN + path },
     openGraph: { title, description, url: ORIGIN + path, type: 'website', images: [{ url: socialImage, width: 1200, height: 630, type: 'image/png', alt: title }] },
     twitter: { card: 'summary_large_image', title, description, images: [socialImage] } };

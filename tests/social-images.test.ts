@@ -27,7 +27,7 @@ test('social artwork renders inside a 1200 by 630 PNG using local assets', async
   const bytes = Buffer.from(await response.arrayBuffer());
   const metadata = await sharp(bytes).metadata();
   assert.equal(metadata.width, 1200); assert.equal(metadata.height, 630);
-  const pixel = await sharp(bytes).extract({ left: 60, top: 90, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
+  const pixel = await sharp(bytes).extract({ left: 60, top: 60, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
   assert.ok(pixel[0] > 200 && pixel[1] < 100 && pixel[2] < 100, 'Portrait fills the top of its frame without bands');
 });
 test('missing artwork and manifest still produce a branded image with long text', async () => {
@@ -39,6 +39,6 @@ test('missing artwork and manifest still produce a branded image with long text'
 test('Open Graph and Twitter use the same versioned preview image', () => {
   const metadata = pageMetadata('/business-and-technology', 'Business and technology', 'Stories', '/api/og-image/category/business-and-technology');
   const image = (metadata.openGraph!.images as { url: string }[])[0];
-  assert.match(image.url, /\?v=artwork-2$/);
+  assert.match(image.url, /\?v=artwork-3$/);
   assert.deepEqual(metadata.twitter!.images, [image.url]);
 });
