@@ -1,5 +1,16 @@
 # Angle — Paper and ink
 
+## Current artwork-led treatment
+
+The following September 24 refinements supersede the original paper-and-ink colors and story-detail layout described below. The current Next.js site uses `app/episode.css` over the shared baseline stylesheet.
+
+- Full-view mesh gradients sample five colors from the artwork using Color Thief. The gallery follows the centered story with an 850ms eased color blend that can retarget during rapid browsing; reduced-motion users get immediate changes. The stream starts with its leading story. Each fullscreen episode has its own palette. Stops are darkened for readable white text, with a fallback mesh when extraction fails.
+- Artwork uses a true 3:4 frame in the homepage gallery, stream cards, and episode view. On desktop the episode artwork, player, and action row stay in the left column while native page scrolling moves the right column, including when scrolling over the artwork.
+- Share sits beside Get Angle below the player. Publication date sits beside duration and speakers beneath the title. Transcripts are not rendered in the episode interface.
+- Episode views fill the viewport without an inset card, border, or rounded outer corners. On mobile the artwork and controls stay above the scrolling story. The same presentation serves direct episode links and intercepted dialogs.
+- Reckless Condensed headings and Inter reading text, metadata, and controls replace the original font choices. Regular and italic Reckless Standard files remain available for future use.
+- Homepage category tabs filter the loaded catalog in place through native browser history. Keep the header, search index, and backdrop mounted; retain shareable category URLs, browser Back/Forward, and the selected filters when an episode is opened and closed.
+
 Website style direction, September 24, 2026. Implemented locally in the gallery and stream view after approval of this direction. Deployment is separate. Shared tokens and component styles live in `public/styles/paper-ink.css`.
 
 ## Starting point
@@ -27,12 +38,12 @@ Use paper and ink for most of the interface. Let illustrations supply the wider 
 
 ## Typography
 
-- **Headlines:** retain the bundled Recoleta face at regular weight. Card titles: 28–32px, line height 1.12. Detail titles: 40–48px desktop and 30–34px mobile, line height 1.1–1.15.
-- **Reading:** system sans-serif, 16px/1.6 for summaries; 17–18px/1.65 for story detail text. Keep paragraphs around 60–70 characters wide.
-- **Labels:** Berkeley Mono, 11–12px/1.5, modest tracking. Uppercase only for short category names and brief metadata. Avoid mono for descriptions and long sentences.
+- **Headlines:** Reckless Condensed at regular weight. Card titles: 28–32px, line height 1.12. Detail titles: 40–48px desktop and 30–34px mobile, line height 1.1–1.15.
+- **Reading:** Inter, 16px/1.6 for summaries; 17–18px/1.65 for story detail text. Keep paragraphs around 60–70 characters wide.
+- **Labels and controls:** Inter, with labels at 11–12px/1.5 and modest tracking. Uppercase only for short category names and brief metadata.
 - **Hierarchy:** category, headline, short summary, then duration/date/host. Headlines carry the emphasis; labels stay quiet.
 
-The current CSS calls the Recoleta family `LTT Recoletta` and loads `/fonts/LttRecoleta-CmpRegular.otf`. Reuse the existing registered family name during implementation unless it is renamed consistently.
+All fonts are self-hosted in `public/fonts/`. `--serif` selects Reckless Condensed, and `--sans` selects Inter; the legacy `--mono` token also resolves to Inter. Both Reckless Condensed S and Reckless Standard M include regular and true italic faces at weight 400. Reckless Standard is available through `--serif-standard` for future use. Inter includes variable regular and italic faces from [Inter 4.1](https://rsms.me/inter/), with its license alongside the files.
 
 ## Story covers and cards
 

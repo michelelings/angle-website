@@ -24,6 +24,6 @@ export function StoryDialog({ children, title }: { children: React.ReactNode; ti
   return <dialog ref={dialog} className="modal-overlay" aria-labelledby="story-title"
     onCancel={event => { event.preventDefault(); router.back(); }}
     onClick={event => { if (event.target === event.currentTarget) router.back(); }}>
-    <div className="modal-content"><div className="modal-header"><button type="button" className="modal-close" aria-label="Close story" autoFocus onClick={() => router.back()}>×</button></div>{children}</div>
+    <div className="episode-shell"><div className="modal-header"><button type="button" className="modal-close" aria-label="Close story" autoFocus onClick={() => router.back()}>×</button></div>{children}</div>
   </dialog>;
 }

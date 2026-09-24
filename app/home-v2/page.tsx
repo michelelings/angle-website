@@ -4,11 +4,12 @@ import { EpisodeCard } from '@/components/episode-card';
 import { getCatalog } from '@/lib/server/catalog';
 import { categoriesFor, filterEpisodes } from '@/lib/episodes';
 import { pageMetadata } from '@/lib/metadata';
+import { ArtworkThemeSource } from '@/components/artwork-theme';
 export const dynamic = 'force-dynamic';
 export const metadata = pageMetadata('/home-v2', 'Story stream | Angle');
 export default async function Stream() {
   const episodes = await getCatalog();
-  return <main><Header count={episodes.length} stream /><div className="rails-container">
+  return <main><ArtworkThemeSource src={episodes[0]?.coverImage || '/images/icon.webp'} /><Header count={episodes.length} stream /><div className="rails-container">
     {!episodes.length && <p className="empty-state">New stories are on their way.</p>}
     {['new', 'popular', ...categoriesFor(episodes)].map(category => {
       const items = filterEpisodes(episodes, category);

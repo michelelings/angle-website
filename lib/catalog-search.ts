@@ -1,4 +1,4 @@
-import { filterEpisodes, type Episode } from './episodes';
+import { filterEpisodes, resolveCategory, type Episode } from './episodes';
 import { normalizeSearch, searchEpisodes, type createSearchIndex, type SearchDocument } from './search';
 
 export function catalogResults(episodes: Episode[], index: ReturnType<typeof createSearchIndex>, query: string, topic: string, category: string) {
@@ -33,4 +33,12 @@ export function catalogHref(pathname: string, query: string, topic: string) {
   if (query) params.set('q', query);
   if (topic) params.set('topic', topic);
   return pathname + (params.size ? '?' + params.toString() : '');
+}
+
+export function catalogCategory(pathname: string, categories: string[]): string | undefined {
+  if (pathname === '/') return 'all';
+  const match = /^\/([^/]+)\/?$/.exec(pathname);
+  if (!match) return undefined;
+  try { return resolveCategory(decodeURIComponent(match[1]), categories); }
+  catch { return undefined; }
 }

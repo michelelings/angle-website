@@ -76,6 +76,27 @@ function pointer(h, target, type, x, time, overrides = {}) {
     target.dispatchEvent(event);
 }
 
+test('artwork theme follows the centered story without updating on every frame', t => {
+    const { gallery } = setup(t, 20);
+    const centered = [];
+    gallery.onCenter = item => centered.push(item?.id ?? null);
+    gallery.render();
+    assert.deepEqual(centered, [1]);
+    gallery.position += 1;
+    gallery.render();
+    assert.deepEqual(centered, [1]);
+    gallery.position += gallery.stride;
+    gallery.render();
+    assert.deepEqual(centered, [1, 2]);
+    gallery.position = -gallery.stride * 2;
+    gallery.render();
+    assert.equal(centered.at(-1), 19);
+    gallery.setItems([{ id: 'only' }]);
+    assert.equal(centered.at(-1), 'only');
+    gallery.setItems([]);
+    assert.equal(centered.at(-1), null);
+});
+
 test('touch capture can transfer from a card to the gallery without ending the swipe', t => {
     const h = setup(t);
     const link = h.wrapper.querySelectorAll('.episode-card a')[2];

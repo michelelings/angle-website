@@ -2,8 +2,7 @@ import { notFound } from 'next/navigation';
 import { getEpisode } from '@/lib/server/catalog';
 import { episodeMetadata, episodeJsonLd } from '@/lib/metadata';
 import { EpisodeDetails } from '@/components/episode-details';
-import { Header } from '@/components/header';
-import { SiteFooter } from '@/components/site-footer';
+import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props) {
@@ -14,8 +13,8 @@ export async function generateMetadata({ params }: Props) {
 export default async function Episode({ params }: Props) {
   const episode = await getEpisode((await params).id);
   if (!episode) notFound();
-  return <main><Header /><article className="modal-content episode-page"><EpisodeDetails episode={episode} /></article>
+  return <main className="episode-shell"><div className="modal-header"><Link className="modal-close" href="/" aria-label="Back to stories">×</Link></div>
+    <article><EpisodeDetails episode={episode} /></article>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: episodeJsonLd(episode) }} />
-    <SiteFooter showStream />
   </main>;
 }

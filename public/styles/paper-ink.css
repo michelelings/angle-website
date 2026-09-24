@@ -1,13 +1,43 @@
 @font-face {
-  font-family: "LTT Recoletta";
-  src: url("/fonts/LttRecoleta-CmpRegular.otf") format("opentype");
+  font-family: "Reckless Condensed";
+  src: url("/fonts/RecklessCondensedS-Regular.woff2") format("woff2");
   font-weight: 400;
+  font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Berkeley Mono";
-  src: url("/fonts/BerkeleyMono-Regular.otf") format("opentype");
+  font-family: "Reckless Condensed";
+  src: url("/fonts/RecklessCondensedS-RegularItalic.woff2") format("woff2");
   font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Reckless Standard";
+  src: url("/fonts/RecklessStandardM-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Reckless Standard";
+  src: url("/fonts/RecklessStandardM-RegularItalic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
   font-display: swap;
 }
 :root {
@@ -20,9 +50,10 @@
   --blue: #365d70;
   --pale-blue: #e3ebec;
   --terracotta: #ad5037;
-  --serif: "LTT Recoletta", Georgia, serif;
-  --mono: "Berkeley Mono", "Courier New", monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --serif: "Reckless Condensed", Georgia, serif;
+  --serif-standard: "Reckless Standard", Georgia, serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: var(--sans);
 }
 * {
   box-sizing: border-box;
@@ -36,6 +67,7 @@ html {
 }
 body {
   font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
   background: var(--paper);
   color: var(--ink);
   min-height: 100vh;
@@ -231,7 +263,7 @@ h1 {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   object-fit: contain;
   background: var(--pale-blue);
   flex-shrink: 0;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { catalogHref, catalogResults } from '../lib/catalog-search';
+import { catalogCategory, catalogHref, catalogResults } from '../lib/catalog-search';
 import { createSearchIndex, searchDocument } from '../lib/search';
 import { parseCatalog, mapV2Episode } from '../worker/catalog';
 const episodes = parseCatalog({ success: true, data: [
@@ -9,6 +9,17 @@ const episodes = parseCatalog({ success: true, data: [
   { id: 'three', title: 'Science', category: 'Technology', createdAt: '2026-09-22', topicNames: ['Research'] },
 ] });
 const index = createSearchIndex(episodes.map(searchDocument));
+test('catalog URLs select filters while episode routes preserve the underlying catalog', () => {
+  const categories = ['World', 'Technology', 'Business and technology'];
+  assert.equal(catalogCategory('/', categories), 'all');
+  assert.equal(catalogCategory('/new', categories), 'new');
+  assert.equal(catalogCategory('/popular', categories), 'popular');
+  assert.equal(catalogCategory('/business-and-technology', categories), 'Business and technology');
+  assert.equal(catalogCategory('/World/', categories), 'World');
+  assert.equal(catalogCategory('/episode/one', categories), undefined);
+  assert.equal(catalogCategory('/home-v2', categories), undefined);
+  assert.equal(catalogCategory('/%zz', categories), undefined);
+});
 test('query, category and topic combine while category counts retain other matches', () => {
   const result = catalogResults(episodes, index, 'irna', 'trade', 'World');
   assert.deepEqual(result.results.map(e => e.id), ['one']);

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ComponentProps } from 'react';
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -8,12 +8,29 @@ import { SiteFooter } from './site-footer';
 import { Gallery } from './gallery';
 import { categorySlug, filterEpisodes, type Episode } from '@/lib/episodes';
 import { createSearchIndex, type SearchDocument } from '@/lib/search';
-import { catalogHref, catalogResults } from '@/lib/catalog-search';
+import { catalogCategory, catalogHref, catalogResults } from '@/lib/catalog-search';
 
-export function CatalogExplorer({ episodes, categories, active }: { episodes: Episode[]; categories: string[]; active: string }) {
+// Keep real, shareable links, but filter the already-loaded catalog on ordinary navigation.
+// Next's onNavigate preserves modifier-click and open-in-new-tab behavior.
+function CatalogLink({ href, onSelect, ...props }: Omit<ComponentProps<typeof Link>, 'href' | 'onNavigate'> & {
+  href: string; onSelect?: () => void;
+}) {
+  return <Link {...props} href={href} prefetch={false} onNavigate={event => {
+    event.preventDefault();
+    onSelect?.();
+    if (href !== window.location.pathname + window.location.search) window.history.pushState(null, '', href);
+  }} />;
+}
+
+export function CatalogExplorer({ episodes, categories, active: initialActive }: { episodes: Episode[]; categories: string[]; active: string }) {
   const params = useSearchParams();
   const pathname = usePathname();
-  const query = params.get('q') || '';
+  const requestedQuery = params.get('q') || '';
+  const routeCategory = catalogCategory(pathname, categories);
+  const [lastCatalog, setLastCatalog] = useState({ category: initialActive, query: requestedQuery });
+  // An intercepted episode changes the URL while this catalog remains behind it.
+  const active = routeCategory ?? lastCatalog.category;
+  const query = routeCategory ? requestedQuery : lastCatalog.query;
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const editing = useRef(false);
@@ -23,6 +40,13 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
   const [documents, setDocuments] = useState<SearchDocument[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!routeCategory) return;
+    setLastCatalog(previous => previous.category === routeCategory && previous.query === requestedQuery
+      ? previous : { category: routeCategory, query: requestedQuery });
+    const label = routeCategory === 'new' ? 'New' : routeCategory === 'popular' ? 'Popular' : routeCategory;
+    document.title = routeCategory === 'all' ? 'Angle' : `${label} Stories | Angle`;
+  }, [routeCategory, requestedQuery]);
   useEffect(() => {
     const controller = new AbortController();
     setState('loading');
@@ -83,21 +107,15 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
         const path = category === 'all' ? '/' : '/' + categorySlug(category);
         const allowed = new Set(filterEpisodes(episodes, category).map(e => e.id));
         const count = model.matching.filter(e => allowed.has(e.id)).length;
-        return <Link key={category} prefetch={false} href={catalogHref(path, query, '')}
+        return <CatalogLink key={category} href={catalogHref(path, query, '')}
           className={`category-tag ${active === category ? 'active' : 'inactive'}`}
-          aria-current={active === category ? 'page' : undefined} onClick={() => { editing.current = false; }}>
+          aria-current={active === category ? 'page' : undefined} onSelect={() => { editing.current = false; }}>
           {category}{!pending && <span className="filter-count">{count}</span>}
-        </Link>;
+        </CatalogLink>;
       })}
     </nav>
     </div>
-    <section className="catalog-refinements" aria-label="Refine stories">
-      {(filtering || active !== 'all') && <div className="selected-filters">
-        <span>Showing</span>
-        {query && <button onClick={() => update('')} aria-label={`Remove search ${query}`}>“{query}” ×</button>}
-        {active !== 'all' && <Link href={catalogHref('/', query, '')} aria-label={`Remove category ${active}`}>{active} ×</Link>}
-        <Link href="/" className="clear-filters">Clear all</Link>
-      </div>}
+    <section className="catalog-refinements" aria-label="Search status" hidden={state === 'ready' && !filtering}>
       <p className="catalog-search-status" role="status">
         {state === 'loading' ? 'Loading searchable stories…'
           : state === 'error' ? 'Search is temporarily unavailable.'
@@ -109,9 +127,9 @@ export function CatalogExplorer({ episodes, categories, active }: { episodes: Ep
       {!pending && !visible.length && <div className="catalog-empty">
         <h2>No stories match these filters.</h2>
         {active !== 'all' && model.matching.length > 0
-          ? <Link href={catalogHref('/', query, '')}>Search all categories · {model.matching.length} {model.matching.length === 1 ? 'story' : 'stories'}</Link>
+          ? <CatalogLink href={catalogHref('/', query, '')} onSelect={() => { editing.current = false; }}>Search all categories · {model.matching.length} {model.matching.length === 1 ? 'story' : 'stories'}</CatalogLink>
           : <p>Try another word or remove a filter.</p>}
-        <Link href="/">Clear all filters</Link>
+        <CatalogLink href="/" onSelect={() => { editing.current = false; }}>Clear all filters</CatalogLink>
       </div>}
       <div hidden={!visible.length}><Gallery episodes={visible} paused={filtering} /></div>
     </div>

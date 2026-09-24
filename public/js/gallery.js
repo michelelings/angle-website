@@ -13,7 +13,7 @@ export function galleryWindow(position, stride, width, count, overscan = 2) {
 }
 
 export class ContinuousGallery {
-    constructor(wrapper, createCard, onOpen, onShare) {
+    constructor(wrapper, createCard, onOpen, onShare, onCenter) {
         this.disposers = [];
         this.listen = (target, event, callback, options) => {
             target.addEventListener(event, callback, options);
@@ -22,6 +22,7 @@ export class ContinuousGallery {
         this.wrapper = wrapper;
         this.track = wrapper.querySelector('.collection-grid');
         this.createCard = createCard;
+        this.onCenter = onCenter;
         this.items = [];
         this.nodes = new Map();
         this.position = 0;
@@ -197,6 +198,7 @@ export class ContinuousGallery {
         this.velocity = 0;
         this.nodes.clear();
         this.renderedStart = null;
+        this.centeredItem = null;
         this.track.replaceChildren();
         this.updateMode();
         if (!items.length) {
@@ -205,6 +207,7 @@ export class ContinuousGallery {
             empty.textContent = 'New stories are on their way.';
             this.track.append(empty);
             this.track.style.transform = '';
+            this.onCenter?.(null, null);
         }
         this.render();
         this.schedule();
@@ -221,6 +224,7 @@ export class ContinuousGallery {
         const visibleEnd = Math.ceil((this.position + this.width) / this.stride);
         if (win.start === this.renderedStart && win.end === this.renderedEnd && visibleEnd === this.visibleEnd && visibleStart === this.visibleStart) {
             this.track.style.transform = `translateX(${-win.offset}px)`;
+            this.notifyCenter();
             return;
         }
         for (const [index, node] of this.nodes) {
@@ -246,6 +250,20 @@ export class ContinuousGallery {
         for (const [index, node] of this.nodes) node.inert = index < visibleStart || index >= visibleEnd;
         // No geometry reads, image changes, or new DOM on ordinary frames.
         this.track.style.transform = `translateX(${-win.offset}px)`;
+        this.notifyCenter();
+    }
+
+    notifyCenter() {
+        if (!this.onCenter) return;
+        const offset = this.mode === 'loop' ? 0 : this.centerOffset;
+        const index = Math.round((this.position + this.width / 2 - offset - (this.stride - this.gap) / 2) / this.stride);
+        const itemIndex = this.mode === 'loop' ? ((index % this.items.length) + this.items.length) % this.items.length
+            : Math.max(0, Math.min(index, this.items.length - 1));
+        const item = this.items[itemIndex];
+        if (item === this.centeredItem) return;
+        this.centeredItem = item;
+        const node = this.nodes.get(this.mode === 'loop' ? index : itemIndex);
+        this.onCenter(item, node?.querySelector('img') || null);
     }
 
     pause(reason, paused) {

@@ -6,10 +6,12 @@ import { ContinuousGallery } from '@/lib/gallery/continuous-gallery.js';
 import { createGalleryCard } from '@/lib/gallery/card';
 import { shareEpisode } from './share-button';
 import { ORIGIN } from '@/lib/site';
+import { useArtworkTheme } from './artwork-theme';
 export function Gallery({ episodes, paused = false }: { episodes: Episode[]; paused?: boolean }) {
   const wrapper = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('');
   const router = useRouter();
+  const updateTheme = useArtworkTheme();
   const instance = useRef<ContinuousGallery | undefined>(undefined);
   const latest = useRef({ episodes, paused });
   latest.current = { episodes, paused };
@@ -34,7 +36,7 @@ export function Gallery({ episodes, paused = false }: { episodes: Episode[]; pau
           try { setStatus(await shareEpisode(episode.id)); } catch (error) {
             if (!(error instanceof Error && error.name === 'AbortError')) setStatus(`Copy this link: ${ORIGIN}/episode/${episode.id}`);
           }
-        });
+        }, (_episode, image) => updateTheme(image));
       instance.current = gallery;
       gallery.setItems(latest.current.episodes);
       gallery.pause('search', latest.current.paused);
@@ -43,8 +45,8 @@ export function Gallery({ episodes, paused = false }: { episodes: Episode[]; pau
     const pause = (event: Event) => gallery?.pause('modal', (event as CustomEvent<boolean>).detail);
     window.addEventListener('angle:dialog', pause);
     void initialize();
-    return () => { disposed = true; abort.abort(); gallery?.destroy(); instance.current = undefined; window.removeEventListener('angle:dialog', pause); };
-  }, [router]);
+    return () => { disposed = true; abort.abort(); gallery?.destroy(); instance.current = undefined; updateTheme(null); window.removeEventListener('angle:dialog', pause); };
+  }, [router, updateTheme]);
   return <><div ref={wrapper} className="gallery-wrapper"><div className="collection-grid" /></div>
     <p className="text-center text-sm text-secondary px-5 break-all" role="status">{status}</p>
     <noscript><div className="p-6 flex flex-wrap gap-4">{episodes.map(episode => <a key={episode.id} href={`/episode/${episode.id}`}>{episode.title}</a>)}</div></noscript>
