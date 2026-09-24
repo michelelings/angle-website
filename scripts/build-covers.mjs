@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
-const recipe = 'original-aspect-webp-82-v2';
+const recipe = 'original-aspect-social-v4';
 
 // Supply one or more website catalog endpoints. Defaults to the current preview,
 // never imports stories into the catalog, and never writes to the media origin.
@@ -35,7 +35,8 @@ await Promise.all(Array.from({ length: 4 }, async () => {
             // Rebuild when either the artwork or the resizing recipe changes.
             const cached = previous[url];
             if (cached?.version === version && cached.recipe === recipe && cached.sources?.length === 3) {
-                const files = await Promise.all(cached.sources.map(s => readFile(`${publicDir}${s.url.slice(1)}`).catch(() => null)));
+                const paths = [...cached.sources.map(s => s.url), cached.socialArtwork, cached.socialBackground];
+                const files = await Promise.all(paths.map(path => path ? readFile(`${publicDir}${path.slice(1)}`).catch(() => null) : null));
                 if (files.every(Boolean)) { manifest[url] = cached; continue; }
             }
             const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
@@ -54,7 +55,15 @@ await Promise.all(Array.from({ length: 4 }, async () => {
                 outputBytes += bytes.length;
                 sources.push({ width, url: `/images/covers/${name}` });
             }
-            manifest[url] = { version, recipe, sources };
+            const socialArtwork = `/images/covers/${hash}-social.jpg`;
+            const socialBackground = `/images/covers/${hash}-mesh.jpg`;
+            await sharp(input).rotate().resize({ width: 750 }).jpeg({ quality: 88 }).toFile(`${publicDir}${socialArtwork.slice(1)}`);
+            // Separate pipelines keep the blur at the small resolution. Sharp
+            // otherwise reorders resize before blur, leaving visible shapes.
+            const small = await sharp(input).rotate().resize(120, 63, { fit: 'cover' }).toBuffer();
+            const blurred = await sharp(small).blur(20).modulate({ brightness: 0.72, saturation: 1.15 }).toBuffer();
+            await sharp(blurred).resize(1200, 630).jpeg({ quality: 85 }).toFile(`${publicDir}${socialBackground.slice(1)}`);
+            manifest[url] = { version, recipe, sources, socialArtwork, socialBackground };
         } catch (error) {
             failures++;
             console.error(`Unable to resize ${url}: ${error.message}`);
