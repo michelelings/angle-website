@@ -508,6 +508,8 @@
         let episodes = [];
         let currentEpisodeId = null;
         let currentAudio = null;
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
         const CANONICAL_BASE_URL = 'https://www.newsangle.co';
 
         // ─── Helpers ───
@@ -543,15 +545,15 @@
             card.className = 'rail-card';
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : '';
             card.innerHTML = `
-                <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
+                <img src="${escapeHtml(episode.coverImage || '/images/icon.webp')}" alt="${escapeHtml(episode.title)}" loading="lazy">
                 <div class="rail-card-gradient"></div>
                 <div class="rail-card-info">
-                    <h3 class="rail-card-title">${episode.title}</h3>
+                    <h3 class="rail-card-title">${escapeHtml(episode.title)}</h3>
                     <div class="rail-card-meta">
-                        ${episode.host ? `<span>${episode.host}</span>` : ''}
+                        ${episode.host ? `<span>${escapeHtml(episode.host)}</span>` : ''}
                         ${dateText ? `<span>${dateText}</span>` : ''}
                     </div>
-                    ${episode.category ? `<span class="rail-card-category">${episode.category.toUpperCase()}</span>` : ''}
+                    ${episode.category ? `<span class="rail-card-category">${escapeHtml(episode.category.toUpperCase())}</span>` : ''}
                 </div>
             `;
             card.addEventListener('click', () => openStoryModal(episode));
@@ -562,6 +564,7 @@
         function buildRails(episodes, categories) {
             const container = document.getElementById('railsContainer');
             container.innerHTML = '';
+            if (!episodes.length) { container.textContent = 'New stories are on their way.'; return; }
 
             // Rail 1: New — latest stories
             const sorted = [...episodes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -585,7 +588,7 @@
             section.className = 'rail';
             section.innerHTML = `
                 <div class="rail-header">
-                    <h2 class="rail-title">${title}</h2>
+                    <h2 class="rail-title">${escapeHtml(title)}</h2>
                     <span class="rail-count">${items.length} stories</span>
                 </div>
             `;
@@ -611,7 +614,7 @@
             let metaHTML = '';
             if (episode.episodeNumber) metaHTML += `<div class="modal-meta-item"><strong>Episode</strong> ${episode.episodeNumber}</div>`;
             if (episode.duration) { const d = formatDuration(episode.duration); if (d) metaHTML += `<div class="modal-meta-item"><strong>Duration</strong> ${d}</div>`; }
-            if (episode.host) metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${episode.host}</div>`;
+            if (episode.host) metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${escapeHtml(episode.host)}</div>`;
             const metaEl = document.getElementById('modalMeta');
             metaEl.innerHTML = metaHTML; metaEl.style.display = metaHTML ? 'flex' : 'none';
 
@@ -619,7 +622,7 @@
 
             const tagsEl = document.getElementById('modalTags');
             if (episode.tags && episode.tags.length) {
-                tagsEl.innerHTML = episode.tags.map(t => `<span class="modal-tag">${t.toUpperCase()}</span>`).join('');
+                tagsEl.innerHTML = episode.tags.map(t => `<span class="modal-tag">${escapeHtml(t.toUpperCase())}</span>`).join('');
                 tagsEl.style.display = 'flex';
             } else { tagsEl.innerHTML = ''; tagsEl.style.display = 'none'; }
 

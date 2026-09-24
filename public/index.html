@@ -127,6 +127,9 @@
         .category-tag {
             white-space: nowrap;
             flex-shrink: 0;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .category-tag {
@@ -203,12 +206,19 @@
         }
 
         .gallery-wrapper {
+            --card-width: 380px;
+            --card-gap: 10px;
+            touch-action: pan-y pinch-zoom;
             overflow: hidden;
             width: 100%;
             position: relative;
             cursor: grab;
             user-select: none;
             -webkit-user-select: none;
+        }
+
+        .gallery-wrapper[data-gallery-mode="static"] {
+            cursor: default;
         }
 
         .gallery-wrapper.scrolling {
@@ -218,7 +228,7 @@
         .collection-grid {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: var(--card-gap);
             padding: 20px 0 80px;
             width: max-content;
             will-change: transform;
@@ -232,7 +242,7 @@
             background-color: #000000;
             cursor: pointer;
             transition: transform 0.2s ease, opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;
-            width: 380px;
+            width: var(--card-width);
             height: 500px;
             display: flex;
             flex-direction: column;
@@ -281,6 +291,10 @@
         }
 
         .episode-title {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+            overflow: hidden;
             font-family: 'LTT Recoletta', Georgia, 'Times New Roman', serif;
             font-size: 36px;
             font-weight: 400;
@@ -289,7 +303,21 @@
             margin: 0;
         }
 
+        .episode-title a { color: inherit; text-decoration: none; }
+        .episode-title a:focus-visible, .episode-share-btn:focus-visible {
+            outline: 2px solid white; outline-offset: 3px;
+        }
+        .episode-card img { opacity: 0; }
+        .episode-card img.ready { opacity: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .episode-card, .modal-content, .modal-overlay { transition: none; }
+        }
+
         .episode-category {
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             display: inline-block;
             padding: 5px 10px;
             border-radius: 4px;
@@ -305,6 +333,10 @@
         }
 
         .episode-description {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
             font-family: 'Berkeley Mono', 'Courier New', Courier, monospace;
             font-size: 10px;
             line-height: 1.4;
@@ -852,6 +884,7 @@
             }
 
             .gallery-wrapper {
+                --card-width: 340px;
                 width: 100vw;
                 margin-left: calc(50% - 50vw);
                 margin-right: calc(50% - 50vw);
@@ -863,7 +896,7 @@
             }
 
             .episode-card {
-                width: 340px;
+                width: var(--card-width);
                 height: 450px;
             }
 
@@ -1050,21 +1083,16 @@
     </div>
 
     
-    <script>
+    <script type="module">
+        import { ContinuousGallery } from "/js/gallery.js";
+
         let episodes = [];
         let activeFilter = 'all';
-        let animationFrameId = null;
-        let scrollPosition = 0;
-        let scrollSpeed = 15; // pixels per second
-        let scrollDistance = 0;
-        let lastTime = null;
         let currentAudio = null;
         let countAnimationId = null;
         let currentTargetCount = 0;
         let currentEpisodeId = null;
         let filterBeforeModal = 'all'; // Track filter state before opening modal
-        let isUserScrolling = false;
-        let scrollTimeout = null;
         let availableCategories = [];
 
         const CANONICAL_BASE_URL = 'https://www.newsangle.co';
@@ -1107,17 +1135,34 @@
             return slugMatch || null;
         }
 
-        // Load SVG icon and inject into element
-        async function loadShareIcon(buttonElement) {
-            try {
-                const response = await fetch('/icons/share.svg');
-                const svgText = await response.text();
-                buttonElement.innerHTML = svgText;
-            } catch (error) {
-                console.error('Failed to load share icon:', error);
-                // Fallback to default icon
-                buttonElement.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="14" height="11" rx="2.5" ry="2.5"/><line x1="12" y1="9" x2="12" y2="6"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="12" y1="6" x2="12" y2="3"/></svg>';
-            }
+        // One static icon definition; no per-card fetch or async DOM insertion.
+        const SHARE_ICON = `<svg width="15" height="19" viewBox="0 0 15 19" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.44531 3.91406C4.25781 3.91406 4.09375 3.85156 3.95312 3.72656C3.81771 3.60156 3.75 3.4401 3.75 3.24219C3.75 3.05469 3.82292 2.88542 3.96875 2.73438L6.53125 0.273438C6.64062 0.169271 6.74479 0.0989583 6.84375 0.0625C6.94271 0.0208333 7.04427 0 7.14844 0C7.25781 0 7.36198 0.0208333 7.46094 0.0625C7.5651 0.0989583 7.66927 0.169271 7.77344 0.273438L10.3359 2.73438C10.4818 2.88542 10.5547 3.05469 10.5547 3.24219C10.5547 3.4401 10.4844 3.60156 10.3438 3.72656C10.2031 3.85156 10.0391 3.91406 9.85156 3.91406C9.63802 3.91406 9.46094 3.83854 9.32031 3.6875L8.28125 2.57031L7.14844 1.09375L6.03125 2.57031L4.98438 3.6875C4.83854 3.83854 4.65885 3.91406 4.44531 3.91406ZM7.14844 11.75C6.92969 11.75 6.74219 11.6719 6.58594 11.5156C6.42969 11.3594 6.35156 11.1771 6.35156 10.9688V3.19531L6.50781 0.851562C6.52344 0.674479 6.59115 0.523438 6.71094 0.398438C6.83073 0.268229 6.97656 0.203125 7.14844 0.203125C7.33073 0.203125 7.48177 0.268229 7.60156 0.398438C7.72135 0.523438 7.78906 0.674479 7.80469 0.851562L7.95312 3.19531V10.9688C7.95312 11.1771 7.875 11.3594 7.71875 11.5156C7.56771 11.6719 7.3776 11.75 7.14844 11.75ZM3.41406 18.1719C2.32031 18.1719 1.47656 17.875 0.882812 17.2812C0.294271 16.6927 0 15.8516 0 14.7578V8.73438C0 7.63542 0.294271 6.79167 0.882812 6.20312C1.47656 5.61458 2.32031 5.32031 3.41406 5.32031H4.875V7.05469H3.48438C2.92708 7.05469 2.49479 7.20573 2.1875 7.50781C1.88542 7.8099 1.73438 8.24219 1.73438 8.80469V14.6875C1.73438 15.2448 1.88542 15.6745 2.1875 15.9766C2.49479 16.2839 2.92708 16.4375 3.48438 16.4375H10.8203C11.3828 16.4375 11.8151 16.2839 12.1172 15.9766C12.4193 15.6745 12.5703 15.2448 12.5703 14.6875V8.80469C12.5703 8.24219 12.4193 7.8099 12.1172 7.50781C11.8151 7.20573 11.3828 7.05469 10.8203 7.05469H9.42969V5.32031H10.8906C11.9896 5.32031 12.8333 5.61458 13.4219 6.20312C14.0156 6.79167 14.3125 7.63542 14.3125 8.73438V14.7578C14.3125 15.8516 14.0156 16.6927 13.4219 17.2812C12.8333 17.875 11.9896 18.1719 10.8906 18.1719H3.41406Z" fill="currentColor"/></svg>`;
+        let coverRenditions = {};
+
+        function prepareCover(image, episode) {
+            const original = episode.coverImage || '/images/icon.webp';
+            const rendition = coverRenditions[original];
+            image.decoding = 'async';
+            image.loading = 'eager'; // Only the visible window and its small buffer exist.
+            if (rendition) {
+                // Square sources cover a portrait card: size by its height.
+                image.sizes = '(max-width: 768px) 450px, 500px';
+                image.srcset = rendition.sources.map(source => `${source.url} ${source.width}w`).join(', ');
+                image.src = rendition.sources[0].url;
+            } else image.src = original;
+            image.onload = async () => {
+                try { await image.decode(); } catch { /* load has already succeeded */ }
+                image.classList.add('ready');
+            };
+            image.onerror = () => {
+                image.removeAttribute('srcset');
+                image.onerror = () => {
+                    image.onerror = null;
+                    image.src = '/images/icon.webp';
+                };
+                image.src = original;
+            };
+            if (image.complete && image.naturalWidth) image.onload();
         }
 
         // Shuffle array using Fisher-Yates algorithm
@@ -1130,6 +1175,9 @@
             return shuffled;
         }
 
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
         // Create episode card element
         function createEpisodeCard(episode) {
             const card = document.createElement('div');
@@ -1140,213 +1188,25 @@
             const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
             
             card.innerHTML = `
-                <img src="${episode.coverImage || '/images/icon.webp'}" alt="${episode.title}" loading="lazy">
+                <img alt="${escapeHtml(episode.title)}" width="500" height="500" draggable="false">
                 <div class="episode-gradient"></div>
                 <div class="episode-info">
-                    <h3 class="episode-title">${episode.title}</h3>
-                    <p class="episode-description">${episode.description || ''}</p>
-                    ${episode.category ? `<span class="episode-category">${episode.category.toUpperCase()}</span>` : ''}
-                    ${episode.host ? `<div class="episode-host">Host: ${episode.host}</div>` : ''}
+                    <h3 class="episode-title"><a href="/episode/${encodeURIComponent(episode.id)}" draggable="false">${escapeHtml(episode.title)}</a></h3>
+                    <p class="episode-description">${escapeHtml(episode.description || '')}</p>
+                    ${episode.category ? `<span class="episode-category">${escapeHtml(episode.category.toUpperCase())}</span>` : ''}
+                    ${episode.host ? `<div class="episode-host">Host: ${escapeHtml(episode.host)}</div>` : ''}
                     ${dateText ? `<div class="episode-date">${dateText}</div>` : ''}
                 </div>
-                <button class="episode-share-btn" aria-label="Share episode" type="button"></button>
+                <button class="episode-share-btn" aria-label="Share ${escapeHtml(episode.title)}" type="button">${SHARE_ICON}</button>
             `;
             
-            // Load share icon into button
-            const shareBtn = card.querySelector('.episode-share-btn');
-            loadShareIcon(shareBtn);
-            
-            // Add click handler to open modal with URL update
-            card.addEventListener('click', () => {
-                openStoryModal(episode);
-            });
-            
-            // Add share button click handler (prevent card click)
-            shareBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCardShare(episode);
-            });
-            
+            prepareCover(card.querySelector('img'), episode);
             return card;
         }
 
-        // Animation loop using requestAnimationFrame
-        function animate(currentTime) {
-            const grid = document.getElementById('collectionGrid');
-            const wrapper = document.querySelector('.gallery-wrapper');
-            
-            if (lastTime === null) {
-                lastTime = currentTime;
-            }
-            
-            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
-            lastTime = currentTime;
-            
-            // Only animate if we have content and user is not scrolling
-            if (scrollDistance > 0 && !isUserScrolling) {
-                // Update scroll position
-                scrollPosition += scrollSpeed * deltaTime;
-                
-                // Loop back when we've scrolled one set width
-                if (scrollPosition >= scrollDistance) {
-                    scrollPosition = scrollPosition % scrollDistance;
-                }
-                
-                // Apply transform
-                grid.style.transform = `translateX(-${scrollPosition}px)`;
-            }
-            
-            // Continue animation
-            animationFrameId = requestAnimationFrame(animate);
-        }
-
-        // Start animation
-        function startAnimation() {
-            if (animationFrameId === null) {
-                lastTime = null;
-                animationFrameId = requestAnimationFrame(animate);
-            }
-        }
-
-        // Stop animation
-        function stopAnimation() {
-            if (animationFrameId !== null) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
-                lastTime = null;
-            }
-        }
-
-        // Handle user scrolling - pause auto-scroll
-        function handleUserScroll(deltaX = 0) {
-            const wrapper = document.querySelector('.gallery-wrapper');
-            const grid = document.getElementById('collectionGrid');
-            
-            if (!wrapper || !grid) return;
-            
-            isUserScrolling = true;
-            wrapper.classList.add('scrolling');
-            
-            // Update scroll position
-            if (deltaX !== 0) {
-                scrollPosition = Math.max(0, Math.min(scrollPosition - deltaX, scrollDistance));
-            }
-            
-            // Sync transform with scroll position
-            grid.style.transform = `translateX(-${scrollPosition}px)`;
-            
-            // Loop back when we've scrolled one set width
-            if (scrollPosition >= scrollDistance) {
-                scrollPosition = scrollPosition % scrollDistance;
-                grid.style.transform = `translateX(-${scrollPosition}px)`;
-            }
-            
-            // Clear existing timeout
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-            
-            // Resume auto-scroll after user stops scrolling
-            scrollTimeout = setTimeout(() => {
-                isUserScrolling = false;
-                wrapper.classList.remove('scrolling');
-                
-                // Ensure animation is running
-                if (animationFrameId === null) {
-                    startAnimation();
-                }
-            }, 1500); // Resume after 1.5 seconds of no scrolling
-        }
-
-        // Initialize scroll handlers
-        function initScrollHandlers() {
-            const wrapper = document.querySelector('.gallery-wrapper');
-            if (!wrapper) return;
-            
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let touchLastX = 0;
-            let isDragging = false;
-            let isMouseDown = false;
-            let startX = 0;
-            let lastScrollPosition = 0;
-            
-            // Touch events for mobile swipe
-            wrapper.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                touchLastX = touchStartX;
-                isDragging = false;
-                lastScrollPosition = scrollPosition;
-            }, { passive: true });
-            
-            wrapper.addEventListener('touchmove', (e) => {
-                const currentX = e.touches[0].clientX;
-                const currentY = e.touches[0].clientY;
-                const deltaX = currentX - touchLastX;
-                const deltaY = Math.abs(currentY - touchStartY);
-                const absDeltaX = Math.abs(currentX - touchStartX);
-                
-                // Determine if this is a horizontal swipe
-                if (!isDragging && absDeltaX > 10) {
-                    if (absDeltaX > deltaY) {
-                        isDragging = true;
-                    }
-                }
-                
-                if (isDragging) {
-                    e.preventDefault();
-                    handleUserScroll(deltaX);
-                    touchLastX = currentX;
-                }
-            }, { passive: false });
-            
-            wrapper.addEventListener('touchend', () => {
-                isDragging = false;
-            }, { passive: true });
-            
-            // Mouse wheel for desktop horizontal scrolling
-            wrapper.addEventListener('wheel', (e) => {
-                // Handle horizontal scrolling or shift+wheel for vertical wheel
-                const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-                const isShiftWheel = e.shiftKey && Math.abs(e.deltaY) > 0;
-                
-                if (isHorizontal || isShiftWheel) {
-                    e.preventDefault();
-                    const delta = isHorizontal ? e.deltaX : e.deltaY;
-                    handleUserScroll(delta);
-                }
-            }, { passive: false });
-            
-            // Mouse drag for desktop
-            wrapper.addEventListener('mousedown', (e) => {
-                isMouseDown = true;
-                startX = e.pageX;
-                lastScrollPosition = scrollPosition;
-                wrapper.classList.add('scrolling');
-                e.preventDefault();
-            });
-            
-            wrapper.addEventListener('mouseleave', () => {
-                isMouseDown = false;
-                wrapper.classList.remove('scrolling');
-            });
-            
-            wrapper.addEventListener('mouseup', () => {
-                isMouseDown = false;
-                wrapper.classList.remove('scrolling');
-            });
-            
-            wrapper.addEventListener('mousemove', (e) => {
-                if (!isMouseDown) return;
-                e.preventDefault();
-                const deltaX = (e.pageX - startX) * 2; // Scroll speed multiplier
-                const newPosition = lastScrollPosition - deltaX;
-                scrollPosition = Math.max(0, Math.min(newPosition, scrollDistance));
-                handleUserScroll(0); // Update transform without changing position
-            });
-        }
+        const gallery = new ContinuousGallery(
+            document.querySelector('.gallery-wrapper'), createEpisodeCard, openStoryModal, handleCardShare
+        );
 
         // Format date for display
         function formatDate(dateString) {
@@ -1360,7 +1220,7 @@
             if (!seconds) return null;
             const hours = Math.floor(seconds / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
+            const secs = Math.floor(seconds % 60);
             
             if (hours > 0) {
                 return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -1479,6 +1339,9 @@
             // Load metadata
             audioElement.load();
 
+            if (audioElement.dataset.initialized) return;
+            audioElement.dataset.initialized = 'true';
+
             // Handle metadata loaded
             audioElement.addEventListener('loadedmetadata', () => {
                 const duration = audioElement.duration;
@@ -1573,7 +1436,8 @@
         }
 
         // Open story modal
-        function openStoryModal(episode) {
+        function openStoryModal(episode, updateHistory = true) {
+            gallery.pause('modal', true);
             const modal = document.getElementById('storyModal');
             const modalImage = document.getElementById('modalImage');
             const modalCategory = document.getElementById('modalCategory');
@@ -1611,7 +1475,7 @@
                 }
             }
             if (episode.host) {
-                metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${episode.host}</div>`;
+                metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${escapeHtml(episode.host)}</div>`;
             }
             modalMeta.innerHTML = metaHTML || '';
             modalMeta.style.display = metaHTML ? 'flex' : 'none';
@@ -1637,7 +1501,7 @@
             modalDate.textContent = formatDate(episode.createdAt);
 
             // Update URL without page reload
-            window.history.pushState(
+            if (updateHistory) window.history.pushState(
                 { episodeId: episode.id, view: 'episode' },
                 '',
                 `/episode/${episode.id}`
@@ -1653,22 +1517,25 @@
         }
 
         // Close story modal
-        function closeStoryModal() {
+        function closeStoryModal(updateHistory = true) {
             cleanupAudio();
             const modal = document.getElementById('storyModal');
             modal.classList.remove('open');
             document.body.classList.remove('modal-open');
             
             // Restore filter state and URL
-            activeFilter = filterBeforeModal;
-            updateCategoryUrl(activeFilter);
+            if (updateHistory) {
+                activeFilter = filterBeforeModal;
+                updateCategoryUrl(activeFilter);
+            }
             updateTagStates(activeFilter);
             renderEpisodes(activeFilter);
             
             currentEpisodeId = null;
-            
-            // Reset meta tags
-            resetMetaTags();
+            gallery.pause('modal', false);
+
+            if (activeFilter === 'all') resetMetaTags();
+            else updateCategoryMetaTags(activeFilter);
         }
 
         // Initialize modal event listeners
@@ -1752,7 +1619,7 @@
             window.addEventListener('popstate', async (e) => {
                 const episodeId = e.state?.episodeId || getEpisodeIdFromUrl();
                 if (episodeId) {
-                    await openModalFromEpisodeId(episodeId);
+                    await openModalFromEpisodeId(episodeId, false);
                 } else {
                     // Check if we need to update category filter
                     const categoryFromUrl = getCategoryFromUrl();
@@ -1772,13 +1639,13 @@
                         updateTagStates(activeFilter);
                         renderEpisodes(activeFilter);
                     }
-                    closeStoryModal();
+                    closeStoryModal(false);
                 }
             });
         }
 
         // Open modal from episode ID (for URL routing)
-        async function openModalFromEpisodeId(episodeId) {
+        async function openModalFromEpisodeId(episodeId, updateHistory = true) {
             // Try to find episode in already loaded episodes
             let episode = episodes.find(ep => ep.id === episodeId);
             
@@ -1803,13 +1670,12 @@
             }
             
             // Open modal with episode
-            openStoryModal(episode);
+            openStoryModal(episode, updateHistory);
         }
 
         // Filter and render episodes (initial render)
         function renderEpisodes(filter = 'all') {
-            const grid = document.getElementById('collectionGrid');
-            const isMobile = window.innerWidth <= 768;
+
             
             // Filter episodes based on selected filter
             let filteredEpisodes;
@@ -1831,60 +1697,9 @@
                 filteredEpisodes = episodes.filter(ep => ep.category === filter);
             }
 
-            // Filter for mobile (show only middle 3 of each 5)
-            if (isMobile) {
-                filteredEpisodes = filteredEpisodes.filter((_, index) => {
-                    const episodeIndex = index % 5;
-                    return episodeIndex === 1 || episodeIndex === 2 || episodeIndex === 3;
-                });
-            }
-
-            // Store old scroll distance for smooth transition
-            const oldScrollDistance = scrollDistance;
-
-            // Hide loading spinner
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            if (loadingSpinner) {
-                loadingSpinner.style.display = 'none';
-            }
-
-            grid.innerHTML = '';
-
-            if (filteredEpisodes.length === 0) {
-                grid.innerHTML = '<div class="loading">No episodes available</div>';
-                scrollDistance = 0;
-                scrollPosition = 0;
-                updateTagStates(filter);
-                return;
-            }
-
-            // Create first set
-            filteredEpisodes.forEach(ep => grid.appendChild(createEpisodeCard(ep)));
-
-            // Measure set width
-            const setWidth = grid.scrollWidth;
-
-            // Create 3 more sets for seamless looping
-            for (let i = 0; i < 3; i++) {
-                filteredEpisodes.forEach(ep => grid.appendChild(createEpisodeCard(ep)));
-            }
-
-            // Update scroll distance
-            scrollDistance = setWidth;
-            
-            // Maintain scroll position relative to new distance for smooth transition
-            if (oldScrollDistance > 0 && scrollDistance > 0) {
-                const progress = scrollPosition / oldScrollDistance;
-                scrollPosition = (progress * scrollDistance) % scrollDistance;
-            } else {
-                scrollPosition = 0;
-            }
-            
-            // Update tag states
+            document.getElementById('loadingSpinner').style.display = 'none';
+            gallery.setItems(filteredEpisodes);
             updateTagStates(filter);
-            
-            // Ensure animation is running
-            startAnimation();
         }
 
         // Update tag states based on active filter
@@ -2300,16 +2115,18 @@
             
             // Always load episodes in background
             try {
-                // Fetch categories and episodes in parallel
-                const [categoriesRes, episodesRes] = await Promise.all([
-                    fetch('/api/categories'),
-                    fetch('/api/episodes')
+                const [episodesRes, renditions] = await Promise.all([
+                    fetch('/api/episodes'),
+                    fetch('/images/cover-renditions.json', { signal: AbortSignal.timeout(1500) })
+                        .then(response => response.ok ? response.json() : {})
+                        .catch(() => ({}))
                 ]);
-
-                const categoriesData = await categoriesRes.json();
                 const episodesData = await episodesRes.json();
-
-                availableCategories = categoriesData.success ? categoriesData.data : [];
+                coverRenditions = renditions;
+                availableCategories = episodesData.success
+                    ? [...new Set(episodesData.data.map(ep => ep.category).filter(Boolean))].sort()
+                    : [];
+                const categoriesData = { success: episodesData.success, data: availableCategories };
 
                 // Check if we're on a category URL and validate it
                 const categoryFromUrl = getCategoryFromUrl();
@@ -2334,19 +2151,12 @@
 
                 if (episodesData.success) {
                     episodes = shuffleArray(episodesData.data);
-                    // Update to actual count (will smoothly transition from current count)
-                    if (episodes.length > 0) {
-                        try {
-                            localStorage.setItem('angle_story_count', String(episodes.length));
-                        } catch (e) {
-                            // Ignore localStorage write failures (e.g., private mode)
-                        }
-                        animateStoryCount(episodes.length);
-                    }
-                    
+                    animateStoryCount(episodes.length);
+
                     // If we're on an episode URL, open modal; otherwise show gallery
                     if (episodeId) {
-                        await openModalFromEpisodeId(episodeId);
+                        renderEpisodes(activeFilter);
+                        await openModalFromEpisodeId(episodeId, false);
                     } else {
                         // Render with the active filter (from URL or default 'all')
                         renderEpisodes(activeFilter);
@@ -2378,41 +2188,11 @@
             }
         }
 
-        // Re-render on resize
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Maintain relative position on resize
-                const oldDistance = scrollDistance;
-                renderEpisodes(activeFilter);
-                // Adjust position if distance changed
-                if (oldDistance > 0 && scrollDistance > 0) {
-                    const progress = scrollPosition / oldDistance;
-                    scrollPosition = (progress * scrollDistance) % scrollDistance;
-                    const grid = document.getElementById('collectionGrid');
-                    grid.style.transform = `translateX(-${scrollPosition}px)`;
-                }
-            }, 250);
-        });
-
         // Initialize modal and routing on page load
         initModal();
         initRouting();
-        initScrollHandlers();
 
-        // Start counting immediately (before data loads)
-        // Use last-known count from localStorage; fall back to 189 if unavailable
-        let fallbackStoryCount = 189;
-        try {
-            const cachedCount = parseInt(localStorage.getItem('angle_story_count'), 10);
-            if (Number.isFinite(cachedCount) && cachedCount > 0) {
-                fallbackStoryCount = cachedCount;
-            }
-        } catch (e) {
-            // Ignore localStorage read failures (e.g., private mode)
-        }
-        animateStoryCount(fallbackStoryCount);
+        // The count reflects this catalog, never the retired Supabase catalog.
 
         // Start
         init();

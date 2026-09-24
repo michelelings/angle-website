@@ -9,18 +9,32 @@
     "validate:transcript-seo": "node scripts/validate-transcript-seo.mjs",
     "sitemap:check": "node scripts/check-sitemap-coverage.mjs",
     "transcript:v1:check": "node scripts/check-transcript-v1-retrofit.mjs",
-    "check:episode-ssr": "node --input-type=module scripts/check-episode-ssr.js"
+    "check:episode-ssr": "node --input-type=module scripts/check-episode-ssr.js",
+    "dev:cloudflare": "wrangler dev",
+    "type-check:cloudflare": "tsc -p tsconfig.worker.json",
+    "build:cloudflare": "npm run build:covers && wrangler deploy --dry-run --outdir dist/worker",
+    "test:cloudflare": "tsx --test tests/*.test.ts",
+    "types:cloudflare": "wrangler types worker/bindings.d.ts --env-interface WorkerEnv --include-runtime false --strict-vars false",
+    "build:covers": "node scripts/build-covers.mjs",
+    "test:gallery": "node --test tests/gallery.test.mjs",
+    "deploy:cloudflare": "npm run build:covers && wrangler deploy"
   },
   "dependencies": {
+    "@cloudflare/pages-plugin-vercel-og": "0.1.2",
     "@supabase/supabase-js": "^2.39.0",
     "@vercel/og": "^0.8.6",
     "react": "^19.2.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20260924.1",
     "@types/node": "^20.10.0",
+    "@types/react": "^19.3.0",
     "@vercel/node": "^3.0.0",
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.4",
     "tsx": "^4.0.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "wrangler": "4.137.0"
   },
   "engines": {
     "node": "22.x"
