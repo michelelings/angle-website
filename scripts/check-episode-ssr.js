@@ -14,7 +14,7 @@
  *   - Any episode page contains the shell error string
  */
 
-import { readFileSync } from 'fs';
+import { JSDOM } from 'jsdom';
 
 const args = process.argv.slice(2);
 const baseUrl = args.find((a) => a.startsWith('--base-url='))?.split('=')[1] || 'https://www.newsangle.co';
@@ -29,7 +29,9 @@ async function fetchText(url) {
 }
 
 function countWords(html) {
-  return html.split(/\s+/).filter(Boolean).length;
+  const document = new JSDOM(html).window.document;
+  document.querySelectorAll('script, style').forEach(node => node.remove());
+  return (document.querySelector('article') || document.body).textContent.split(/\s+/).filter(Boolean).length;
 }
 
 function median(arr) {
@@ -55,7 +57,7 @@ async function main() {
   console.log(`Fetching sitemap: ${sitemapUrl}`);
   const sitemapXml = await fetchText(sitemapUrl);
   const allEpisodeUrls = [...sitemapXml.matchAll(/<loc>([^<]*)\/episode\/([^<]*)<\/loc>/g)]
-    .map((m) => m[0].replace(/<\/?loc>/g, ''));
+    .map((m) => new URL(new URL(m[0].replace(/<\/?loc>/g, '')).pathname, baseUrl).href);
 
   if (allEpisodeUrls.length === 0) {
     console.error('❌ No episode URLs found in sitemap!');

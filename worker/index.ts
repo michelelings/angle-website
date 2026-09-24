@@ -77,7 +77,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const { ogImage } = await import('./og');
     return ogImage('Angle', 'Stories worth listening.');
   }
-  if (/^\/(icons|images|fonts|js)\//.test(path) || path === '/favicon.ico') {
+  if (/^\/(icons|images|fonts|js|styles)\//.test(path) || path === '/favicon.ico') {
     const asset = await env.ASSETS.fetch(request);
     if (asset.ok && /^\/images\/covers\/[a-f0-9]{24}-(500|1000|1500)\.webp$/.test(path)) {
       const immutable = new Response(asset.body, asset);

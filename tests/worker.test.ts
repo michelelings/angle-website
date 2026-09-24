@@ -23,7 +23,7 @@ function env(rows: unknown[] = []): Env {
     } } as Fetcher,
     ASSETS: { async fetch(request: Request) {
       return new URL(request.url).pathname === '/index.html'
-        ? new Response(await readFile(new URL('../public/index.html', import.meta.url), 'utf8'))
+        ? new Response(await readFile(new URL('../legacy/index.html', import.meta.url), 'utf8'))
         : new Response('Not found', { status: 404 });
     } } as Fetcher,
   };
@@ -36,7 +36,7 @@ test('gallery module and generated covers reach static assets without catalog ac
   bindings.ASSETS = { async fetch(input: Request) {
     return new Response(new URL(input.url).pathname);
   } } as Fetcher;
-  for (const path of ['/js/gallery.js', '/images/cover-renditions.json', '/images/covers/example-1000.webp']) {
+  for (const path of ['/js/gallery.js', '/js/story-dialog.js', '/styles/paper-ink.css', '/images/cover-renditions.json', '/images/covers/example-1000.webp']) {
     const response = await request(path, bindings);
     assert.equal(response.status, 200);
     assert.equal(await response.text(), path);

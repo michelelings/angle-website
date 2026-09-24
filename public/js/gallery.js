@@ -14,6 +14,11 @@ export function galleryWindow(position, stride, width, count, overscan = 2) {
 
 export class ContinuousGallery {
     constructor(wrapper, createCard, onOpen, onShare) {
+        this.disposers = [];
+        this.listen = (target, event, callback, options) => {
+            target.addEventListener(event, callback, options);
+            this.disposers.push(() => target.removeEventListener?.(event, callback, options));
+        };
         this.wrapper = wrapper;
         this.track = wrapper.querySelector('.collection-grid');
         this.createCard = createCard;
@@ -31,7 +36,7 @@ export class ContinuousGallery {
         wrapper.setAttribute('role', 'region');
         wrapper.setAttribute('aria-label', 'Stories. Use left and right arrow keys to browse.');
 
-        this.track.addEventListener('click', e => {
+        this.listen(this.track, 'click', e => {
             if (this.suppressClick) { e.preventDefault(); return; }
             const card = e.target.closest('.episode-card');
             if (!card || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -41,18 +46,18 @@ export class ContinuousGallery {
             if (e.target.closest('.episode-share-btn')) onShare(item);
             else onOpen(item);
         });
-        wrapper.addEventListener('dragstart', e => e.preventDefault());
-        wrapper.addEventListener('keydown', e => {
+        this.listen(wrapper, 'dragstart', e => e.preventDefault());
+        this.listen(wrapper, 'keydown', e => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
             e.preventDefault();
             wrapper.focus({ preventScroll: true });
             this.pause('focus', true);
             this.move(e.key === 'ArrowRight' ? this.stride : -this.stride);
         });
-        wrapper.addEventListener('focusin', e => this.pause('focus', e.target !== wrapper || !this.pointer));
-        wrapper.addEventListener('focusout', () => queueMicrotask(() =>
+        this.listen(wrapper, 'focusin', e => this.pause('focus', e.target !== wrapper || !this.pointer));
+        this.listen(wrapper, 'focusout', () => queueMicrotask(() =>
             this.pause('focus', wrapper.contains(document.activeElement))));
-        wrapper.addEventListener('wheel', e => {
+        this.listen(wrapper, 'wheel', e => {
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) && !e.shiftKey) return;
             e.preventDefault();
             const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.width : 1;
@@ -61,14 +66,14 @@ export class ContinuousGallery {
 
         // Capture only after a horizontal drag is recognized: a simple tap still
         // targets the card/link, and native vertical scrolling remains available.
-        wrapper.addEventListener('pointerdown', e => {
+        this.listen(wrapper, 'pointerdown', e => {
             if (!e.isPrimary || e.button !== 0 || this.mode === 'static') return;
             this.suppressClick = false;
             this.pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, last: e.clientX, dragging: false };
             if (document.activeElement === wrapper) this.pause('focus', false);
             this.pause('pointer', true);
         });
-        wrapper.addEventListener('pointermove', e => {
+        this.listen(wrapper, 'pointermove', e => {
             const p = this.pointer;
             if (!p || p.id !== e.pointerId) return;
             const dx = e.clientX - p.x;
@@ -95,11 +100,11 @@ export class ContinuousGallery {
             clearTimeout(this.clickTimer);
             this.clickTimer = setTimeout(() => { this.suppressClick = false; }, 0);
         };
-        window.addEventListener('pointerup', release);
-        window.addEventListener('pointercancel', release);
-        wrapper.addEventListener('lostpointercapture', release);
-        document.addEventListener('visibilitychange', () => this.pause('hidden', document.hidden));
-        this.motion.addEventListener('change', () => this.pause('motion', this.motion.matches));
+        this.listen(window, 'pointerup', release);
+        this.listen(window, 'pointercancel', release);
+        this.listen(wrapper, 'lostpointercapture', release);
+        this.listen(document, 'visibilitychange', () => this.pause('hidden', document.hidden));
+        this.listen(this.motion, 'change', () => this.pause('motion', this.motion.matches));
         this.pause('hidden', document.hidden);
         this.pause('motion', this.motion.matches);
         this.intersection = new IntersectionObserver(([entry]) => this.pause('offscreen', !entry.isIntersecting));
@@ -107,6 +112,18 @@ export class ContinuousGallery {
         this.resize = new ResizeObserver(() => this.measure());
         this.resize.observe(wrapper);
         this.measure();
+    }
+
+    destroy() {
+        this.destroyed = true;
+        if (this.frame !== null) cancelAnimationFrame(this.frame);
+        clearTimeout(this.resumeTimer);
+        clearTimeout(this.clickTimer);
+        this.intersection.disconnect?.();
+        this.resize.disconnect?.();
+        this.disposers.forEach(dispose => dispose());
+        this.nodes.clear();
+        this.track.replaceChildren();
     }
 
     measure() {
@@ -233,7 +250,7 @@ export class ContinuousGallery {
     }
 
     schedule() {
-        if (this.frame !== null || !this.items.length || ((this.pauses.size || this.mode !== 'loop') && !this.pendingDelta)) return;
+        if (this.destroyed || this.frame !== null || !this.items.length || ((this.pauses.size || this.mode !== 'loop') && !this.pendingDelta)) return;
         this.frame = requestAnimationFrame(time => {
             this.frame = null;
             if (this.pendingDelta) {

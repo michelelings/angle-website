@@ -1,5 +1,7 @@
 # Cloudflare deployment and cutover
 
+The website has been migrated to Next.js/OpenNext. Use [the current migration guide](docs/nextjs-migration.md) for application structure and commands. The historical deployment and DNS notes below remain for reference.
+
 ## Verified on 24 September 2026
 
 - Account: Angle (`118438a64acf487f0c03264439e49d9b`).

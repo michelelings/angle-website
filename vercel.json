@@ -20,6 +20,6 @@
     { "source": "/episode/:id", "destination": "/api/render/episode/[id]" },
     { "source": "/home-v2", "destination": "/home-v2.html" },
     { "source": "/:category", "destination": "/api/render/[category]" },
-    { "source": "/((?!api|icons|images|fonts|js).*)", "destination": "/index.html" }
+    { "source": "/((?!api|icons|images|fonts|js|styles).*)", "destination": "/index.html" }
   ]
 }

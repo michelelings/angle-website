@@ -98,6 +98,30 @@ test('ordinary frames and modal/filter restoration preserve card nodes', t => {
     assert.equal(h.gallery.position, position, 'resume does not catch up time spent hidden');
 });
 
+test('height-only mobile viewport changes preserve cards and image elements', t => {
+    const h = setup(t, 227);
+    h.wrapper.style.setProperty('--card-width', '340px');
+    Object.defineProperty(h.wrapper, 'clientWidth', { value: 390 });
+    h.gallery.measure();
+    const cards = [...h.wrapper.querySelectorAll('.episode-card')];
+    const images = cards.map(card => {
+        const image = h.window.document.createElement('img');
+        image.src = '/images/icon.webp';
+        card.prepend(image);
+        return image;
+    });
+    const created = h.created();
+    for (const height of [844, 744, 844, 700, 844]) {
+        Object.defineProperty(h.window, 'innerHeight', { configurable: true, value: height });
+        h.window.dispatchEvent(new h.window.Event('resize'));
+        // Also cover a ResizeObserver notification with unchanged width.
+        h.gallery.measure();
+        assert.deepEqual([...h.wrapper.querySelectorAll('.episode-card')], cards);
+        assert.deepEqual([...h.wrapper.querySelectorAll('img')], images);
+        assert.equal(h.created(), created);
+    }
+});
+
 test('reduced motion and offscreen states stop automatic frames but allow manual browsing', t => {
     const h = setup(t);
     h.gallery.pause('motion', true);
@@ -213,4 +237,14 @@ test('loop needs eight unique stories and two screen widths; resizing keeps a va
     assert.equal(h.gallery.mode, 'static');
     assert.equal(h.frames.size, 0);
     assert.equal(h.wrapper.querySelectorAll('.episode-card').length, 2);
+});
+
+test('React unmount disposes animation, global handlers and pending resume work', t => {
+    const { gallery, frames } = setup(t);
+    gallery.move(100);
+    gallery.destroy();
+    assert.equal(frames.size, 0);
+    assert.equal(gallery.track.childElementCount, 0);
+    gallery.schedule();
+    assert.equal(frames.size, 0);
 });
