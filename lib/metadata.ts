@@ -8,7 +8,15 @@ export function pageMetadata(path = '/', title = 'Angle', description = DESCRIPT
 }
 export function episodeMetadata(episode: Episode): Metadata {
   const meta = pageMetadata(`/episode/${episode.id}`, `${episode.title} | Angle`, episode.fullDescription || episode.description || DESCRIPTION, `/api/og-image/${episode.id}`);
-  return { ...meta, openGraph: { ...meta.openGraph, type: 'article' } };
+  return { ...meta, openGraph: { ...meta.openGraph, type: 'article',
+    ...(episode.previewVideoUrl ? { videos: [{
+      url: episode.previewVideoUrl,
+      secureUrl: episode.previewVideoUrl,
+      type: 'video/mp4',
+      ...(episode.previewVideoWidth ? { width: episode.previewVideoWidth } : {}),
+      ...(episode.previewVideoHeight ? { height: episode.previewVideoHeight } : {}),
+    }] } : {}),
+  } };
 }
 export function episodeJsonLd(episode: Episode): string {
   return JSON.stringify({ '@context': 'https://schema.org', '@type': 'PodcastEpisode', name: episode.title,

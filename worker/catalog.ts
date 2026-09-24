@@ -8,6 +8,10 @@ export interface Episode {
   category: string | null;
   duration: number | null;
   audioUrl: string | null;
+  /** Public, non-expiring MP4 asset for social link previews. */
+  previewVideoUrl?: string | null;
+  previewVideoWidth?: number | null;
+  previewVideoHeight?: number | null;
   transcript: string | null;
   host: string | null;
   episodeNumber: number | null;
@@ -45,6 +49,17 @@ function nullableNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+function videoUrl(value: unknown): string | null {
+  const url = mediaUrl(value);
+  if (!url) return null;
+  const parsed = new URL(url);
+  return parsed.username || parsed.password ? null : url;
+}
+
+function videoDimension(value: unknown): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
 // Project the verified v2 API into the website contract. Never forward arbitrary
 // backend properties.
 export function parseCatalog(payload: unknown): Episode[] {
@@ -66,6 +81,9 @@ export function parseCatalog(payload: unknown): Episode[] {
         coverImage: mediaUrl(row.coverImage), createdAt: row.createdAt,
         updatedAt: nullableString(row.updatedAt), category: nullableString(row.category),
         duration: nullableNumber(row.duration), audioUrl: mediaUrl(row.audioUrl),
+        previewVideoUrl: videoUrl(row.previewVideoUrl),
+        previewVideoWidth: videoDimension(row.previewVideoWidth),
+        previewVideoHeight: videoDimension(row.previewVideoHeight),
         transcript: nullableString(row.transcript), host: nullableString(row.host),
         episodeNumber: nullableNumber(row.episodeNumber),
         tags: Array.isArray(row.tags) ? row.tags.filter((tag: unknown) => typeof tag === 'string') : null,
@@ -100,6 +118,8 @@ export function mapV2Episode(value: unknown): Episode {
   const mapped = parseCatalog({ success: true, data: [{
     id: row.id, title: row.title, description: row.excerpt, fullDescription: row.excerpt,
     coverImage: row.coverUrl, createdAt: row.createdAt, category: row.category,
+    previewVideoUrl: row.previewVideoUrl,
+    previewVideoWidth: row.previewVideoWidth, previewVideoHeight: row.previewVideoHeight,
     duration: rendition.durationSeconds, audioUrl: rendition.url, host: host || null, transcript: transcriptText || null, updatedAt: row.createdAt,
     topicNames: Array.isArray(object(row.taxonomy).topics)
       ? (object(row.taxonomy).topics as unknown[]).map(topic => nullableString(object(topic).name)).filter(Boolean) : [],
