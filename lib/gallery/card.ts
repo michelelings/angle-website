@@ -18,7 +18,7 @@ export function createGalleryCard(episode: Episode, renditions: Renditions): HTM
   image.decoding = 'async';
   image.loading = 'eager';
   if (sources?.length) {
-    image.sizes = '(max-width: 374px) 280px, (max-width: 768px) 320px, 360px';
+    image.sizes = '(orientation: landscape) and (max-height: 500px) and (max-width: 1000px) 144px, (max-width: 374px) 248px, (max-width: 768px) 260px, (max-width: 1366px) 280px, 360px';
     image.srcset = sources.map(s => `${s.url} ${s.width}w`).join(', ');
   }
   image.src = sources?.[0]?.url || original;

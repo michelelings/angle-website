@@ -1,11 +1,15 @@
 import { CatalogError, readCatalog, readEpisode, categoriesFor, resolveCategory, type Env } from '../../worker/catalog';
 import { ogImage } from './og';
 import { sitemapResponse } from './sitemap';
+import { readSearchDocuments } from './search';
 const failure = (message: string, status: number) => Response.json({ success: false, error: message }, { status });
 export async function apiResponse(path: string[], env: Env): Promise<Response> {
   try {
     const key = path.join('/');
     if (key === 'health') return Response.json({ status: 'ok' });
+    if (key === 'search-index') return Response.json({ data: await readSearchDocuments(env) }, {
+      headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' },
+    });
     if (key === 'episodes') return Response.json({ success: true, data: await readCatalog(env) });
     if (key === 'categories') return Response.json({ success: true, data: categoriesFor(await readCatalog(env)) });
     if (key === 'ready') { await readCatalog(env); return Response.json({ status: 'ok', catalog: 'reachable' }); }

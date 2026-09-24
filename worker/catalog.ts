@@ -12,6 +12,8 @@ export interface Episode {
   host: string | null;
   episodeNumber: number | null;
   tags: string[] | null;
+  topics?: string[];
+  topicNames?: string[];
   fullDescription: string | null;
 }
 
@@ -67,6 +69,8 @@ export function parseCatalog(payload: unknown): Episode[] {
         transcript: nullableString(row.transcript), host: nullableString(row.host),
         episodeNumber: nullableNumber(row.episodeNumber),
         tags: Array.isArray(row.tags) ? row.tags.filter((tag: unknown) => typeof tag === 'string') : null,
+        topics: Array.isArray(row.topics) ? row.topics.filter((topic: unknown) => typeof topic === 'string') : [],
+        topicNames: Array.isArray(row.topicNames) ? row.topicNames.filter((name: unknown) => typeof name === 'string') : [],
         fullDescription: nullableString(row.fullDescription),
       };
     }).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -97,6 +101,13 @@ export function mapV2Episode(value: unknown): Episode {
     id: row.id, title: row.title, description: row.excerpt, fullDescription: row.excerpt,
     coverImage: row.coverUrl, createdAt: row.createdAt, category: row.category,
     duration: rendition.durationSeconds, audioUrl: rendition.url, host: host || null, transcript: transcriptText || null, updatedAt: row.createdAt,
+    topicNames: Array.isArray(object(row.taxonomy).topics)
+      ? (object(row.taxonomy).topics as unknown[]).map(topic => nullableString(object(topic).name)).filter(Boolean) : [],
+    topics: Array.isArray(object(row.taxonomy).topics)
+      ? (object(row.taxonomy).topics as unknown[]).flatMap(topic => {
+        const value = object(topic);
+        return [nullableString(value.name), nullableString(value.description)].filter(Boolean);
+      }) : [],
   }] })[0];
   if (!mapped.coverImage || !mapped.audioUrl) throw new CatalogError(502, 'Published episode media is missing');
   return mapped;

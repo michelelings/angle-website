@@ -23,7 +23,8 @@
     "cf-typegen": "wrangler types cloudflare-env.d.ts --env-interface CloudflareEnv --include-runtime false --strict-vars false && node scripts/strip-cloudflare-main-module.mjs",
     "preview:cloudflare": "opennextjs-cloudflare preview --local-upstream localhost --var ENVIRONMENT:local",
     "test": "npm run test:gallery && npm run test:cloudflare",
-    "check:next": "node scripts/verify-next.mjs"
+    "check:next": "node scripts/verify-next.mjs",
+    "seo:measure": "node scripts/seo-measure.mjs"
   },
   "dependencies": {
     "@cloudflare/pages-plugin-vercel-og": "0.1.2",
