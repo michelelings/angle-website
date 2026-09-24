@@ -4,19 +4,53 @@
   "description": "Angle podcast website",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx dev-server.js",
-    "type-check": "tsc --noEmit"
+    "dev": "next dev",
+    "type-check": "tsc --noEmit",
+    "validate:transcript-seo": "node scripts/validate-transcript-seo.mjs",
+    "sitemap:check": "node scripts/check-sitemap-coverage.mjs",
+    "transcript:v1:check": "node scripts/check-transcript-v1-retrofit.mjs",
+    "check:episode-ssr": "node scripts/check-episode-ssr.js",
+    "dev:cloudflare": "npm run preview:cloudflare",
+    "type-check:cloudflare": "tsc -p tsconfig.worker.json",
+    "build:cloudflare": "npm run build:covers && npm run cf-typegen && opennextjs-cloudflare build",
+    "test:cloudflare": "tsx --test tests/*.test.ts",
+    "types:cloudflare": "npm run cf-typegen",
+    "build:covers": "node scripts/build-covers.mjs",
+    "test:gallery": "node --test tests/gallery.test.mjs",
+    "deploy:cloudflare": "npm run build:cloudflare && opennextjs-cloudflare deploy",
+    "build": "next build",
+    "start": "next start",
+    "cf-typegen": "wrangler types cloudflare-env.d.ts --env-interface CloudflareEnv --include-runtime false --strict-vars false && node scripts/strip-cloudflare-main-module.mjs",
+    "preview:cloudflare": "opennextjs-cloudflare preview --local-upstream localhost --var ENVIRONMENT:local",
+    "test": "npm run test:gallery && npm run test:cloudflare",
+    "check:next": "node scripts/verify-next.mjs",
+    "seo:measure": "node scripts/seo-measure.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@cloudflare/pages-plugin-vercel-og": "0.1.2",
+    "@supabase/supabase-js": "^2.39.0",
+    "@vercel/og": "^0.8.6",
+    "next": "^16.3.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20260924.1",
+    "@opennextjs/cloudflare": "^1.20.2",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20.10.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vercel/node": "^3.0.0",
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.0.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "wrangler": "4.137.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "22.x"
   }
 }

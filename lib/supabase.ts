@@ -13,7 +13,15 @@ export interface Episode {
   description: string | null;
   coverImage: string | null;
   createdAt: string;
+  updatedAt?: string | null;
   category: string | null;
+  duration?: number | null;
+  audioUrl?: string | null;
+  transcript?: string | null;
+  host?: string | null;
+  episodeNumber?: number | null;
+  tags?: string[] | null;
+  fullDescription?: string | null;
 }
 
 interface EpisodeRow {
@@ -31,11 +39,16 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+function sanitizeText(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  return value.replace(/\u2014/g, '-');
+}
+
 // Fetch functions
 export async function fetchEpisodes(): Promise<Episode[]> {
   const { data, error } = await supabase
     .from('episodes')
-    .select('id, title, excerpt, cover_url, created_at, category')
+    .select('*')
     .eq('status', 'completed')
     .order('created_at', { ascending: false });
 
@@ -44,14 +57,78 @@ export async function fetchEpisodes(): Promise<Episode[]> {
     throw error;
   }
 
-  return (data as EpisodeRow[]).map((episode) => ({
+  return (data as any[]).map((episode) => ({
     id: episode.id,
-    title: episode.title,
-    description: episode.excerpt,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
     coverImage: episode.cover_url,
     createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
     category: episode.category,
+    // Include any additional fields that might exist
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: sanitizeText(episode.transcript || null),
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
   }));
+}
+
+/**
+ * Reconstruct a plain-text transcript from script_segments array.
+ * script_segments is [{text, speaker, voice_id}]. We join all texts in order.
+ */
+function transcriptFromSegments(segments: unknown): string | null {
+  if (!Array.isArray(segments) || segments.length === 0) return null;
+  return (segments as Array<{ text?: string }>)
+    .map((s) => (typeof s.text === 'string' ? s.text.trim() : ''))
+    .filter(Boolean)
+    .join(' ');
+}
+
+export async function fetchEpisodeById(id: string): Promise<Episode | null> {
+  const { data, error } = await supabase
+    .from('episodes')
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'completed')
+    .single();
+
+  if (error) {
+    console.error('Error fetching episode:', error);
+    return null;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  // Prefer script_full (the complete podcast script text) as transcript source.
+  // Fall back to reconstructing from script_segments dialogue array.
+  // Note: the DB column is named `script_full`, not `transcript`.
+  const transcript =
+    sanitizeText(data.script_full || null) ||
+    sanitizeText(transcriptFromSegments(data.script_segments)) ||
+    null;
+
+  return {
+    id: data.id,
+    title: sanitizeText(data.title) || '',
+    description: sanitizeText(data.excerpt),
+    coverImage: data.cover_url,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at || data.created_at,
+    category: data.category,
+    duration: data.duration || data.length || null,
+    audioUrl: data.audio_url || data.audio || null,
+    transcript,
+    host: data.host || data.author || null,
+    episodeNumber: data.episode_number || data.number || null,
+    tags: data.tags || null,
+    fullDescription: sanitizeText(data.description || data.full_description || null),
+  };
 }
 
 export async function fetchCategories(): Promise<string[]> {
@@ -69,4 +146,87 @@ export async function fetchCategories(): Promise<string[]> {
   return [...new Set((data as { category: string | null }[]).map((e) => e.category))]
     .filter((category): category is string => category !== null)
     .sort();
+}
+
+
+export async function fetchEpisodesByCategory(category: string, limit = 30): Promise<Episode[]> {
+  // NOTE: Use select('*') to avoid silent failures when column names drift.
+  // Category SSR injection is best-effort; return [] on error.
+  let query = supabase
+    .from('episodes')
+    .select('*')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (category !== 'new' && category !== 'popular') {
+    query = query.eq('category', category);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching episodes by category:', error);
+    return [];
+  }
+
+  return (data as any[]).map((episode) => ({
+    id: episode.id,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
+    coverImage: episode.cover_url,
+    createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
+    category: episode.category,
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: sanitizeText(episode.transcript || null),
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
+  }));
+}
+
+export async function fetchMostRecentEpisodeByCategory(category: string): Promise<Episode | null> {
+  let query = supabase
+    .from('episodes')
+    .select('*')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  // For special filters, get most recent overall
+  // For actual categories, filter by category
+  if (category !== 'new' && category !== 'popular') {
+    query = query.eq('category', category);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching most recent episode by category:', error);
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const episode = data[0];
+  return {
+    id: episode.id,
+    title: sanitizeText(episode.title) || '',
+    description: sanitizeText(episode.excerpt),
+    coverImage: episode.cover_url,
+    createdAt: episode.created_at,
+    updatedAt: episode.updated_at || episode.created_at,
+    category: episode.category,
+    duration: episode.duration || episode.length || null,
+    audioUrl: episode.audio_url || episode.audio || null,
+    transcript: sanitizeText(episode.transcript || null),
+    host: episode.host || episode.author || null,
+    episodeNumber: episode.episode_number || episode.number || null,
+    tags: episode.tags || null,
+    fullDescription: sanitizeText(episode.description || episode.full_description || null),
+  };
 }

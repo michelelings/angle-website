@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angle — Stream View</title>
+    <link rel="icon" type="image/webp" href="/images/icon.webp">
+    <link rel="canonical" href="https://www.newsangle.co/home-v2">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.newsangle.co/home-v2">
+    <meta property="og:title" content="Angle — Stream View">
+    <meta property="og:description" content="Stories worth listening.">
+    <meta property="og:image" content="https://www.newsangle.co/images/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://www.newsangle.co/home-v2">
+    <meta name="twitter:title" content="Angle — Stream View">
+    <meta name="twitter:description" content="Stories worth listening.">
+    <meta name="twitter:image" content="https://www.newsangle.co/images/og-image.png">
+    <meta name="twitter:image:alt" content="Stories worth listening.">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRQ8EPNMPQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RRQ8EPNMPQ');
+    </script>
+
+    <link rel="stylesheet" href="/styles/paper-ink.css">
+</head>
+<body>
+    <div class="header-section">
+        <a href="/home-v2" style="text-decoration: none; color: inherit; display: block;">
+            <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
+        </a>
+        <p class="intro">Stories worth listening.</p>
+        <div class="cta-buttons">
+            <a href="https://testflight.apple.com/join/p2VQgeun" class="button" id="getAngleHeaderBtn">Get Angle</a>
+        </div>
+        <a href="/" class="switch-link">Switch to classic view →</a>
+    </div>
+
+    <div id="loadingSpinner"><div class="spinner"></div></div>
+
+    <div class="rails-container" id="railsContainer"></div>
+
+    <!-- Story Detail Modal -->
+    <div class="modal-overlay" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="modal-close" id="modalClose" aria-label="Close story">×</button>
+            </div>
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <div class="modal-body">
+                <span class="modal-category" id="modalCategory"></span>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta" id="modalMeta"></div>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-tags" id="modalTags"></div>
+                <div class="modal-audio-player" id="modalAudioPlayer" style="display: none;">
+                    <audio id="audioElement" preload="metadata"></audio>
+                    <div class="audio-controls">
+                        <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon" style="display: none;">⏸</span>
+                        </button>
+                        <div class="audio-progress-container">
+                            <div class="audio-progress-bar" id="audioProgressBar">
+                                <div class="audio-progress-filled" id="audioProgressFilled"></div>
+                            </div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
+                            <span class="audio-time-separator">/</span>
+                            <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
+                        </div>
+                    </div>
+                        <a href="https://testflight.apple.com/join/p2VQgeun" class="audio-get-angle-btn" target="_blank" rel="noopener noreferrer">Get Angle</a>
+                    <div class="audio-error" id="audioError" style="display: none;">
+                        Unable to load audio. Please try again later.
+                    </div>
+                </div>
+                <div class="modal-date" id="modalDate"></div>
+                <button type="button" class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+      <a href="https://x.com/angle_newsapp" target="_blank" rel="noopener noreferrer" aria-label="Follow Angle on X">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      </a>
+      <a href="https://www.instagram.com/angle_newsapp" target="_blank" rel="noopener noreferrer" aria-label="Follow Angle on Instagram">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+        </svg>
+      </a>
+    </footer>
+
+    <script type="module">
+        import { showStoryDialog, hideStoryDialog } from "/js/story-dialog.js";
+        let episodes = [];
+        let currentEpisodeId = null;
+        let currentAudio = null;
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        const CANONICAL_BASE_URL = 'https://www.newsangle.co';
+
+        // ─── Helpers ───
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+        }
+
+        function formatCardDate(dateString) {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).replace(',', '');
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '0:00';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return h > 0
+                ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
+                : `${m}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return null;
+            return formatTime(seconds);
+        }
+
+        // ─── Card creation ───
+        function createRailCard(episode) {
+            const card = document.createElement('div');
+            card.className = 'rail-card';
+            const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : '';
+            card.innerHTML = `
+                <img src="${escapeHtml(episode.coverImage || '/images/icon.webp')}" alt="${escapeHtml(episode.title)}" loading="lazy">
+                <div class="rail-card-info">
+                    <h3 class="rail-card-title">${escapeHtml(episode.title)}</h3>
+                    <div class="rail-card-meta">
+                        ${episode.host ? `<span>${escapeHtml(episode.host)}</span>` : ''}
+                        ${dateText ? `<span>${dateText}</span>` : ''}
+                    </div>
+                    ${episode.category ? `<span class="rail-card-category">${escapeHtml(episode.category.toUpperCase())}</span>` : ''}
+                </div>
+            `;
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', episode.title);
+            card.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openStoryModal(episode); }
+            });
+            card.addEventListener('click', () => openStoryModal(episode));
+            return card;
+        }
+
+        // ─── Build rails ───
+        function buildRails(episodes, categories) {
+            const container = document.getElementById('railsContainer');
+            container.innerHTML = '';
+            if (!episodes.length) { container.textContent = 'New stories are on their way.'; return; }
+
+            // Rail 1: New — latest stories
+            const sorted = [...episodes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            addRail(container, 'New', sorted);
+
+            // Rail 2: Popular — top 30% most recent
+            const popular = sorted.slice(0, Math.ceil(sorted.length * 0.3));
+            addRail(container, 'Popular', popular);
+
+            // One rail per category
+            categories.forEach(cat => {
+                const catEpisodes = episodes.filter(ep => ep.category === cat);
+                if (catEpisodes.length > 0) {
+                    addRail(container, cat, catEpisodes);
+                }
+            });
+        }
+
+        function addRail(container, title, items) {
+            const section = document.createElement('section');
+            section.className = 'rail';
+            section.innerHTML = `
+                <div class="rail-header">
+                    <h2 class="rail-title">${escapeHtml(title)}</h2>
+                    <span class="rail-count">${items.length} stories</span>
+                </div>
+            `;
+            const track = document.createElement('div');
+            track.className = 'rail-track';
+            items.forEach(ep => track.appendChild(createRailCard(ep)));
+            section.appendChild(track);
+            container.appendChild(section);
+        }
+
+        // ─── Modal ───
+        function openStoryModal(episode) {
+            const modal = document.getElementById('storyModal');
+            document.getElementById('modalImage').src = episode.coverImage || '/images/icon.webp';
+            document.getElementById('modalImage').alt = episode.title;
+
+            const cat = document.getElementById('modalCategory');
+            if (episode.category) { cat.textContent = episode.category.toUpperCase(); cat.style.display = 'inline-block'; }
+            else { cat.style.display = 'none'; }
+
+            document.getElementById('modalTitle').textContent = episode.title;
+
+            let metaHTML = '';
+            if (episode.episodeNumber) metaHTML += `<div class="modal-meta-item"><strong>Episode</strong> ${episode.episodeNumber}</div>`;
+            if (episode.duration) { const d = formatDuration(episode.duration); if (d) metaHTML += `<div class="modal-meta-item"><strong>Duration</strong> ${d}</div>`; }
+            if (episode.host) metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${escapeHtml(episode.host)}</div>`;
+            const metaEl = document.getElementById('modalMeta');
+            metaEl.innerHTML = metaHTML; metaEl.style.display = metaHTML ? 'flex' : 'none';
+
+            document.getElementById('modalDescription').textContent = episode.fullDescription || episode.description || 'No description available.';
+
+            const tagsEl = document.getElementById('modalTags');
+            if (episode.tags && episode.tags.length) {
+                tagsEl.innerHTML = episode.tags.map(t => `<span class="modal-tag">${escapeHtml(t.toUpperCase())}</span>`).join('');
+                tagsEl.style.display = 'flex';
+            } else { tagsEl.innerHTML = ''; tagsEl.style.display = 'none'; }
+
+            initAudioPlayer(episode.audioUrl || null);
+            document.getElementById('modalDate').textContent = formatDate(episode.createdAt);
+
+            currentEpisodeId = episode.id;
+            window.history.pushState({ episodeId: episode.id }, '', `/episode/${episode.id}`);
+
+            showStoryDialog(modal);
+        }
+
+        function closeStoryModal() {
+            cleanupAudio();
+            hideStoryDialog(document.getElementById('storyModal'));
+            currentEpisodeId = null;
+            window.history.pushState({}, '', '/home-v2');
+        }
+
+        // ─── Audio ───
+        function initAudioPlayer(audioUrl) {
+            const el = document.getElementById('audioElement');
+            const player = document.getElementById('modalAudioPlayer');
+            const btn = document.getElementById('audioPlayPause');
+            const playIcon = btn.querySelector('.play-icon');
+            const pauseIcon = btn.querySelector('.pause-icon');
+            const filled = document.getElementById('audioProgressFilled');
+            const cur = document.getElementById('audioTimeCurrent');
+            const dur = document.getElementById('audioTimeDuration');
+            const err = document.getElementById('audioError');
+
+            err.style.display = 'none';
+            playIcon.style.display = 'inline'; pauseIcon.style.display = 'none';
+            filled.style.width = '0%'; cur.textContent = '0:00'; dur.textContent = '0:00';
+
+            if (!audioUrl) { player.style.display = 'none'; return; }
+
+            el.src = audioUrl; player.style.display = 'block'; currentAudio = el; el.load();
+
+            el.onloadedmetadata = () => { if (isFinite(el.duration)) dur.textContent = formatTime(el.duration); };
+            el.ontimeupdate = () => {
+                if (isFinite(el.duration) && el.duration > 0) {
+                    filled.style.width = `${(el.currentTime / el.duration) * 100}%`;
+                    cur.textContent = formatTime(el.currentTime);
+                }
+            };
+            el.onplay = () => { playIcon.style.display = 'none'; pauseIcon.style.display = 'inline'; };
+            el.onpause = () => { playIcon.style.display = 'inline'; pauseIcon.style.display = 'none'; };
+            el.onerror = () => { err.style.display = 'block'; };
+        }
+
+        function cleanupAudio() {
+            const el = document.getElementById('audioElement');
+            if (el) { el.pause(); el.src = ''; el.load(); }
+            currentAudio = null;
+        }
+
+        // ─── Share ───
+        function showShareToast() {
+            let toast = document.getElementById('shareToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'shareToast'; toast.className = 'share-toast';
+                toast.textContent = 'Link copied!'; document.body.appendChild(toast);
+            }
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        async function handleShare(e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            const url = currentEpisodeId ? `${CANONICAL_BASE_URL}/episode/${currentEpisodeId}` : `${CANONICAL_BASE_URL}/home-v2`;
+            if (navigator.share) {
+                try { await navigator.share({ url }); showShareToast(); return; } catch (err) { if (err?.name === 'AbortError') return; }
+            }
+            try { await navigator.clipboard.writeText(url); showShareToast(); } catch { alert('Copy manually: ' + url); }
+        }
+
+        // ─── Init ───
+        async function init() {
+            try {
+                const [catRes, epRes] = await Promise.all([fetch('/api/categories'), fetch('/api/episodes')]);
+                const catData = await catRes.json();
+                const epData = await epRes.json();
+
+                document.getElementById('loadingSpinner').style.display = 'none';
+
+                const categories = catData.success ? catData.data : [];
+                if (epData.success) {
+                    episodes = epData.data;
+                    buildRails(episodes, categories);
+                } else {
+                    document.getElementById('railsContainer').innerHTML = '<div style="text-align:center;padding:40px;color:var(--secondary);">Failed to load episodes</div>';
+                }
+            } catch (err) {
+                console.error('Init error:', err);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('railsContainer').innerHTML = '<div style="text-align:center;padding:40px;color:var(--secondary);">Failed to load episodes</div>';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('modalClose').addEventListener('click', e => { e.stopPropagation(); closeStoryModal(); });
+        document.getElementById('storyModal').addEventListener('click', e => { if (e.target === document.getElementById('storyModal')) closeStoryModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('storyModal').classList.contains('open')) closeStoryModal(); });
+        document.getElementById('audioPlayPause').addEventListener('click', () => {
+            const el = document.getElementById('audioElement');
+            if (!el || !el.src) return;
+            el.paused ? el.play().catch(() => {}) : el.pause();
+        });
+        document.getElementById('audioProgressBar').addEventListener('click', e => {
+            const el = document.getElementById('audioElement');
+            if (!el || !el.src || el.readyState === 0) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            if (isFinite(el.duration)) el.currentTime = pct * el.duration;
+        });
+        document.getElementById('modalShareBtn').addEventListener('click', e => handleShare(e));
+
+        window.addEventListener('popstate', () => {
+            if (document.getElementById('storyModal').classList.contains('open')) closeStoryModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>

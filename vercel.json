@@ -1,7 +1,25 @@
 {
   "version": 2,
   "framework": null,
+  "redirects": [
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "https://www.newsangle.co/sitemap.xml",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "newsangle.co" }],
+      "destination": "https://www.newsangle.co/:path*",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/public/$1" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/api/episodes/(.*)", "destination": "/api/episodes/[id]" },
+    { "source": "/episode/:id", "destination": "/api/render/episode/[id]" },
+    { "source": "/home-v2", "destination": "/home-v2.html" },
+    { "source": "/:category", "destination": "/api/render/[category]" },
+    { "source": "/((?!api|icons|images|fonts|js|styles).*)", "destination": "/index.html" }
   ]
 }

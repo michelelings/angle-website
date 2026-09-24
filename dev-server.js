@@ -27,7 +27,27 @@ const MIME_TYPES = {
 
 // Dynamic API route handler
 async function handleApiRoute(pathname, req, res) {
-  const routeName = pathname.replace('/api/', '').replace(/\/$/, '');
+  let routeName = pathname.replace('/api/', '').replace(/\/$/, '');
+  let dynamicParam = null;
+  
+  // Handle dynamic routes like /api/episodes/[id]
+  if (routeName.startsWith('episodes/')) {
+    const parts = routeName.split('/');
+    if (parts.length === 2) {
+      routeName = 'episodes/[id]';
+      dynamicParam = parts[1];
+    }
+  }
+  
+  // Handle dynamic routes like /api/render/[category]
+  if (routeName.startsWith('render/')) {
+    const parts = routeName.split('/');
+    if (parts.length === 2) {
+      routeName = 'render/[category]';
+      dynamicParam = parts[1];
+    }
+  }
+  
   const routePath = join(__dirname, 'api', `${routeName}.ts`);
   
   try {
@@ -35,12 +55,24 @@ async function handleApiRoute(pathname, req, res) {
     const module = await import(`./api/${routeName}.ts`);
     const handler = module.default;
     
+    // Create query params with dynamic parameter
+    const url = new URL(req.url, `http://localhost:${PORT}`);
+    const query = Object.fromEntries(url.searchParams);
+    if (dynamicParam) {
+      // For render/[category], use 'category' as the param name
+      if (routeName === 'render/[category]') {
+        query.category = dynamicParam;
+      } else {
+        query.id = dynamicParam;
+      }
+    }
+    
     // Create mock Vercel request/response objects
     const vercelReq = {
       method: req.method,
       url: req.url,
       headers: req.headers,
-      query: Object.fromEntries(new URL(req.url, `http://localhost:${PORT}`).searchParams),
+      query: query,
     };
     
     const vercelRes = {
@@ -58,9 +90,21 @@ async function handleApiRoute(pathname, req, res) {
         res.writeHead(this.statusCode, { 'Content-Type': 'application/json', ...this.headers });
         res.end(JSON.stringify(data));
       },
-      end() {
-        res.writeHead(this.statusCode, this.headers);
+      send(data) {
+        res.writeHead(this.statusCode, { 'Content-Type': 'text/html', ...this.headers });
+        res.end(data);
+      },
+      redirect(code, url) {
+        res.writeHead(code || 302, { 'Location': url });
         res.end();
+      },
+      end(data) {
+        res.writeHead(this.statusCode, this.headers);
+        if (data) {
+          res.end(data);
+        } else {
+          res.end();
+        }
       },
     };
     
@@ -101,6 +145,22 @@ async function handleStaticFile(pathname, res) {
   }
 }
 
+// Check if pathname looks like a category page (single segment, not episode, not api, not static file)
+function isCategoryPage(pathname) {
+  // Exclude known paths
+  if (pathname === '/' || 
+      pathname.startsWith('/api/') || 
+      pathname.startsWith('/episode/') ||
+      pathname.startsWith('/images/') ||
+      pathname.startsWith('/fonts/') ||
+      pathname.includes('.')) {
+    return false;
+  }
+  // Check if it's a single segment path (e.g., /health, /sports)
+  const segments = pathname.split('/').filter(Boolean);
+  return segments.length === 1;
+}
+
 // Create server
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -110,6 +170,11 @@ const server = createServer(async (req, res) => {
   
   if (pathname.startsWith('/api/')) {
     await handleApiRoute(pathname, req, res);
+  } else if (isCategoryPage(pathname)) {
+    // Route category pages to render function
+    const category = pathname.slice(1); // Remove leading slash
+    const renderPath = `/api/render/${category}`;
+    await handleApiRoute(renderPath, req, res);
   } else {
     await handleStaticFile(pathname, res);
   }

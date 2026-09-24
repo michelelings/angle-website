@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angle</title>
+    <link rel="icon" type="image/webp" href="/images/icon.webp">
+    <link rel="canonical" href="https://www.newsangle.co/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.newsangle.co/">
+    <meta property="og:title" content="Angle">
+    <meta property="og:description" content="Stories worth listening.">
+    <meta property="og:image" content="https://www.newsangle.co/images/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://www.newsangle.co/">
+    <meta name="twitter:title" content="Angle">
+    <meta name="twitter:description" content="Stories worth listening.">
+    <meta name="twitter:image" content="https://www.newsangle.co/images/og-image.png">
+    <meta name="twitter:image:alt" content="Stories worth listening.">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRQ8EPNMPQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RRQ8EPNMPQ');
+    </script>
+    
+    <link rel="stylesheet" href="/styles/paper-ink.css">
+</head>
+<body>
+    <div class="header-section">
+        <a href="/" class="header-link" id="headerLink" style="text-decoration: none; color: inherit; display: block;">
+            <img src="/images/icon.webp" alt="Angle icon" class="app-icon">
+        </a>
+        <p class="intro">0 stories worth listening.</p>
+        <div class="cta-buttons">
+            <a href="https://testflight.apple.com/join/p2VQgeun" class="button" id="getAngleHeaderBtn">Get Angle</a>
+        </div>
+        <a href="/home-v2" class="switch-link">Try stream view →</a>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="loading" id="loadingSpinner"><div class="spinner"></div></div>
+    <div class="gallery-wrapper">
+        <div class="collection-grid" id="collectionGrid">
+        </div>
+    </div>
+
+    <!-- Story Detail Modal -->
+    <div class="modal-overlay" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="modal-close" id="modalClose" aria-label="Close story">×</button>
+            </div>
+            <img class="modal-image" id="modalImage" src="" alt="">
+            <div class="modal-body">
+                <span class="modal-category" id="modalCategory"></span>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta" id="modalMeta"></div>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-tags" id="modalTags"></div>
+                <div class="modal-audio-player" id="modalAudioPlayer" style="display: none;">
+                    <audio id="audioElement" preload="metadata"></audio>
+                    <div class="audio-controls">
+                        <button class="audio-play-pause" id="audioPlayPause" aria-label="Play audio">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon" style="display: none;">⏸</span>
+                        </button>
+                        <div class="audio-progress-container">
+                            <div class="audio-progress-bar" id="audioProgressBar">
+                                <div class="audio-progress-filled" id="audioProgressFilled"></div>
+                            </div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="audio-time-current" id="audioTimeCurrent">0:00</span>
+                            <span class="audio-time-separator">/</span>
+                            <span class="audio-time-duration" id="audioTimeDuration">0:00</span>
+                        </div>
+                    </div>
+                        <a href="https://testflight.apple.com/join/p2VQgeun" class="audio-get-angle-btn" target="_blank" rel="noopener noreferrer">Get Angle</a>
+                    <div class="audio-error" id="audioError" style="display: none;">
+                        Unable to load audio. Please try again later.
+                    </div>
+                </div>
+                <div class="modal-date" id="modalDate"></div>
+                <button type="button" class="modal-share-btn" id="modalShareBtn" aria-label="Share episode">Share</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <script type="module">
+        import { showStoryDialog, hideStoryDialog } from "/js/story-dialog.js";
+        import { ContinuousGallery } from "/js/gallery.js";
+
+        let episodes = [];
+        let activeFilter = 'all';
+        let currentAudio = null;
+        let countAnimationId = null;
+        let currentTargetCount = 0;
+        let currentEpisodeId = null;
+        let filterBeforeModal = 'all'; // Track filter state before opening modal
+        let availableCategories = [];
+
+        const CANONICAL_BASE_URL = 'https://www.newsangle.co';
+        const SPECIAL_FILTERS = new Set(['new', 'popular']);
+
+        function normalizeCategoryValue(value) {
+            return String(value || '').trim().toLowerCase();
+        }
+
+        function categoryToSlug(category) {
+            return normalizeCategoryValue(category)
+                .replace(/&/g, ' and ')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .replace(/-+/g, '-');
+        }
+
+        function getCategoryPathSegment(category) {
+            const normalized = normalizeCategoryValue(category);
+            if (SPECIAL_FILTERS.has(normalized)) {
+                return normalized;
+            }
+            return categoryToSlug(category);
+        }
+
+        function resolveCategoryFromUrlSegment(segment, categories = availableCategories) {
+            const normalizedSegment = normalizeCategoryValue(segment);
+            if (!normalizedSegment) return null;
+
+            if (SPECIAL_FILTERS.has(normalizedSegment)) {
+                return normalizedSegment;
+            }
+
+            const exactMatch = categories.find(category => normalizeCategoryValue(category) === normalizedSegment);
+            if (exactMatch) {
+                return exactMatch;
+            }
+
+            const slugMatch = categories.find(category => categoryToSlug(category) === normalizedSegment);
+            return slugMatch || null;
+        }
+
+        // One static icon definition; no per-card fetch or async DOM insertion.
+        const SHARE_ICON = `<svg width="15" height="19" viewBox="0 0 15 19" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.44531 3.91406C4.25781 3.91406 4.09375 3.85156 3.95312 3.72656C3.81771 3.60156 3.75 3.4401 3.75 3.24219C3.75 3.05469 3.82292 2.88542 3.96875 2.73438L6.53125 0.273438C6.64062 0.169271 6.74479 0.0989583 6.84375 0.0625C6.94271 0.0208333 7.04427 0 7.14844 0C7.25781 0 7.36198 0.0208333 7.46094 0.0625C7.5651 0.0989583 7.66927 0.169271 7.77344 0.273438L10.3359 2.73438C10.4818 2.88542 10.5547 3.05469 10.5547 3.24219C10.5547 3.4401 10.4844 3.60156 10.3438 3.72656C10.2031 3.85156 10.0391 3.91406 9.85156 3.91406C9.63802 3.91406 9.46094 3.83854 9.32031 3.6875L8.28125 2.57031L7.14844 1.09375L6.03125 2.57031L4.98438 3.6875C4.83854 3.83854 4.65885 3.91406 4.44531 3.91406ZM7.14844 11.75C6.92969 11.75 6.74219 11.6719 6.58594 11.5156C6.42969 11.3594 6.35156 11.1771 6.35156 10.9688V3.19531L6.50781 0.851562C6.52344 0.674479 6.59115 0.523438 6.71094 0.398438C6.83073 0.268229 6.97656 0.203125 7.14844 0.203125C7.33073 0.203125 7.48177 0.268229 7.60156 0.398438C7.72135 0.523438 7.78906 0.674479 7.80469 0.851562L7.95312 3.19531V10.9688C7.95312 11.1771 7.875 11.3594 7.71875 11.5156C7.56771 11.6719 7.3776 11.75 7.14844 11.75ZM3.41406 18.1719C2.32031 18.1719 1.47656 17.875 0.882812 17.2812C0.294271 16.6927 0 15.8516 0 14.7578V8.73438C0 7.63542 0.294271 6.79167 0.882812 6.20312C1.47656 5.61458 2.32031 5.32031 3.41406 5.32031H4.875V7.05469H3.48438C2.92708 7.05469 2.49479 7.20573 2.1875 7.50781C1.88542 7.8099 1.73438 8.24219 1.73438 8.80469V14.6875C1.73438 15.2448 1.88542 15.6745 2.1875 15.9766C2.49479 16.2839 2.92708 16.4375 3.48438 16.4375H10.8203C11.3828 16.4375 11.8151 16.2839 12.1172 15.9766C12.4193 15.6745 12.5703 15.2448 12.5703 14.6875V8.80469C12.5703 8.24219 12.4193 7.8099 12.1172 7.50781C11.8151 7.20573 11.3828 7.05469 10.8203 7.05469H9.42969V5.32031H10.8906C11.9896 5.32031 12.8333 5.61458 13.4219 6.20312C14.0156 6.79167 14.3125 7.63542 14.3125 8.73438V14.7578C14.3125 15.8516 14.0156 16.6927 13.4219 17.2812C12.8333 17.875 11.9896 18.1719 10.8906 18.1719H3.41406Z" fill="currentColor"/></svg>`;
+        let coverRenditions = {};
+
+        function prepareCover(image, episode) {
+            const original = episode.coverImage || '/images/icon.webp';
+            const rendition = coverRenditions[original];
+            image.decoding = 'async';
+            image.loading = 'eager'; // Only the visible window and its small buffer exist.
+            if (rendition) {
+                // Match the square artwork width to the responsive card geometry.
+                image.sizes = '(max-width: 374px) 280px, (max-width: 768px) 320px, 360px';
+                image.srcset = rendition.sources.map(source => `${source.url} ${source.width}w`).join(', ');
+                image.src = rendition.sources[0].url;
+            } else image.src = original;
+            image.onload = async () => {
+                try { await image.decode(); } catch { /* load has already succeeded */ }
+                image.classList.add('ready');
+            };
+            image.onerror = () => {
+                image.removeAttribute('srcset');
+                image.onerror = () => {
+                    image.onerror = null;
+                    image.src = '/images/icon.webp';
+                };
+                image.src = original;
+            };
+            if (image.complete && image.naturalWidth) image.onload();
+        }
+
+        // Shuffle array using Fisher-Yates algorithm
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+        // Create episode card element
+        function createEpisodeCard(episode) {
+            const card = document.createElement('div');
+            card.className = 'episode-card';
+            card.setAttribute('data-category', episode.category || '');
+            card.setAttribute('data-episode-id', episode.id);
+            
+            const dateText = episode.createdAt ? formatCardDate(episode.createdAt) : null;
+            
+            card.innerHTML = `
+                <img alt="${escapeHtml(episode.title)}" width="500" height="500" draggable="false">
+                <div class="episode-info">
+                    ${episode.category ? `<span class="episode-category">${escapeHtml(episode.category.toUpperCase())}</span>` : ''}
+                    <h3 class="episode-title"><a href="/episode/${encodeURIComponent(episode.id)}" draggable="false">${escapeHtml(episode.title)}</a></h3>
+                    <p class="episode-description">${escapeHtml(episode.description || '')}</p>
+                    <div class="episode-footer">
+                        ${episode.duration ? `<span>${escapeHtml(formatDuration(episode.duration))}</span>` : ''}
+                        ${dateText ? `<span>${dateText}</span>` : ''}
+                    </div>
+                </div>
+                <button class="episode-share-btn" aria-label="Share ${escapeHtml(episode.title)}" type="button">${SHARE_ICON}</button>
+            `;
+            
+            prepareCover(card.querySelector('img'), episode);
+            return card;
+        }
+
+        const gallery = new ContinuousGallery(
+            document.querySelector('.gallery-wrapper'), createEpisodeCard, openStoryModal, handleCardShare
+        );
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options).toUpperCase();
+        }
+
+        // Format duration (in seconds) to readable format
+        function formatDuration(seconds) {
+            if (!seconds) return null;
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Format duration to minutes and seconds for card display
+        function formatDurationMinutes(seconds) {
+            if (!seconds) return null;
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}m ${secs}s`;
+        }
+
+        // Format date for card display (e.g., "Sun Jan 25")
+        function formatCardDate(dateString) {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options).replace(',', '');
+        }
+
+        // Format time for audio player (MM:SS or HH:MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '0:00';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Animate count from current to target number
+        function animateStoryCount(targetCount) {
+            const introElement = document.querySelector('.intro');
+            if (!introElement) return;
+
+            // Cancel any existing animation
+            if (countAnimationId !== null) {
+                cancelAnimationFrame(countAnimationId);
+            }
+
+            // Get current displayed count
+            const currentText = introElement.textContent;
+            const match = currentText.match(/(\d+)\s+stories/);
+            const startCount = match ? parseInt(match[1], 10) : 0;
+            
+            // If already at target, no need to animate
+            if (startCount === targetCount) {
+                introElement.textContent = `${targetCount} stories worth listening.`;
+                return;
+            }
+
+            currentTargetCount = targetCount;
+            const duration = 800; // Faster animation duration in milliseconds
+            const startTime = performance.now();
+
+            function updateCount(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation (ease-out)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentCount = Math.floor(startCount + (targetCount - startCount) * easeOut);
+                
+                introElement.textContent = `${currentCount} stories worth listening.`;
+                
+                if (progress < 1) {
+                    countAnimationId = requestAnimationFrame(updateCount);
+                } else {
+                    // Ensure final count is exact
+                    introElement.textContent = `${targetCount} stories worth listening.`;
+                    countAnimationId = null;
+                }
+            }
+
+            countAnimationId = requestAnimationFrame(updateCount);
+        }
+
+        // Initialize audio player
+        function initAudioPlayer(audioUrl) {
+            const audioElement = document.getElementById('audioElement');
+            const audioPlayer = document.getElementById('modalAudioPlayer');
+            const playPauseBtn = document.getElementById('audioPlayPause');
+            const playIcon = playPauseBtn.querySelector('.play-icon');
+            const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+            const progressFilled = document.getElementById('audioProgressFilled');
+            const timeCurrent = document.getElementById('audioTimeCurrent');
+            const timeDuration = document.getElementById('audioTimeDuration');
+            const audioError = document.getElementById('audioError');
+
+            // Reset state
+            audioError.style.display = 'none';
+            audioPlayer.classList.remove('audio-loading');
+            playIcon.style.display = 'inline';
+            pauseIcon.style.display = 'none';
+            playPauseBtn.classList.remove('playing');
+            progressFilled.style.width = '0%';
+            timeCurrent.textContent = '0:00';
+            timeDuration.textContent = '0:00';
+
+            if (!audioUrl) {
+                audioPlayer.style.display = 'none';
+                return;
+            }
+
+            // Set audio source
+            audioElement.src = audioUrl;
+            audioPlayer.style.display = 'block';
+            currentAudio = audioElement;
+
+            // Load metadata
+            audioElement.load();
+
+            if (audioElement.dataset.initialized) return;
+            audioElement.dataset.initialized = 'true';
+
+            // Handle metadata loaded
+            audioElement.addEventListener('loadedmetadata', () => {
+                const duration = audioElement.duration;
+                if (isFinite(duration)) {
+                    timeDuration.textContent = formatTime(duration);
+                }
+            });
+
+            // Handle time updates
+            audioElement.addEventListener('timeupdate', () => {
+                const current = audioElement.currentTime;
+                const duration = audioElement.duration;
+                
+                if (isFinite(duration) && duration > 0) {
+                    const progress = (current / duration) * 100;
+                    progressFilled.style.width = `${progress}%`;
+                    timeCurrent.textContent = formatTime(current);
+                }
+            });
+
+            // Handle play/pause
+            audioElement.addEventListener('play', () => {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'inline';
+                playPauseBtn.classList.add('playing');
+            });
+
+            audioElement.addEventListener('pause', () => {
+                playIcon.style.display = 'inline';
+                pauseIcon.style.display = 'none';
+                playPauseBtn.classList.remove('playing');
+            });
+
+            // Handle errors
+            audioElement.addEventListener('error', () => {
+                audioError.style.display = 'block';
+                audioPlayer.classList.remove('audio-loading');
+                playPauseBtn.disabled = true;
+            });
+
+            // Handle loading
+            audioElement.addEventListener('loadstart', () => {
+                audioPlayer.classList.add('audio-loading');
+            });
+
+            audioElement.addEventListener('canplay', () => {
+                audioPlayer.classList.remove('audio-loading');
+            });
+        }
+
+        // Handle play/pause button click
+        function handleAudioPlayPause() {
+            const audioElement = document.getElementById('audioElement');
+            if (!audioElement || !audioElement.src) return;
+
+            if (audioElement.paused) {
+                audioElement.play().catch(err => {
+                    console.error('Error playing audio:', err);
+                    document.getElementById('audioError').style.display = 'block';
+                });
+            } else {
+                audioElement.pause();
+            }
+        }
+
+        // Handle progress bar click (seeking)
+        function handleProgressBarClick(event) {
+            const audioElement = document.getElementById('audioElement');
+            const progressBar = document.getElementById('audioProgressBar');
+            
+            if (!audioElement || !audioElement.src || audioElement.readyState === 0) return;
+
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            const duration = audioElement.duration;
+            
+            if (isFinite(duration) && duration > 0) {
+                audioElement.currentTime = percentage * duration;
+            }
+        }
+
+        // Cleanup audio when modal closes
+        function cleanupAudio() {
+            const audioElement = document.getElementById('audioElement');
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.src = '';
+                audioElement.load();
+            }
+            currentAudio = null;
+        }
+
+        // Open story modal
+        function openStoryModal(episode, updateHistory = true) {
+            gallery.pause('modal', true);
+            const modal = document.getElementById('storyModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalCategory = document.getElementById('modalCategory');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMeta = document.getElementById('modalMeta');
+            const modalDescription = document.getElementById('modalDescription');
+            const modalTags = document.getElementById('modalTags');
+            const modalDate = document.getElementById('modalDate');
+
+            // Store current filter state before opening modal
+            filterBeforeModal = activeFilter;
+
+            // Populate modal with episode data
+            modalImage.src = episode.coverImage || '/images/icon.webp';
+            modalImage.alt = episode.title;
+            
+            if (episode.category) {
+                modalCategory.textContent = episode.category.toUpperCase();
+                modalCategory.style.display = 'inline-block';
+            } else {
+                modalCategory.style.display = 'none';
+            }
+            
+            modalTitle.textContent = episode.title;
+            
+            // Build meta information
+            let metaHTML = '';
+            if (episode.episodeNumber) {
+                metaHTML += `<div class="modal-meta-item"><strong>Episode</strong> ${episode.episodeNumber}</div>`;
+            }
+            if (episode.duration) {
+                const formattedDuration = formatDuration(episode.duration);
+                if (formattedDuration) {
+                    metaHTML += `<div class="modal-meta-item"><strong>Duration</strong> ${formattedDuration}</div>`;
+                }
+            }
+            if (episode.host) {
+                metaHTML += `<div class="modal-meta-item"><strong>Host</strong> ${escapeHtml(episode.host)}</div>`;
+            }
+            modalMeta.innerHTML = metaHTML || '';
+            modalMeta.style.display = metaHTML ? 'flex' : 'none';
+            
+            // Use fullDescription if available, otherwise use description
+            const descriptionText = episode.fullDescription || episode.description || 'No description available.';
+            modalDescription.textContent = descriptionText;
+            
+            // Display tags if available
+            if (episode.tags && Array.isArray(episode.tags) && episode.tags.length > 0) {
+                modalTags.innerHTML = episode.tags.map(tag => 
+                    `<span class="modal-tag">${tag.toUpperCase()}</span>`
+                ).join('');
+                modalTags.style.display = 'flex';
+            } else {
+                modalTags.innerHTML = '';
+                modalTags.style.display = 'none';
+            }
+            
+            // Initialize audio player if audio URL is available
+            initAudioPlayer(episode.audioUrl || null);
+            
+            modalDate.textContent = formatDate(episode.createdAt);
+
+            // Update URL without page reload
+            if (updateHistory) window.history.pushState(
+                { episodeId: episode.id, view: 'episode' },
+                '',
+                `/episode/${episode.id}`
+            );
+            currentEpisodeId = episode.id;
+
+            // Update meta tags for social sharing
+            updateMetaTags(episode);
+
+            // Show modal
+            showStoryDialog(modal);
+        }
+
+        // Close story modal
+        function closeStoryModal(updateHistory = true) {
+            cleanupAudio();
+            const modal = document.getElementById('storyModal');
+            hideStoryDialog(modal);
+            
+            // Restore filter state and URL
+            if (updateHistory) {
+                activeFilter = filterBeforeModal;
+                updateCategoryUrl(activeFilter);
+            }
+            updateTagStates(activeFilter);
+            renderEpisodes(activeFilter);
+            
+            currentEpisodeId = null;
+            gallery.pause('modal', false);
+
+            if (activeFilter === 'all') resetMetaTags();
+            else updateCategoryMetaTags(activeFilter);
+        }
+
+        // Initialize modal event listeners
+        function initModal() {
+            const modal = document.getElementById('storyModal');
+            const closeButton = document.getElementById('modalClose');
+            const playPauseBtn = document.getElementById('audioPlayPause');
+            const progressBar = document.getElementById('audioProgressBar');
+
+            // Close button click
+            closeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeStoryModal();
+            });
+
+            // Backdrop click (close when clicking outside modal content)
+            modal.addEventListener('click', (e) => {
+                // Only close if clicking directly on the modal overlay, not on modal content
+                if (e.target === modal) {
+                    closeStoryModal();
+                }
+            });
+
+            // ESC key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('open')) {
+                    closeStoryModal();
+                }
+            });
+
+            // Audio player controls
+            if (playPauseBtn) {
+                playPauseBtn.addEventListener('click', handleAudioPlayPause);
+            }
+
+            if (progressBar) {
+                progressBar.addEventListener('click', handleProgressBarClick);
+            }
+        }
+
+        // Initialize routing and share functionality
+        function initRouting() {
+            const shareBtn = document.getElementById('modalShareBtn');
+            const headerLink = document.getElementById('headerLink');
+            const getAngleHeaderBtn = document.getElementById('getAngleHeaderBtn');
+            const getAngleModalBtn = document.querySelector('.audio-get-angle-btn');
+
+            if (typeof gtag === 'function') {
+                if (getAngleHeaderBtn) {
+                    getAngleHeaderBtn.addEventListener('click', () => {
+                        gtag('event', 'download_click', { link_location: 'header' });
+                    });
+                }
+                if (getAngleModalBtn) {
+                    getAngleModalBtn.addEventListener('click', () => {
+                        gtag('event', 'download_click', { link_location: 'modal' });
+                    });
+                }
+            }
+
+            if (shareBtn) {
+                shareBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleShare(e);
+                });
+            } else {
+                console.warn('Share button not found');
+            }
+
+            if (headerLink) {
+                headerLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (currentEpisodeId) {
+                        closeStoryModal();
+                    }
+                });
+            }
+
+            // Handle browser back/forward navigation
+            window.addEventListener('popstate', async (e) => {
+                const episodeId = e.state?.episodeId || getEpisodeIdFromUrl();
+                if (episodeId) {
+                    await openModalFromEpisodeId(episodeId, false);
+                } else {
+                    // Check if we need to update category filter
+                    const categoryFromUrl = getCategoryFromUrl();
+                    const resolvedCategory = categoryFromUrl
+                        ? resolveCategoryFromUrlSegment(categoryFromUrl)
+                        : null;
+
+                    if (resolvedCategory) {
+                        activeFilter = resolvedCategory;
+                        updateCategoryMetaTags(resolvedCategory);
+                        updateTagStates(activeFilter);
+                        renderEpisodes(activeFilter);
+                    } else {
+                        // No category, show all
+                        activeFilter = 'all';
+                        resetMetaTags();
+                        updateTagStates(activeFilter);
+                        renderEpisodes(activeFilter);
+                    }
+                    closeStoryModal(false);
+                }
+            });
+        }
+
+        // Open modal from episode ID (for URL routing)
+        async function openModalFromEpisodeId(episodeId, updateHistory = true) {
+            // Try to find episode in already loaded episodes
+            let episode = episodes.find(ep => ep.id === episodeId);
+            
+            // If not found, fetch from API
+            if (!episode) {
+                try {
+                    const response = await fetch(`/api/episodes/${episodeId}`);
+                    const data = await response.json();
+                    
+                    if (!data.success || !data.data) {
+                        // Episode not found - show error or redirect
+                        window.history.replaceState({ view: 'gallery' }, '', '/');
+                        return;
+                    }
+                    
+                    episode = data.data;
+                } catch (error) {
+                    console.error('Error fetching episode:', error);
+                    window.history.replaceState({ view: 'gallery' }, '', '/');
+                    return;
+                }
+            }
+            
+            // Open modal with episode
+            openStoryModal(episode, updateHistory);
+        }
+
+        // Filter and render episodes (initial render)
+        function renderEpisodes(filter = 'all') {
+
+            
+            // Filter episodes based on selected filter
+            let filteredEpisodes;
+            if (filter === 'all') {
+                filteredEpisodes = episodes;
+            } else if (filter === 'new') {
+                // Show episodes sorted by createdAt (newest first)
+                filteredEpisodes = [...episodes].sort((a, b) => {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+            } else if (filter === 'popular') {
+                // For now, show most recent episodes as placeholder
+                // TODO: Replace with actual popularity metric when available
+                filteredEpisodes = [...episodes].sort((a, b) => {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }).slice(0, Math.ceil(episodes.length * 0.3)); // Top 30% most recent
+            } else {
+                // Filter by category
+                filteredEpisodes = episodes.filter(ep => ep.category === filter);
+            }
+
+            document.getElementById('loadingSpinner').style.display = 'none';
+            gallery.setItems(filteredEpisodes);
+            updateTagStates(filter);
+        }
+
+        // Update tag states based on active filter
+        function updateTagStates(activeFilter) {
+            const tags = document.querySelectorAll('.category-tag');
+            tags.forEach(tag => {
+                const tagCategory = tag.getAttribute('data-category');
+                tag.classList.remove('active', 'inactive');
+                
+                if (activeFilter === 'all') {
+                    // No filter active, all tags normal
+                    tag.classList.remove('inactive');
+                } else if (tagCategory === activeFilter) {
+                    // This tag is active
+                    tag.classList.add('active');
+                } else {
+                    // Other tags should fade
+                    tag.classList.add('inactive');
+                }
+            });
+        }
+
+        // Initialize category tags with click handlers
+        function initFilters(categories) {
+            const filtersContainer = document.getElementById('filters');
+            filtersContainer.innerHTML = '';
+
+            // Create special filter tags (new and popular)
+            const specialFilters = [
+                { id: 'new', label: 'NEW' },
+                { id: 'popular', label: 'POPULAR' }
+            ];
+
+            specialFilters.forEach(filter => {
+                const tag = document.createElement('button');
+                tag.className = 'category-tag';
+                tag.textContent = filter.label;
+                tag.setAttribute('data-category', filter.id);
+                tag.setAttribute('type', 'button');
+                tag.setAttribute('aria-label', `Filter by ${filter.label}`);
+                
+                // Add click handler
+                tag.addEventListener('click', () => {
+                    handleFilterClick(filter.id);
+                });
+                
+                filtersContainer.appendChild(tag);
+            });
+
+            // Create category tags
+            categories.forEach(category => {
+                const tag = document.createElement('button');
+                tag.className = 'category-tag';
+                tag.textContent = category.toUpperCase();
+                tag.setAttribute('data-category', category);
+                tag.setAttribute('type', 'button');
+                tag.setAttribute('aria-label', `Filter by ${category}`);
+                
+                // Add click handler
+                tag.addEventListener('click', () => {
+                    handleFilterClick(category);
+                });
+                
+                filtersContainer.appendChild(tag);
+            });
+        }
+
+        // Handle filter tag click
+        function handleFilterClick(category) {
+            // Toggle: if clicking the same filter, turn it off
+            if (activeFilter === category) {
+                activeFilter = 'all';
+            } else {
+                activeFilter = category;
+            }
+            
+            // Update URL to reflect the active filter
+            updateCategoryUrl(activeFilter);
+            
+            // Update meta tags for category pages
+            if (activeFilter === 'all') {
+                resetMetaTags();
+            } else {
+                updateCategoryMetaTags(activeFilter);
+            }
+            
+            // Update tag states
+            updateTagStates(activeFilter);
+            
+            // Re-render episodes with the new filter
+            // This ensures consistency and proper mobile filtering
+            renderEpisodes(activeFilter);
+        }
+
+        // URL Routing Functions
+        function getEpisodeIdFromUrl() {
+            const match = window.location.pathname.match(/^\/episode\/([^\/]+)$/);
+            return match ? match[1] : null;
+        }
+
+        // Get category from URL (e.g., /sports)
+        function getCategoryFromUrl() {
+            const path = window.location.pathname;
+            // Don't match if it's an episode URL, API route, or root
+            if (path === '/' || path.startsWith('/episode/') || path.startsWith('/api/') || path.startsWith('/images/') || path.startsWith('/fonts/')) {
+                return null;
+            }
+            // Match single-segment paths (e.g., /sports, /popular)
+            const match = path.match(/^\/([^\/]+)$/);
+            if (!match) return null;
+            try {
+                return decodeURIComponent(match[1]);
+            } catch {
+                return match[1];
+            }
+        }
+
+        // Update URL to reflect active category filter
+        function updateCategoryUrl(filter) {
+            if (filter === 'all') {
+                // Remove category from URL, go back to home
+                window.history.pushState({ view: 'gallery', filter: 'all' }, '', '/');
+            } else {
+                const pathSegment = getCategoryPathSegment(filter);
+                // Update URL to include canonical category slug (e.g., /business-and-economy)
+                window.history.pushState({ view: 'gallery', filter: filter }, '', `/${encodeURIComponent(pathSegment)}`);
+            }
+        }
+
+        // Meta Tags Functions
+        function updateMetaTags(episode) {
+            const baseUrl = CANONICAL_BASE_URL;
+            const episodeUrl = `${baseUrl}/episode/${episode.id}`;
+            // Use the story's actual cover image directly as og:image.
+            // All cover images are publicly accessible Supabase CDN URLs (WebP).
+            // The /api/og-image dynamic generator was skipping WebP, so crawlers
+            // saw a blank background instead of the story's actual photo.
+            const _ci = episode.coverImage;
+            const ogImageUrl = _ci && _ci.startsWith('http')
+                ? _ci
+                : (_ci ? `${baseUrl}${_ci.startsWith('/') ? '' : '/'}${_ci}` : `${baseUrl}/images/og-image.png`);
+            const description = episode.fullDescription || episode.description || 'Stories worth listening.';
+
+            updateMetaTag('property', 'og:title', episode.title);
+            updateMetaTag('property', 'og:description', description);
+            updateMetaTag('property', 'og:image', ogImageUrl);
+            updateMetaTag('property', 'og:url', episodeUrl);
+            updateMetaTag('property', 'og:type', 'article');
+            
+            updateMetaTag('name', 'twitter:card', 'summary_large_image');
+            updateMetaTag('name', 'twitter:title', episode.title);
+            updateMetaTag('name', 'twitter:description', description);
+            updateMetaTag('name', 'twitter:image', ogImageUrl);
+            updateMetaTag('name', 'twitter:image:alt', description);
+            updateMetaTag('name', 'twitter:url', episodeUrl);
+            updateCanonicalLink(episodeUrl);
+            
+            document.title = `${episode.title} | Angle`;
+        }
+
+        function updateMetaTag(attr, value, content) {
+            let tag = document.querySelector(`meta[${attr}="${value}"]`);
+            if (!tag) {
+                tag = document.createElement('meta');
+                tag.setAttribute(attr, value);
+                document.head.appendChild(tag);
+            }
+            tag.setAttribute('content', content);
+        }
+
+        function updateCanonicalLink(url) {
+            let tag = document.querySelector('link[rel="canonical"]');
+            if (!tag) {
+                tag = document.createElement('link');
+                tag.setAttribute('rel', 'canonical');
+                document.head.appendChild(tag);
+            }
+            tag.setAttribute('href', url);
+        }
+
+        function updateCategoryMetaTags(category) {
+            const baseUrl = CANONICAL_BASE_URL;
+            const pathSegment = getCategoryPathSegment(category);
+            const categoryUrl = `${baseUrl}/${encodeURIComponent(pathSegment)}`;
+            
+            // Format category name for display
+            const normalizedCategory = normalizeCategoryValue(category);
+            const categoryLabel = normalizedCategory === 'new' ? 'New' : 
+                                 normalizedCategory === 'popular' ? 'Popular' : 
+                                 category;
+            
+            const title = `${categoryLabel} Stories | Angle`;
+            const description = normalizedCategory === 'new' ? 'Latest stories worth listening.' :
+                               normalizedCategory === 'popular' ? 'Popular stories worth listening.' :
+                               `${categoryLabel} stories worth listening.`;
+            
+            // Use category-specific OG image endpoint
+            const ogImageUrl = `${baseUrl}/api/og-image/category/${encodeURIComponent(pathSegment)}`;
+            
+            updateMetaTag('property', 'og:title', title);
+            updateMetaTag('property', 'og:description', description);
+            updateMetaTag('property', 'og:image', ogImageUrl);
+            updateMetaTag('property', 'og:url', categoryUrl);
+            updateMetaTag('property', 'og:type', 'website');
+            
+            updateMetaTag('name', 'twitter:card', 'summary_large_image');
+            updateMetaTag('name', 'twitter:title', title);
+            updateMetaTag('name', 'twitter:description', description);
+            updateMetaTag('name', 'twitter:image', ogImageUrl);
+            updateMetaTag('name', 'twitter:image:alt', description);
+            updateMetaTag('name', 'twitter:url', categoryUrl);
+            updateCanonicalLink(categoryUrl);
+            
+            document.title = title;
+        }
+
+        function resetMetaTags() {
+            const baseUrl = CANONICAL_BASE_URL;
+            // Use the static PNG for the homepage — no dynamic generation needed.
+            const homeOgImage = `${baseUrl}/images/og-image.png`;
+            updateMetaTag('property', 'og:title', 'Angle');
+            updateMetaTag('property', 'og:description', 'Stories worth listening.');
+            updateMetaTag('property', 'og:image', homeOgImage);
+            updateMetaTag('property', 'og:url', baseUrl);
+            updateMetaTag('property', 'og:type', 'website');
+            
+            updateMetaTag('name', 'twitter:card', 'summary_large_image');
+            updateMetaTag('name', 'twitter:title', 'Angle');
+            updateMetaTag('name', 'twitter:description', 'Stories worth listening.');
+            updateMetaTag('name', 'twitter:image', homeOgImage);
+            updateMetaTag('name', 'twitter:image:alt', 'Stories worth listening.');
+            updateMetaTag('name', 'twitter:url', baseUrl);
+            updateCanonicalLink(`${baseUrl}/`);
+            
+            document.title = 'Angle';
+        }
+
+        // Share Functionality
+        function showShareToast() {
+            let toast = document.getElementById('shareToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'shareToast';
+                toast.className = 'share-toast';
+                toast.textContent = 'Link copied!';
+                document.body.appendChild(toast);
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Helper to build canonical episode share URL
+        function getCanonicalEpisodeShareUrl() {
+            const baseUrl = CANONICAL_BASE_URL;
+
+            const episodeId =
+                window.history.state?.episodeId ??
+                currentEpisodeId ??
+                null;
+
+            return episodeId ? `${baseUrl}/episode/${episodeId}` : `${baseUrl}/`;
+        }
+
+        async function handleShare(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const url = getCanonicalEpisodeShareUrl();
+            console.log("SHARE URL", url);
+
+            // Try native share API first (mobile)
+            // Note: Omitting title and text allows Messages/Mail to fetch og:meta tags from the page
+            // This ensures proper og:image preview generation
+            if (navigator.share) {
+                try {
+                    await navigator.share({ url });
+                    showShareToast();
+                    return;
+                } catch (err) {
+                    // User cancelled - don't show error
+                    if (err?.name === 'AbortError' || err?.code === 20) {
+                        return;
+                    }
+                    // Other error - fall through to clipboard
+                }
+            }
+
+            // Fall back to clipboard
+            try {
+                // Check if clipboard API is available
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    showShareToast();
+                    return;
+                } else {
+                    throw new Error('Clipboard API not available');
+                }
+            } catch (err) {
+                console.error('Clipboard API failed, using fallback:', err);
+                // Fallback for older browsers or when clipboard API fails
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    textArea.style.position = 'fixed';
+                    textArea.style.top = '0';
+                    textArea.style.left = '0';
+                    textArea.style.width = '2em';
+                    textArea.style.height = '2em';
+                    textArea.style.padding = '0';
+                    textArea.style.border = 'none';
+                    textArea.style.outline = 'none';
+                    textArea.style.boxShadow = 'none';
+                    textArea.style.background = 'transparent';
+                    textArea.style.opacity = '0';
+                    textArea.readOnly = true;
+                    
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        console.log('URL copied via fallback method');
+                        showShareToast();
+                    } else {
+                        console.error('execCommand copy failed');
+                        alert('Failed to copy link. Please copy manually: ' + url);
+                    }
+                } catch (e) {
+                    console.error('Fallback copy failed:', e);
+                    alert('Failed to copy link. Please copy manually: ' + url);
+                }
+            }
+        }
+
+        // Handle share from card
+        async function handleCardShare(episode) {
+            const baseUrl = CANONICAL_BASE_URL;
+            const url = `${baseUrl}/episode/${episode.id}`;
+            console.log("SHARE URL", url);
+
+            // Try native share API first (mobile)
+            if (navigator.share) {
+                try {
+                    await navigator.share({ url });
+                    showShareToast();
+                    return;
+                } catch (err) {
+                    // User cancelled - don't show error
+                    if (err?.name === 'AbortError' || err?.code === 20) {
+                        return;
+                    }
+                    // Other error - fall through to clipboard
+                }
+            }
+
+            // Fall back to clipboard
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    showShareToast();
+                    return;
+                } else {
+                    throw new Error('Clipboard API not available');
+                }
+            } catch (err) {
+                // Fallback for older browsers
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    textArea.style.position = 'fixed';
+                    textArea.style.top = '0';
+                    textArea.style.left = '0';
+                    textArea.style.width = '2em';
+                    textArea.style.height = '2em';
+                    textArea.style.padding = '0';
+                    textArea.style.border = 'none';
+                    textArea.style.outline = 'none';
+                    textArea.style.boxShadow = 'none';
+                    textArea.style.background = 'transparent';
+                    textArea.style.opacity = '0';
+                    textArea.readOnly = true;
+                    
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showShareToast();
+                    } else {
+                        alert('Failed to copy link. Please copy manually: ' + url);
+                    }
+                } catch (e) {
+                    alert('Failed to copy link. Please copy manually: ' + url);
+                }
+            }
+        }
+
+        // Fetch and initialize
+        async function init() {
+            // Check if we're on an episode URL
+            const episodeId = getEpisodeIdFromUrl();
+            
+            // Always load episodes in background
+            try {
+                const [episodesRes, renditions] = await Promise.all([
+                    fetch('/api/episodes'),
+                    fetch('/images/cover-renditions.json', { signal: AbortSignal.timeout(1500) })
+                        .then(response => response.ok ? response.json() : {})
+                        .catch(() => ({}))
+                ]);
+                const episodesData = await episodesRes.json();
+                coverRenditions = renditions;
+                availableCategories = episodesData.success
+                    ? [...new Set(episodesData.data.map(ep => ep.category).filter(Boolean))].sort()
+                    : [];
+                const categoriesData = { success: episodesData.success, data: availableCategories };
+
+                // Check if we're on a category URL and validate it
+                const categoryFromUrl = getCategoryFromUrl();
+                if (categoryFromUrl && !episodeId) {
+                    const resolvedCategory = resolveCategoryFromUrlSegment(categoryFromUrl, availableCategories);
+
+                    if (resolvedCategory) {
+                        activeFilter = resolvedCategory;
+                        // Update meta tags for category page
+                        updateCategoryMetaTags(resolvedCategory);
+                    } else {
+                        // Invalid category, redirect to home
+                        activeFilter = 'all';
+                        resetMetaTags();
+                        window.history.replaceState({ view: 'gallery', filter: 'all' }, '', '/');
+                    }
+                }
+
+                if (categoriesData.success) {
+                    initFilters(availableCategories);
+                }
+
+                if (episodesData.success) {
+                    episodes = shuffleArray(episodesData.data);
+                    animateStoryCount(episodes.length);
+
+                    // If we're on an episode URL, open modal; otherwise show gallery
+                    if (episodeId) {
+                        renderEpisodes(activeFilter);
+                        await openModalFromEpisodeId(episodeId, false);
+                    } else {
+                        // Render with the active filter (from URL or default 'all')
+                        renderEpisodes(activeFilter);
+                    }
+                } else {
+                    const loadingSpinner = document.getElementById('loadingSpinner');
+                    if (loadingSpinner) {
+                        loadingSpinner.style.display = 'none';
+                    }
+                    if (!episodeId) {
+                        document.getElementById('collectionGrid').innerHTML = 
+                            '<div class="loading">Failed to load episodes</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error initializing:', error);
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                if (loadingSpinner) {
+                    loadingSpinner.style.display = 'none';
+                }
+                
+                // If we're on an episode URL, try to open modal anyway
+                if (episodeId) {
+                    await openModalFromEpisodeId(episodeId);
+                } else {
+                    document.getElementById('collectionGrid').innerHTML = 
+                        '<div class="loading">Failed to load episodes</div>';
+                }
+            }
+        }
+
+        // Initialize modal and routing on page load
+        initModal();
+        initRouting();
+
+        // The count reflects this catalog, never the retired Supabase catalog.
+
+        // Start
+        init();
+    </script>
+    <footer class="site-footer">
+      <a href="https://x.com/angle_newsapp" target="_blank" rel="noopener noreferrer" aria-label="Follow Angle on X">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      </a>
+      <a href="https://www.instagram.com/angle_newsapp" target="_blank" rel="noopener noreferrer" aria-label="Follow Angle on Instagram">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+        </svg>
+      </a>
+    </footer>
+</body>
+</html>

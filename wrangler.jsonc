@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "angle-website",
+  "account_id": "118438a64acf487f0c03264439e49d9b",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "newsangle.co/*",
+      "zone_name": "newsangle.co"
+    },
+    {
+      "pattern": "www.newsangle.co/*",
+      "zone_name": "newsangle.co"
+    }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "services": [
+    {
+      "binding": "ANGLE_BACKEND",
+      "service": "angle-api"
+    }
+  ],
+  "vars": {
+    "PUBLIC_ORIGIN": "https://www.newsangle.co",
+    "ENVIRONMENT": "production",
+    "ANGLE_API_ORIGIN": "https://angle-api.footy.workers.dev"
+  }
+}
