@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
+const recipe = 'original-aspect-webp-82-v2';
+
 // Supply one or more website catalog endpoints. Defaults to the current preview,
 // never imports stories into the catalog, and never writes to the media origin.
 const endpoints = process.argv.slice(2);
@@ -30,9 +32,9 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     while (queue.length) {
         const [url, version] = queue.shift();
         try {
-            // Reuse existing files only when the catalog's artwork version is unchanged.
+            // Rebuild when either the artwork or the resizing recipe changes.
             const cached = previous[url];
-            if (cached?.version === version && cached.sources?.length === 3) {
+            if (cached?.version === version && cached.recipe === recipe && cached.sources?.length === 3) {
                 const files = await Promise.all(cached.sources.map(s => readFile(`${publicDir}${s.url.slice(1)}`).catch(() => null)));
                 if (files.every(Boolean)) { manifest[url] = cached; continue; }
             }
@@ -41,18 +43,18 @@ await Promise.all(Array.from({ length: 4 }, async () => {
             const input = Buffer.from(await response.arrayBuffer());
             if (input.length > 25 * 1024 * 1024) throw new Error('Cover exceeds 25MB');
             inputBytes += input.length;
-            const hash = createHash('sha256').update(input).update('square-webp-82-v1').digest('hex').slice(0, 24);
+            const hash = createHash('sha256').update(input).update(recipe).digest('hex').slice(0, 24);
             const sources = [];
             for (const width of [500, 1000, 1500]) {
                 const name = `${hash}-${width}.webp`;
                 const bytes = await sharp(input, { limitInputPixels: 40_000_000 }).rotate()
-                    .resize(width, width, { fit: 'cover', position: 'centre' })
+                    .resize({ width })
                     .webp({ quality: 82, effort: 4 }).toBuffer();
                 await writeFile(`${output}/${name}`, bytes);
                 outputBytes += bytes.length;
                 sources.push({ width, url: `/images/covers/${name}` });
             }
-            manifest[url] = { version, sources };
+            manifest[url] = { version, recipe, sources };
         } catch (error) {
             failures++;
             console.error(`Unable to resize ${url}: ${error.message}`);
