@@ -3,7 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 import { ORIGIN } from '@/lib/site';
 import { ArtworkTheme } from '@/components/artwork-theme';
-export const metadata: Metadata = { metadataBase: new URL(ORIGIN), icons: { icon: '/images/icon.webp' } };
+export const metadata: Metadata = { metadataBase: new URL(ORIGIN) };
 export default function RootLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   return <html lang="en"><body><ArtworkTheme>{children}{modal}</ArtworkTheme>
     <Script src="https://www.googletagmanager.com/gtag/js?id=G-RRQ8EPNMPQ" strategy="afterInteractive" />
