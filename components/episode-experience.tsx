@@ -5,8 +5,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { extractArtworkColors } from '@/lib/artwork-palette';
 import { AudioPlayer } from './audio-player';
 
-export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl, children }: {
-  id: string; artwork: string; artworkSources: ReturnType<typeof progressiveArtworkProps>; title: string; audioUrl: string | null; children: ReactNode;
+export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl, artworkHeader, children }: {
+  id: string; artwork: string; artworkSources: ReturnType<typeof progressiveArtworkProps>; title: string; audioUrl: string | null; artworkHeader: ReactNode; children: ReactNode;
 }) {
   const image = useRef<HTMLImageElement>(null);
   const player = useRef<HTMLDivElement>(null);
@@ -49,6 +49,7 @@ export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl
     <section className="episode-media" aria-label="Artwork and audio player">
       <div className="episode-media-card">
         <ArtworkImage previewRef={image} className="modal-image" {...artworkSources} fetchPriority="high" crossOrigin="anonymous" alt={title} width="600" height="800" />
+        {artworkHeader}
         {audioUrl && <div ref={player} className="episode-listen-panel" style={playerStyle}>
           <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} />
         </div>}

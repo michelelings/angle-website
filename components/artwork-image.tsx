@@ -6,7 +6,7 @@ type Props = Omit<ComponentProps<'img'>, 'srcSet' | 'sizes'> & {
   src: string; fullSrc: string; previewRef?: RefObject<HTMLImageElement | null>;
 };
 
-export function ArtworkImage({ src, fullSrc, className = '', previewRef, ...props }: Props) {
+export function ArtworkImage({ src, fullSrc, className = '', previewRef, children, ...props }: Props) {
   const full = useRef<HTMLImageElement>(null);
   const [decodedSource, setDecodedSource] = useState('');
   useEffect(() => {
@@ -20,5 +20,6 @@ export function ArtworkImage({ src, fullSrc, className = '', previewRef, ...prop
       onError={event => artworkFallback(event.currentTarget, null)} />
     {fullSrc !== src && <img {...props} ref={full} src={fullSrc} crossOrigin="anonymous" decoding="async"
       className={`artwork-full${decodedSource === fullSrc ? ' is-ready' : ''}`} alt="" aria-hidden="true" fetchPriority="low" />}
+    {children}
   </span>;
 }

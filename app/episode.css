@@ -100,12 +100,16 @@
   padding: 80px;
 }
 .episode-media-card {
+  --media-padding-x: 18px;
+  position: relative;
   display: flex;
   flex-direction: column;
   width: var(--artwork-size);
   flex-shrink: 0;
   box-shadow: 0 32px 100px -16px rgb(0 0 0 / 32%), 0 12px 40px -12px rgb(0 0 0 / 18%);
 }
+.episode-media-card .episode-breadcrumb { position: absolute; z-index: 1; inset: 0 0 auto; margin: 0; padding: 16px var(--media-padding-x); color: #fff; }
+.episode-media-card .episode-breadcrumb-home { min-width: 44px; }
 .episode-media .modal-image {
   position: static;
   flex-shrink: 1;
@@ -120,7 +124,7 @@
 .episode-listen-panel {
   width: 100%;
   flex-shrink: 0;
-  padding: 20px 18px;
+  padding: 20px var(--media-padding-x);
   border: 0;
   border-radius: 0;
   color: var(--player-ink, #fff);
@@ -170,7 +174,6 @@
   padding: 80px 80px 80px 0;
 }
 .episode-reading .modal-body { max-width: none; padding: 0; margin: 0; }
-.episode-reading .episode-breadcrumb { margin-top: 0; margin-bottom: 8px; }
 .episode-reading .modal-title { font-size: clamp(60px, min(9vw, 22cqw), 128px); line-height: 0.98; margin-bottom: 14px; }
 .episode-reading .modal-description,
 .episode-reading .modal-meta-item,
@@ -183,13 +186,12 @@
   .episode-view { display: block; }
   .episode-shell .modal-header { top: max(12px, env(safe-area-inset-top)); right: 16px; }
   .episode-media { --artwork-size: min(100%, 420px); position: relative; height: auto; gap: 0; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); }
-  .episode-media-card { position: relative; }
-  .episode-media .episode-listen-panel { position: absolute; inset: auto 0 0; padding: 20px 16px; }
+  .episode-media-card { --media-padding-x: 16px; }
+  .episode-media .episode-listen-panel { position: absolute; inset: auto 0 0; }
   .episode-media .modal-image { max-height: none; }
   .episode-reading { padding: 24px max(20px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
   .episode-reading .modal-title { font-size: clamp(40px, 12vw, 64px); }
-  .episode-reading .episode-breadcrumb { font-size: 18px; }
-  .episode-reading .episode-breadcrumb-home { min-width: 44px; }
+  .episode-media-card .episode-breadcrumb { font-size: 18px; }
   .episode-reading .modal-description,
   .episode-reading .transcript,
   .episode-reading .transcript summary,

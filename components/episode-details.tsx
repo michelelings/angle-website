@@ -7,11 +7,11 @@ import { GetAngleLink } from './get-angle-link';
 import { ShareButton } from './share-button';
 import { EpisodeTitle } from './episode-title';
 export function EpisodeDetails({ episode, modal = false, related = [] }: { episode: Episode; modal?: boolean; related?: Episode[] }) {
-  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={progressiveArtworkProps(episode)} title={episode.title} audioUrl={episode.audioUrl}>
-    <div className="modal-body">
-      <nav className="episode-breadcrumb" aria-label="Breadcrumb"><Link href="/" className="episode-breadcrumb-home" aria-label="Angle home"><img src="/images/logo.svg" alt="" width="32" height="32" /></Link>
+  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={progressiveArtworkProps(episode)} title={episode.title} audioUrl={episode.audioUrl}
+    artworkHeader={<nav className="episode-breadcrumb" aria-label="Breadcrumb"><Link href="/" className="episode-breadcrumb-home" aria-label="Angle home"><img src="/images/logo.svg" alt="" width="32" height="32" /></Link>
         {episode.category && <span>{categoryLabel(episode.category)}</span>}
-      </nav>
+      </nav>}>
+    <div className="modal-body">
       <EpisodeTitle title={episode.title} modal={modal} />
       <div className="modal-meta">
         {episode.duration !== null && <span className="modal-meta-item">{formatMinutes(episode.duration)}</span>}
