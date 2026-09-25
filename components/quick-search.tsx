@@ -8,12 +8,14 @@ export function QuickSearch() {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<SearchDocument[]>([]);
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [attempt, setAttempt] = useState(0);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [requested, setRequested] = useState(false);
   const [active, setActive] = useState(-1);
   useEffect(() => {
+    if (!requested) return;
     const controller = new AbortController();
     setState('loading');
     fetch('/api/search-index', { signal: controller.signal }).then(async response => {
@@ -23,7 +25,7 @@ export function QuickSearch() {
       if (!controller.signal.aborted) { setDocuments(body.data); setState('ready'); }
     }).catch(() => { if (!controller.signal.aborted) setState('error'); });
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, requested]);
   const index = useMemo(() => createSearchIndex(documents), [documents]);
   const results = useMemo(() => searchEpisodes(index, query), [index, query]);
   const visible = results.slice(0, 8);
@@ -45,7 +47,7 @@ export function QuickSearch() {
         autoComplete="off" value={query} role="combobox" aria-autocomplete="list"
         aria-expanded={expanded} aria-controls={`${id}-results`}
         aria-activedescendant={expanded && active >= 0 && visible[active] ? `${id}-result-${active}` : undefined}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { setRequested(true); setOpen(true); }}
         onChange={event => { setQuery(event.target.value); setOpen(true); setActive(-1); }}
         onKeyDown={event => {
           if (event.key === 'Escape') { setOpen(false); setActive(-1); }

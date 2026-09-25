@@ -1,8 +1,8 @@
 # Server rendering and loading performance
 
-Catalog headings, category counts, filters, cards, and search results render on the server. Search uses a native GET form (`?q=`); submit with Enter or Search. Category links preserve the query. Browsing, filtering, and searching work without JavaScript. The browser no longer fetches the full transcript index or builds its search index on startup. Fuzzy transcript search remains available on the server.
+Catalog headings, categories, cards, and direct search URLs render on the server. After hydration, search filters the gallery on every keystroke with the existing fuzzy title/topic/transcript matching and category counts. Opening search loads the cached search documents once; the initial homepage does not download transcripts or build a search index. Typing uses browser history updates without a server round trip per character. Direct `?q=` visits receive initial search documents from the server so their results appear in the initial HTML. A native GET form remains as a no-JavaScript fallback.
 
-Client components remain for gallery movement, audio controls, dialogs, sharing, image error recovery, and artwork themes. The gallery receives its accessible initial cards as server-rendered children. Its enhancement starts without fetching an image manifest.
+Client components handle live search, gallery movement, audio controls, dialogs, sharing, image error recovery, and artwork themes. The gallery starts without fetching an image manifest.
 
 ## Artwork
 
