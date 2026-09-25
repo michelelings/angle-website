@@ -101,3 +101,23 @@ test('failed image transformations are not cached and allow a later recovery', a
   const failed = await artworkResponse(request, episode.id, env);
   assert.equal(failed.status, 502); assert.equal(failed.headers.get('cache-control'), 'no-store');
 });
+
+test('artwork from the backend origin uses its service binding instead of public Worker fetch', async t => {
+  memoryCache(t); const env = environment();
+  const backendRow = { ...row, coverUrl: env.ANGLE_API_ORIGIN + '/v2/media/cover' };
+  const episode = mapV2Episode(backendRow); let mediaCalls = 0;
+  env.ANGLE_BACKEND = { async fetch(request) {
+    if (new URL(request.url).pathname === '/v2/media/cover') {
+      mediaCalls++; return new Response('png', { headers: { 'Content-Type': 'image/png' } });
+    }
+    return Response.json({ catalogEpoch: 'angle-pipeline-v2', episodes: [backendRow], nextOffset: null });
+  } };
+  const transformer: ImageTransformer = {
+    transform() { return this; }, draw() { return this; },
+    async output() { return { response: () => new Response('webp'), image: () => new Response('webp').body!, contentType: () => 'image/webp' }; },
+  };
+  env.IMAGES = { input: () => transformer };
+  t.mock.method(globalThis, 'fetch', async () => { throw new Error('Must use service binding'); });
+  const response = await artworkResponse(new Request(new URL(artworkUrl(episode, 540), env.PUBLIC_ORIGIN)), episode.id, env);
+  assert.equal(response.status, 200); assert.equal(mediaCalls, 1);
+});
