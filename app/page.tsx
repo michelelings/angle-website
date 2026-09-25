@@ -1,5 +1,7 @@
 import { CatalogPage } from '@/components/catalog-page';
-import { pageMetadata } from '@/lib/metadata';
+import { pageMetadata, searchMetadata, type SearchParams } from '@/lib/metadata';
 export const dynamic = 'force-dynamic';
-export const metadata = pageMetadata();
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
+  return searchMetadata(pageMetadata(), await searchParams);
+}
 export default function Home() { return <CatalogPage />; }

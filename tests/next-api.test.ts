@@ -28,11 +28,11 @@ test('Next API retains catalog and episode response contracts, including missing
 });
 test('sitemap and JSON-LD preserve canonical routes and escape untrusted text', async () => {
   const xml = await (await apiResponse(['sitemap'], env())).text();
-  assert.match(xml, /https:\/\/www.newsangle.co\/science-and-tech/);
+  assert.doesNotMatch(xml, /https:\/\/www.newsangle.co\/science-and-tech/);
   assert.match(xml, /https:\/\/www.newsangle.co\/episode\/story-one/);
   const { data: [episode] } = await (await apiResponse(['episodes'], env())).json();
   assert.ok(!episodeJsonLd(episode).includes('</script>'));
   assert.equal(JSON.parse(episodeJsonLd(episode)).name, row.title);
-  assert.equal(filterEpisodes([episode], 'popular').length, 1);
+  assert.equal(filterEpisodes([episode], 'popular').length, 0);
   assert.equal(filterEpisodes([episode], 'missing').length, 0);
 });

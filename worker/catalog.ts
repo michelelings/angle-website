@@ -19,6 +19,11 @@ export interface Episode {
   topics?: string[];
   topicNames?: string[];
   fullDescription: string | null;
+  listenCount?: number;
+  presenterDisclosure?: string | null;
+  asOf?: string | null;
+  sources?: { title: string; url: string; publisher: string | null }[];
+  chapters?: { title: string; turns: { speaker: string | null; text: string }[] }[];
 }
 
 // Bindings are generated from wrangler.jsonc. The narrow fetch interfaces also
@@ -47,6 +52,18 @@ function mediaUrl(value: unknown): string | null {
 
 function nullableNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function timestamp(value: unknown): string | null {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
+}
+
+function sourceUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value);
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
 }
 
 function videoUrl(value: unknown): string | null {
@@ -79,7 +96,7 @@ export function parseCatalog(payload: unknown): Episode[] {
       return {
         id: row.id, title: row.title, description: nullableString(row.description),
         coverImage: mediaUrl(row.coverImage), createdAt: row.createdAt,
-        updatedAt: nullableString(row.updatedAt), category: nullableString(row.category),
+        updatedAt: timestamp(row.updatedAt), category: nullableString(row.category),
         duration: nullableNumber(row.duration), audioUrl: mediaUrl(row.audioUrl),
         previewVideoUrl: videoUrl(row.previewVideoUrl),
         previewVideoWidth: videoDimension(row.previewVideoWidth),
@@ -90,6 +107,7 @@ export function parseCatalog(payload: unknown): Episode[] {
         topics: Array.isArray(row.topics) ? row.topics.filter((topic: unknown) => typeof topic === 'string') : [],
         topicNames: Array.isArray(row.topicNames) ? row.topicNames.filter((name: unknown) => typeof name === 'string') : [],
         fullDescription: nullableString(row.fullDescription),
+        listenCount: nullableNumber(row.listenCount) ?? 0,
       };
     }).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 }
@@ -120,7 +138,8 @@ export function mapV2Episode(value: unknown): Episode {
     coverImage: row.coverUrl, createdAt: row.createdAt, category: row.category,
     previewVideoUrl: row.previewVideoUrl,
     previewVideoWidth: row.previewVideoWidth, previewVideoHeight: row.previewVideoHeight,
-    duration: rendition.durationSeconds, audioUrl: rendition.url, host: host || null, transcript: transcriptText || null, updatedAt: row.createdAt,
+    duration: rendition.durationSeconds, audioUrl: rendition.url, host: host || null, transcript: transcriptText || null, updatedAt: row.updatedAt,
+    listenCount: row.listenCount,
     topicNames: Array.isArray(object(row.taxonomy).topics)
       ? (object(row.taxonomy).topics as unknown[]).map(topic => nullableString(object(topic).name)).filter(Boolean) : [],
     topics: Array.isArray(object(row.taxonomy).topics)
@@ -129,6 +148,23 @@ export function mapV2Episode(value: unknown): Episode {
         return [nullableString(value.name), nullableString(value.description)].filter(Boolean);
       }) : [],
   }] })[0];
+  mapped.asOf = timestamp(row.asOf);
+  mapped.presenterDisclosure = nullableString(presenters.disclosure);
+  mapped.sources = Array.isArray(row.sources) ? row.sources.flatMap(value => {
+    const source = object(value);
+    const url = sourceUrl(source.url);
+    return url ? [{ url, title: nullableString(source.title)?.replace(/\s+/g, ' ').trim() || new URL(url).hostname,
+      publisher: nullableString(source.publisher) }] : [];
+  }).filter((source, index, sources) => sources.findIndex(other => other.url === source.url) === index) : [];
+  mapped.chapters = chapters.map(value => {
+    const chapter = object(value);
+    return { title: nullableString(chapter.title) || 'Transcript', turns: (Array.isArray(chapter.turns) ? chapter.turns : []).flatMap(value => {
+      const turn = object(value);
+      const text = nullableString(turn.text);
+      const speaker = typeof turn.speaker === 'string' ? nullableString(object(hosts[turn.speaker]).displayName) : null;
+      return text ? [{ text, speaker }] : [];
+    }) };
+  }).filter(chapter => chapter.turns.length);
   if (!mapped.coverImage || !mapped.audioUrl) throw new CatalogError(502, 'Published episode media is missing');
   return mapped;
 }

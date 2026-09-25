@@ -49,6 +49,7 @@ export class ContinuousGallery {
             else onOpen(item);
         });
         this.listen(wrapper, 'dragstart', e => e.preventDefault());
+        this.listen(document, 'keydown', () => delete wrapper.dataset.pointerFocus);
         this.listen(wrapper, 'keydown', e => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
             e.preventDefault();
@@ -69,6 +70,7 @@ export class ContinuousGallery {
         // Capture only after a horizontal drag is recognized: a simple tap still
         // targets the card/link, and native vertical scrolling remains available.
         this.listen(wrapper, 'pointerdown', e => {
+            wrapper.dataset.pointerFocus = 'true';
             if (!e.isPrimary || e.button !== 0 || this.mode === 'static') return;
             this.suppressClick = false;
             this.pointer = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY,

@@ -7,6 +7,7 @@ import { Header } from './header';
 import { SiteFooter } from './site-footer';
 import { Gallery } from './gallery';
 import { categorySlug, filterEpisodes, type Episode } from '@/lib/episodes';
+import { categoryLabel } from '@/lib/catalog-copy';
 import { createSearchIndex, type SearchDocument } from '@/lib/search';
 import { catalogCategory, catalogHref, catalogResults } from '@/lib/catalog-search';
 
@@ -45,7 +46,7 @@ export function CatalogExplorer({ episodes, categories, active: initialActive }:
     setLastCatalog(previous => previous.category === routeCategory && previous.query === requestedQuery
       ? previous : { category: routeCategory, query: requestedQuery });
     const label = routeCategory === 'new' ? 'New' : routeCategory === 'popular' ? 'Popular' : routeCategory;
-    document.title = routeCategory === 'all' ? 'Angle' : `${label} Stories | Angle`;
+    document.title = routeCategory === 'all' ? 'Angle — Audio Stories and News Explainers' : `${label} Stories | Angle`;
   }, [routeCategory, requestedQuery]);
   useEffect(() => {
     const controller = new AbortController();
@@ -68,7 +69,7 @@ export function CatalogExplorer({ episodes, categories, active: initialActive }:
   const filtering = !!query.trim();
   const pending = filtering && state !== 'ready';
   const visible = useMemo(() => pending ? [] : model.results, [pending, model.results]);
-  const filters = ['all', 'new', 'popular', ...categories.filter(c => !['all', 'new', 'popular'].includes(c))];
+  const filters = ['all', 'new', ...(filterEpisodes(episodes, 'popular').length ? ['popular'] : []), ...categories.filter(c => !['all', 'new', 'popular'].includes(c))];
   function update(nextQuery: string, typing = false) {
     const url = catalogHref(pathname, nextQuery, '');
     if (typing && editing.current) window.history.replaceState(null, '', url);
@@ -110,7 +111,7 @@ export function CatalogExplorer({ episodes, categories, active: initialActive }:
         return <CatalogLink key={category} href={catalogHref(path, query, '')}
           className={`category-tag ${active === category ? 'active' : 'inactive'}`}
           aria-current={active === category ? 'page' : undefined} onSelect={() => { editing.current = false; }}>
-          {category}{!pending && <span className="filter-count">{count}</span>}
+          {categoryLabel(category)}{!pending && <span className="filter-count">{count}</span>}
         </CatalogLink>;
       })}
     </nav>

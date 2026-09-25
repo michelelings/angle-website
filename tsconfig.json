@@ -50,6 +50,12 @@
   ],
   "exclude": [
     "node_modules",
+    "**/* 2.ts",
+    "**/* 2.tsx",
+    "**/* 3.ts",
+    "**/* 3.tsx",
+    "**/* 4.ts",
+    "**/* 4.tsx",
     "api",
     "lib/supabase.ts",
     "tests",

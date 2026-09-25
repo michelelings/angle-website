@@ -7,9 +7,12 @@ import { createGalleryCard } from '@/lib/gallery/card';
 import { shareEpisode } from './share-button';
 import { ORIGIN } from '@/lib/site';
 import { useArtworkTheme } from './artwork-theme';
+import { EpisodeCard } from './episode-card';
 export function Gallery({ episodes, paused = false }: { episodes: Episode[]; paused?: boolean }) {
   const wrapper = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('');
+  const [ready, setReady] = useState(false);
+  const fallback = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const updateTheme = useArtworkTheme();
   const instance = useRef<ContinuousGallery | undefined>(undefined);
@@ -41,14 +44,18 @@ export function Gallery({ episodes, paused = false }: { episodes: Episode[]; pau
       gallery.setItems(latest.current.episodes);
       gallery.pause('search', latest.current.paused);
       gallery.pause('modal', !!document.querySelector('dialog[open]'));
+      // Keep the accessible fallback if it currently owns keyboard focus.
+      if (!fallback.current?.contains(document.activeElement)) setReady(true);
     }
     const pause = (event: Event) => gallery?.pause('modal', (event as CustomEvent<boolean>).detail);
     window.addEventListener('angle:dialog', pause);
     void initialize();
     return () => { disposed = true; abort.abort(); gallery?.destroy(); instance.current = undefined; updateTheme(null); window.removeEventListener('angle:dialog', pause); };
   }, [router, updateTheme]);
-  return <><div ref={wrapper} className="gallery-wrapper"><div className="collection-grid" /></div>
+  return <><div ref={fallback} className="gallery-wrapper catalog-fallback" hidden={ready}><div className="collection-grid">
+      {episodes.map(episode => <EpisodeCard key={episode.id} episode={episode} gallery />)}
+    </div></div>
+    <div ref={wrapper} className={`gallery-wrapper${ready ? '' : ' gallery-pending'}`} aria-hidden={!ready} inert={!ready}><div className="collection-grid" /></div>
     <p className="text-center text-sm text-secondary px-5 break-all" role="status">{status}</p>
-    <noscript><div className="p-6 flex flex-wrap gap-4">{episodes.map(episode => <a key={episode.id} href={`/episode/${episode.id}`}>{episode.title}</a>)}</div></noscript>
   </>;
 }

@@ -1,4 +1,5 @@
 import { type Episode, type Renditions, formatDate, formatTime } from '../episodes';
+import { categoryLabel } from '../catalog-copy';
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 // The animation engine owns this small DOM island. React owns the surrounding
 // page and dialog; ordinary animation frames never rerender the React tree.
@@ -7,7 +8,7 @@ export function createGalleryCard(episode: Episode, renditions: Renditions): HTM
   card.className = 'episode-card';
   card.dataset.episodeId = episode.id;
   card.innerHTML = `<img alt="${escape(episode.title)}" width="600" height="800" draggable="false" class="ready">
-    <div class="episode-info">${episode.category ? `<span class="episode-category">${escape(episode.category)}</span>` : ''}
+    <div class="episode-info">${episode.category ? `<span class="episode-category">${escape(categoryLabel(episode.category))}</span>` : ''}
     <h3 class="episode-title"><a href="/episode/${encodeURIComponent(episode.id)}" draggable="false">${escape(episode.title)}</a></h3>
     <p class="episode-description">${escape(episode.description || '')}</p>
     <div class="episode-footer">${episode.duration !== null ? `<span>${formatTime(episode.duration)}</span>` : ''}<span>${formatDate(episode.createdAt)}</span></div></div>

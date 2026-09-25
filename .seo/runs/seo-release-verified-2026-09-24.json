@@ -1,0 +1,285 @@
+{
+  "measuredAt": "2026-09-24T14:12:08.339Z",
+  "base": "https://www.newsangle.co",
+  "methodology": "Single sequential HTTP observation per sitemap page; TTFB includes network time. Server HTML links exclude script/style/noscript. These timings are not Core Web Vitals or a ranking measurement.",
+  "vitals": {
+    "speed": {
+      "maxTtfbMs": 381,
+      "totalHtmlBytes": 336659
+    },
+    "relevance": {
+      "status": "unverified",
+      "reason": "No approved keyword map or Search Console query data"
+    },
+    "googleCtr": {
+      "status": "unavailable",
+      "reason": "No Search Console connection available in this session"
+    },
+    "links": {
+      "broken": [],
+      "redirecting": [],
+      "orphans": [],
+      "unreachableFromHome": []
+    }
+  },
+  "findings": {
+    "missingH1": [],
+    "canonicalMismatch": [],
+    "missingDescription": []
+  },
+  "pages": [
+    {
+      "path": "/",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 267,
+      "htmlBytes": 27462,
+      "title": "Angle — Audio Stories and News Explainers",
+      "h1": [
+        "Audio stories and news explainers"
+      ],
+      "description": "Listen to stories about technology and world events. Explore audio episodes, read transcripts, and discover Angle.",
+      "canonical": "https://www.newsangle.co",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+        "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+        "/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 8,
+      "clickDepth": 0
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 203,
+      "htmlBytes": 18901,
+      "title": "About Angle | Audio Stories and News Explainers",
+      "h1": [
+        "About Angle"
+      ],
+      "description": "Learn about Angle audio stories, transcripts, source information, and how to share feedback.",
+      "canonical": "https://www.newsangle.co/about",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/about"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 8,
+      "clickDepth": 1
+    },
+    {
+      "path": "/popular",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 314,
+      "htmlBytes": 25771,
+      "title": "Most-listened audio stories | Angle",
+      "h1": [
+        "Most-listened audio stories"
+      ],
+      "description": "Explore Angle stories ranked by their recorded listen counts. Listen to an episode or read its transcript.",
+      "canonical": "https://www.newsangle.co/popular",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 4,
+      "clickDepth": 1
+    },
+    {
+      "path": "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 130,
+      "htmlBytes": 26463,
+      "title": "Greenland security audio stories | Angle",
+      "h1": [
+        "Greenland security audio stories"
+      ],
+      "description": "Explore greenland security through audio stories, episode summaries, and transcripts.",
+      "canonical": "https://www.newsangle.co/greenland-security-announcement-status-decision-channels-and-local-stakes",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/technology",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 148,
+      "htmlBytes": 25409,
+      "title": "Technology audio stories | Angle",
+      "h1": [
+        "Technology audio stories"
+      ],
+      "description": "Explore technology through audio stories, episode summaries, and transcripts.",
+      "canonical": "https://www.newsangle.co/technology",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/sanctions-and-aviation",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 97,
+      "htmlBytes": 26011,
+      "title": "Sanctions and aviation audio stories | Angle",
+      "h1": [
+        "Sanctions and aviation audio stories"
+      ],
+      "description": "Explore sanctions and aviation through audio stories, episode summaries, and transcripts.",
+      "canonical": "https://www.newsangle.co/sanctions-and-aviation",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 191,
+      "htmlBytes": 66058,
+      "title": "Following the Controls in the Hugging Face Incident | Angle",
+      "h1": [
+        "Following the Controls in the Hugging Face Incident"
+      ],
+      "description": "Listen to “Following the Controls in the Hugging Face Incident” on Angle. Read the episode summary, transcript, and available sources.",
+      "canonical": "https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/technology",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 2,
+      "clickDepth": 1
+    },
+    {
+      "path": "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 164,
+      "htmlBytes": 62387,
+      "title": "Between a Greenland Security Announcement and Life on the Ground | Angle",
+      "h1": [
+        "Between a Greenland Security Announcement and Life on the Ground"
+      ],
+      "description": "Listen to “Between a Greenland Security Announcement and Life on the Ground” on Angle. Read the episode summary, transcript, and available sources.",
+      "canonical": "https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 3,
+      "clickDepth": 1
+    },
+    {
+      "path": "/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 381,
+      "htmlBytes": 58197,
+      "title": "Fuel, Finance, and a Reported Airline Shutdown | Angle",
+      "h1": [
+        "Fuel, Finance, and a Reported Airline Shutdown"
+      ],
+      "description": "Listen to “Fuel, Finance, and a Reported Airline Shutdown” on Angle. Read the episode summary, transcript, and available sources.",
+      "canonical": "https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/sanctions-and-aviation",
+        "/about",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 2,
+      "clickDepth": 1
+    }
+  ],
+  "extraLinks": [
+    {
+      "path": "/new",
+      "status": 200,
+      "location": null
+    },
+    {
+      "path": "/home-v2",
+      "status": 200,
+      "location": null
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import { initOpenNextCloudflareForDev } from './lib/opennext-context.js';
 if (process.env.NODE_ENV === 'development') void initOpenNextCloudflareForDev();
 const config: NextConfig = {
   poweredByHeader: false,
+  // Resolve route metadata (including notFound) before sending success headers.
+  htmlLimitedBots: /.*/,
   async redirects() {
     return [
       { source: '/index.html', destination: '/', permanent: true },

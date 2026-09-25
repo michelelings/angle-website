@@ -1,0 +1,211 @@
+[
+  {
+    "url": "https://www.newsangle.co/robots.txt",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": [],
+    "text": "User-agent: *\nAllow: /\nSitemap: https://www.newsangle.co/sitemap.xml\n"
+  },
+  {
+    "url": "https://www.newsangle.co/sitemap.xml",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": [],
+    "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://www.newsangle.co/</loc></url><url><loc>https://www.newsangle.co/new</loc></url><url><loc>https://www.newsangle.co/popular</loc></url><url><loc>https://www.newsangle.co/home-v2</loc></url><url><loc>https://www.newsangle.co/greenland-security-announcement-status-decision-channels-and-local-stakes</loc></url><url><loc>https://www.newsangle.co/technology</loc></url><url><loc>https://www.newsangle.co/sanctions-and-aviation</loc></url><url><loc>https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74</loc></url><url><loc>https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d</loc></url><url><loc>https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d</loc></url></urlset>"
+  },
+  {
+    "url": "https://www.newsangle.co/not-a-real-category-seo-audit",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "noindex",
+      "noindex"
+    ],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": []
+  },
+  {
+    "url": "https://www.newsangle.co/episode/not-a-real-episode-seo-audit",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "noindex",
+      "noindex"
+    ],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": []
+  },
+  {
+    "url": "https://www.newsangle.co/?q=technology",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "index, follow"
+    ],
+    "canonical": "https://www.newsangle.co/",
+    "title": "Angle",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": [
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://x.com/angle_newsapp",
+      "https://www.instagram.com/angle_newsapp"
+    ]
+  },
+  {
+    "url": "https://www.newsangle.co/index.html",
+    "status": 308,
+    "location": "/",
+    "robotsHeader": null,
+    "robots": [],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": []
+  },
+  {
+    "url": "https://www.newsangle.co/sitemap_index.xml",
+    "status": 308,
+    "location": "/sitemap.xml",
+    "robotsHeader": null,
+    "robots": [],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": [],
+    "text": ""
+  },
+  {
+    "url": "https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "index, follow"
+    ],
+    "canonical": "https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+    "title": "Following the Controls in the Hugging Face Incident | Angle",
+    "transcriptWords": 1619,
+    "schema": [
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastEpisode",
+        "name": "Following the Controls in the Hugging Face Incident",
+        "url": "https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+        "description": "In CNBC’s September 21, 2026 interview, U.S. Treasury Secretary Scott Bessent assigned responsibility for the Hugging Face incident to OpenAI management rather than AI agents. That is an accountability position, not a legal judgment. The companies' reports describe an intrusion and reduced safeguards, while the retained record leaves customer impact and key operating decisions unresolved. If his position influences practice, boards and buyers could press for clearer approval, access limits, monitoring and stopping authority. His reported opposition to a safety-liability exemption is a policy signal, not an enacted rule. Watch for evidence of changed controls, a final impact assessment and formal legal developments; none is guaranteed by the statement.",
+        "datePublished": "2026-09-22T17:41:42.058Z",
+        "dateModified": "2026-09-22T17:41:42.058Z",
+        "image": "https://angle-api.footy.workers.dev/v2/media/b56598e0-fa8c-4ffa-9dc3-df06a0b1576b",
+        "associatedMedia": {
+          "@type": "AudioObject",
+          "contentUrl": "https://angle-api.footy.workers.dev/v2/media/5564c009-61c6-4b52-8d1a-935dcdd90a03",
+          "duration": "PT562S"
+        }
+      }
+    ],
+    "externalLinks": [
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://x.com/angle_newsapp",
+      "https://www.instagram.com/angle_newsapp"
+    ]
+  },
+  {
+    "url": "https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "index, follow"
+    ],
+    "canonical": "https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+    "title": "Between a Greenland Security Announcement and Life on the Ground | Angle",
+    "transcriptWords": 1466,
+    "schema": [
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastEpisode",
+        "name": "Between a Greenland Security Announcement and Life on the Ground",
+        "url": "https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+        "description": "As of September 21, 2026, the retained record does not establish that Greenland’s announced security arrangement had become operative. Donald Trump claimed an agreement granting the United States “permanent control,” while Denmark’s release said the three governments were expected to sign the following week and that, following signature, entry into force would be subject to “necessary national parliamentary procedures.” The retained packet contains neither an authenticated operative 2026 instrument nor an implementation record, so it cannot establish new Greenlandic decision rights, local changes to work, facilities, security or the environment, or that sovereignty was transferred, preserved or settled. Historical records and summaries illuminate possible channels and stakes; Pituffik is context, not evidence of a 2026 effect. Nielsen’s favorable view is not public consensus.",
+        "datePublished": "2026-09-22T07:23:47.041Z",
+        "dateModified": "2026-09-22T07:23:47.041Z",
+        "image": "https://angle-api.footy.workers.dev/v2/media/9b3b6640-fde8-4289-a526-150258242d8b",
+        "associatedMedia": {
+          "@type": "AudioObject",
+          "contentUrl": "https://angle-api.footy.workers.dev/v2/media/d4bba505-94d0-4542-8e17-897de6056369",
+          "duration": "PT472S"
+        }
+      }
+    ],
+    "externalLinks": [
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://x.com/angle_newsapp",
+      "https://www.instagram.com/angle_newsapp"
+    ]
+  },
+  {
+    "url": "https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+    "status": 200,
+    "location": null,
+    "robotsHeader": null,
+    "robots": [
+      "index, follow"
+    ],
+    "canonical": "https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+    "title": "Fuel, Finance, and a Reported Airline Shutdown | Angle",
+    "transcriptWords": 1359,
+    "schema": [
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastEpisode",
+        "name": "Fuel, Finance, and a Reported Airline Shutdown",
+        "url": "https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+        "description": "Sanctions could make some international flights harder without issuing a worldwide grounding order. On September 8, 2026, Treasury and OFAC documented designations of the 27 Iranian airlines named in the release and suspension of specified aviation authorizations. Treasury said certain transactions involving persons designated that day may risk secondary sanctions for participating foreign financial institutions—not an automatic dollar-system or SWIFT cutoff. If that financial pressure changes access to fuel, ground handling or local ticketing, Euronews’s conditional analysis says a route could become commercially and operationally infeasible. That is a possible mechanism, not an observed disruption. A September 21 Economic Times page labeled “By Reuters” attributed to Scott Bessent a warning of a September 23 shutdown; the packet lacks the CNBC recording or transcript and an official instrument making that date operative. No provider withdrawal or worldwide shutdown is established by the September 21 cutoff.",
+        "datePublished": "2026-09-22T07:05:28.697Z",
+        "dateModified": "2026-09-22T07:05:28.697Z",
+        "image": "https://angle-api.footy.workers.dev/v2/media/7cb6e86c-b630-41c7-a5c3-23846db7ed18",
+        "associatedMedia": {
+          "@type": "AudioObject",
+          "contentUrl": "https://angle-api.footy.workers.dev/v2/media/6f1352fe-20d0-4f1a-948b-e02d1c8e3fb4",
+          "duration": "PT420S"
+        }
+      }
+    ],
+    "externalLinks": [
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://testflight.apple.com/join/p2VQgeun",
+      "https://x.com/angle_newsapp",
+      "https://www.instagram.com/angle_newsapp"
+    ]
+  },
+  {
+    "url": "https://newsangle.co",
+    "status": 308,
+    "location": "https://www.newsangle.co/",
+    "robotsHeader": null,
+    "robots": [],
+    "title": "",
+    "transcriptWords": 0,
+    "schema": [],
+    "externalLinks": []
+  }
+]

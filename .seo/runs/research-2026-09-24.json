@@ -1,0 +1,285 @@
+{
+  "measuredAt": "2026-09-24T13:39:33.013Z",
+  "base": "https://www.newsangle.co",
+  "methodology": "Single sequential HTTP observation per sitemap page; TTFB includes network time. Server HTML links exclude script/style/noscript. These timings are not Core Web Vitals or a ranking measurement.",
+  "vitals": {
+    "speed": {
+      "maxTtfbMs": 1372,
+      "totalHtmlBytes": 348181
+    },
+    "relevance": {
+      "status": "unverified",
+      "reason": "No approved keyword map or Search Console query data"
+    },
+    "googleCtr": {
+      "status": "unavailable",
+      "reason": "No Search Console connection available in this session"
+    },
+    "links": {
+      "broken": [],
+      "redirecting": [],
+      "orphans": [],
+      "unreachableFromHome": []
+    }
+  },
+  "findings": {
+    "missingH1": [],
+    "canonicalMismatch": [],
+    "missingDescription": []
+  },
+  "pages": [
+    {
+      "path": "/",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 1372,
+      "htmlBytes": 23574,
+      "title": "Angle",
+      "h1": [
+        "3 stories worth listening.3 stories worth listening."
+      ],
+      "description": "Stories worth listening.",
+      "canonical": "https://www.newsangle.co",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 9,
+      "clickDepth": 0
+    },
+    {
+      "path": "/new",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 317,
+      "htmlBytes": 25414,
+      "title": "New Stories | Angle",
+      "h1": [
+        "3 stories worth listening.3 stories worth listening."
+      ],
+      "description": "New stories worth listening.",
+      "canonical": "https://www.newsangle.co/new",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/popular",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 256,
+      "htmlBytes": 25284,
+      "title": "Popular Stories | Angle",
+      "h1": [
+        "1 story worth listening.1 story worth listening."
+      ],
+      "description": "Popular stories worth listening.",
+      "canonical": "https://www.newsangle.co/popular",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/home-v2",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 395,
+      "htmlBytes": 40095,
+      "title": "Story stream | Angle",
+      "h1": [
+        "3 stories worth listening.3 stories worth listening."
+      ],
+      "description": "Stories worth listening.",
+      "canonical": "https://www.newsangle.co/home-v2",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+        "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+        "/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 9,
+      "clickDepth": 1
+    },
+    {
+      "path": "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 262,
+      "htmlBytes": 27043,
+      "title": "Greenland security announcement: status, decision channels and local stakes Stories | Angle",
+      "h1": [
+        "1 story worth listening.1 story worth listening."
+      ],
+      "description": "Greenland security announcement: status, decision channels and local stakes stories worth listening.",
+      "canonical": "https://www.newsangle.co/greenland-security-announcement-status-decision-channels-and-local-stakes",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/technology",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 277,
+      "htmlBytes": 25362,
+      "title": "Technology Stories | Angle",
+      "h1": [
+        "1 story worth listening.1 story worth listening."
+      ],
+      "description": "Technology stories worth listening.",
+      "canonical": "https://www.newsangle.co/technology",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/sanctions-and-aviation",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 351,
+      "htmlBytes": 25669,
+      "title": "sanctions-and-aviation Stories | Angle",
+      "h1": [
+        "1 story worth listening.1 story worth listening."
+      ],
+      "description": "sanctions-and-aviation stories worth listening.",
+      "canonical": "https://www.newsangle.co/sanctions-and-aviation",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/new",
+        "/popular",
+        "/greenland-security-announcement-status-decision-channels-and-local-stakes",
+        "/technology",
+        "/sanctions-and-aviation",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 5,
+      "clickDepth": 1
+    },
+    {
+      "path": "/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 298,
+      "htmlBytes": 52216,
+      "title": "Following the Controls in the Hugging Face Incident | Angle",
+      "h1": [
+        "Following the Controls in the Hugging Face Incident"
+      ],
+      "description": "In CNBC’s September 21, 2026 interview, U.S. Treasury Secretary Scott Bessent assigned responsibility for the Hugging Face incident to OpenAI management rather than AI agents. That is an accountability position, not a legal judgment. The companies' reports describe an intrusion and reduced safeguards, while the retained record leaves customer impact and key operating decisions unresolved. If his position influences practice, boards and buyers could press for clearer approval, access limits, monitoring and stopping authority. His reported opposition to a safety-liability exemption is a policy signal, not an enacted rule. Watch for evidence of changed controls, a final impact assessment and formal legal developments; none is guaranteed by the statement.",
+      "canonical": "https://www.newsangle.co/episode/8094ea4c-7a61-42cc-8d30-67b803de7a74",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 1,
+      "clickDepth": 2
+    },
+    {
+      "path": "/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 311,
+      "htmlBytes": 52284,
+      "title": "Between a Greenland Security Announcement and Life on the Ground | Angle",
+      "h1": [
+        "Between a Greenland Security Announcement and Life on the Ground"
+      ],
+      "description": "As of September 21, 2026, the retained record does not establish that Greenland’s announced security arrangement had become operative. Donald Trump claimed an agreement granting the United States “permanent control,” while Denmark’s release said the three governments were expected to sign the following week and that, following signature, entry into force would be subject to “necessary national parliamentary procedures.” The retained packet contains neither an authenticated operative 2026 instrument nor an implementation record, so it cannot establish new Greenlandic decision rights, local changes to work, facilities, security or the environment, or that sovereignty was transferred, preserved or settled. Historical records and summaries illuminate possible channels and stakes; Pituffik is context, not evidence of a 2026 effect. Nielsen’s favorable view is not public consensus.",
+      "canonical": "https://www.newsangle.co/episode/f8bef68b-1b19-448f-99d2-ee391b205d6d",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 1,
+      "clickDepth": 2
+    },
+    {
+      "path": "/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+      "status": 200,
+      "location": null,
+      "ttfbMs": 277,
+      "htmlBytes": 51240,
+      "title": "Fuel, Finance, and a Reported Airline Shutdown | Angle",
+      "h1": [
+        "Fuel, Finance, and a Reported Airline Shutdown"
+      ],
+      "description": "Sanctions could make some international flights harder without issuing a worldwide grounding order. On September 8, 2026, Treasury and OFAC documented designations of the 27 Iranian airlines named in the release and suspension of specified aviation authorizations. Treasury said certain transactions involving persons designated that day may risk secondary sanctions for participating foreign financial institutions—not an automatic dollar-system or SWIFT cutoff. If that financial pressure changes access to fuel, ground handling or local ticketing, Euronews’s conditional analysis says a route could become commercially and operationally infeasible. That is a possible mechanism, not an observed disruption. A September 21 Economic Times page labeled “By Reuters” attributed to Scott Bessent a warning of a September 23 shutdown; the packet lacks the CNBC recording or transcript and an official instrument making that date operative. No provider withdrawal or worldwide shutdown is established by the September 21 cutoff.",
+      "canonical": "https://www.newsangle.co/episode/e9c104c3-a8e1-4278-93a9-fe8ac67e2c9d",
+      "robots": "index, follow",
+      "robotsHeader": null,
+      "internalLinks": [
+        "/",
+        "/home-v2"
+      ],
+      "imagesWithoutAlt": 0,
+      "incomingLinks": 1,
+      "clickDepth": 2
+    }
+  ],
+  "extraLinks": []
+}

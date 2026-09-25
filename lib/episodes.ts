@@ -5,8 +5,8 @@ export function filterEpisodes(episodes: Episode[], filter: string): Episode[] {
   if (filter === 'all') return episodes;
   const sorted = [...episodes].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   if (filter === 'new') return sorted;
-  // Preserve the existing placeholder until the backend supplies popularity data.
-  if (filter === 'popular') return sorted.slice(0, Math.ceil(sorted.length * 0.3));
+  if (filter === 'popular') return sorted.filter(e => (e.listenCount || 0) > 0)
+    .sort((a, b) => (b.listenCount || 0) - (a.listenCount || 0));
   return episodes.filter(episode => episode.category === filter);
 }
 export function formatTime(seconds: number | null): string {

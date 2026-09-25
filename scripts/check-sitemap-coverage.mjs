@@ -166,6 +166,9 @@ async function main() {
       console.log(`- ${entry.loc}`);
     });
   }
+  if (malformedEntries.length || missingTranscriptIds.length || extraTranscriptIds.length || transcriptLastmodMismatches.length) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

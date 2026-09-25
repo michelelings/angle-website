@@ -30,8 +30,8 @@ export function EpisodeExperience({ id, artwork, title, audioUrl, children }: {
     <section className="episode-media" aria-label="Artwork and audio player">
       <img ref={image} className="modal-image" src={artwork} crossOrigin="anonymous" alt={title} width="600" height="800"
         onError={event => { if (!event.currentTarget.src.endsWith('/images/icon.webp')) event.currentTarget.src = '/images/icon.webp'; }} />
-      {audioUrl && <AudioPlayer key={audioUrl} src={audioUrl} />}
-      <div className="episode-actions"><GetAngleLink location="modal" /><ShareButton id={id} /></div>
+      {audioUrl && <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} />}
+      <div className="episode-actions"><GetAngleLink location="modal" episodeId={id} /><ShareButton id={id} /></div>
     </section>
     <div className="episode-reading">{children}</div>
   </div>;
