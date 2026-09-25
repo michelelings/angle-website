@@ -17,8 +17,15 @@ export async function artworkResponse(request: Request, id: string, env: Env): P
       });
       if (!env.IMAGES) return error(503);
       // Resolve sources exclusively from the public catalog; never proxy a client URL.
-      const source = await fetch(episode.coverImage, { redirect: 'error', signal: AbortSignal.timeout(10_000) });
-      if (!source.ok || !source.body || !source.headers.get('content-type')?.startsWith('image/')) return error(502);
+      const options = { redirect: 'error' as const, signal: AbortSignal.timeout(10_000) };
+      const source = env.ANGLE_BACKEND && new URL(episode.coverImage).origin === new URL(env.ANGLE_API_ORIGIN).origin
+        ? await env.ANGLE_BACKEND.fetch(new Request(episode.coverImage, options))
+        : await fetch(episode.coverImage, options);
+      if (!source.ok || !source.body || !source.headers.get('content-type')?.startsWith('image/')) {
+        console.error('Artwork source unavailable', { id, status: source.status });
+        await source.body?.cancel();
+        return error(502);
+      }
       const result = await env.IMAGES.input(source.body).transform({ width, fit: 'scale-down' })
         .output({ format: 'image/webp', quality: 82 });
       return new Response(result.response().body, { headers: { 'Content-Type': 'image/webp' } });
@@ -27,6 +34,7 @@ export async function artworkResponse(request: Request, id: string, env: Env): P
     if (result.status === 200) result.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     return result;
   } catch (cause) {
+    console.error('Artwork optimization failed', { id, width, message: cause instanceof Error ? cause.message : String(cause) });
     return error(cause instanceof CatalogError ? cause.status : 502);
   }
 }
