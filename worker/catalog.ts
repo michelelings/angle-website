@@ -1,11 +1,13 @@
 import { publicCache } from './public-cache';
 import { publishedHook } from '../lib/published-hooks';
+import { parseEpisodeStory, type EpisodeStory } from '../lib/episode-story';
 
 export interface Episode {
   id: string;
   title: string;
   description: string | null;
   hookLine?: string | null;
+  story?: EpisodeStory;
   coverImage: string | null;
   createdAt: string;
   updatedAt: string | null;
@@ -156,6 +158,8 @@ export function mapV2Episode(value: unknown): Episode {
       }) : [],
   }] })[0];
   mapped.asOf = timestamp(row.asOf);
+  mapped.story = parseEpisodeStory(row.story, row.playbackContext, String(mode), mapped.duration);
+  mapped.hookLine = mapped.story?.hookLine || mapped.hookLine;
   mapped.presenterDisclosure = nullableString(presenters.disclosure);
   mapped.sources = Array.isArray(row.sources) ? row.sources.flatMap(value => {
     const source = object(value);

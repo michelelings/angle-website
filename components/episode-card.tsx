@@ -6,7 +6,7 @@ import { categoryLabel } from '@/lib/catalog-copy';
 export function EpisodeCard({ episode, gallery = false, priority = false }: { episode: Episode; gallery?: boolean; priority?: boolean }) {
   return <article className={gallery ? 'episode-card' : 'rail-card'}>
     <Link className="rail-card-link" href={`/episode/${encodeURIComponent(episode.id)}`} scroll={false} prefetch={false} aria-label={episode.title}>
-      <ArtworkImage className="ready" {...progressiveArtworkProps(episode)} alt="" width="300" height="400"
+      <ArtworkImage className="ready" cornerShade={gallery} {...progressiveArtworkProps(episode)} alt="" width="300" height="400"
         loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'auto'}>
         {gallery && episode.category && <span className="episode-category artwork-category">{categoryLabel(episode.category)}</span>}
       </ArtworkImage>

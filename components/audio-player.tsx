@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type Ref } from 'react';
+import type { EpisodePlaybackHandle } from './episode-playback';
 import { formatTime } from '@/lib/episodes';
 import { createListeningTracker } from '@/lib/listening';
 import { trackEvent } from '@/lib/analytics';
@@ -8,8 +9,9 @@ import { cachedWaveform, loadWaveform } from '@/lib/audio-waveform';
 // These are decorative placeholder peaks; decoded audio replaces them when ready.
 const pendingWaveform = Array.from({ length: 80 }, (_, index) =>
   .42 + .22 * Math.abs(Math.sin(index * 1.73 + .8)) + .2 * Math.abs(Math.sin(index * .37 + 1.2)));
-export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string }) {
+export function AudioPlayer({ src, episodeId, playbackRef }: { src: string; episodeId: string; playbackRef?: Ref<EpisodePlaybackHandle> }) {
   const audio = useRef<HTMLAudioElement>(null);
+  const pendingSeek = useRef<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -17,6 +19,16 @@ export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string
   const [waveform, setWaveform] = useState<number[] | undefined>(undefined);
   const [tracker] = useState(() => createListeningTracker(event => trackEvent(event.name,
     event.percent === undefined ? {} : { percent: event.percent }, episodeId)));
+  useImperativeHandle(playbackRef, () => ({ playFrom(seconds) {
+    const element = audio.current;
+    if (!element || !Number.isFinite(seconds) || seconds < 0) return;
+    tracker.resetPosition();
+    setError(false);
+    if (element.readyState >= 1) { element.currentTime = Math.min(seconds, Number.isFinite(element.duration) ? element.duration : seconds); setTime(element.currentTime); }
+    else pendingSeek.current = seconds;
+    // Start in the click gesture so mobile browsers allow playback before metadata arrives.
+    void element.play().catch(() => setError(true));
+  } }), [tracker]);
   useEffect(() => {
     const element = audio.current;
     if (element) { element.src = src; element.load(); }
@@ -44,7 +56,14 @@ export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string
       onPause={() => { setPlaying(false); tracker.resetPosition(); }}
       onSeeking={() => tracker.resetPosition()} onSeeked={() => tracker.resetPosition()}
       onEnded={e => { setPlaying(false); tracker.end(e.currentTarget.duration); }}
-      onLoadedMetadata={e => setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+      onLoadedMetadata={e => {
+        const element = e.currentTarget;
+        setDuration(Number.isFinite(element.duration) ? element.duration : 0);
+        if (pendingSeek.current !== null) {
+          element.currentTime = Math.min(pendingSeek.current, Number.isFinite(element.duration) ? element.duration : pendingSeek.current);
+          pendingSeek.current = null; setTime(element.currentTime);
+        }
+      }}
       onTimeUpdate={e => { const element = e.currentTarget; setTime(element.currentTime);
         if (!element.paused && !element.seeking) tracker.sample(element.currentTime, element.duration);
       }} onError={() => setError(true)} />
