@@ -108,6 +108,7 @@ test('artwork from the backend origin uses its service binding instead of public
   const episode = mapV2Episode(backendRow); let mediaCalls = 0;
   env.ANGLE_BACKEND = { async fetch(request) {
     if (new URL(request.url).pathname === '/v2/media/cover') {
+      assert.equal(request.redirect, 'manual');
       mediaCalls++; return new Response('png', { headers: { 'Content-Type': 'image/png' } });
     }
     return Response.json({ catalogEpoch: 'angle-pipeline-v2', episodes: [backendRow], nextOffset: null });

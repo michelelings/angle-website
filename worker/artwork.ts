@@ -17,7 +17,7 @@ export async function artworkResponse(request: Request, id: string, env: Env): P
       });
       if (!env.IMAGES) return error(503);
       // Resolve sources exclusively from the public catalog; never proxy a client URL.
-      const options = { redirect: 'error' as const, signal: AbortSignal.timeout(10_000) };
+      const options = { redirect: 'manual' as const, signal: AbortSignal.timeout(10_000) };
       const source = env.ANGLE_BACKEND && new URL(episode.coverImage).origin === new URL(env.ANGLE_API_ORIGIN).origin
         ? await env.ANGLE_BACKEND.fetch(new Request(episode.coverImage, options))
         : await fetch(episode.coverImage, options);
