@@ -1,8 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { ORIGIN } from '@/lib/site';
 import { ArtworkTheme } from '@/components/artwork-theme';
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 export const metadata: Metadata = {
   metadataBase: new URL(ORIGIN),
   // Use a new filename when the artwork changes: Safari can retain old site icons.

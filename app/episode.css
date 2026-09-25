@@ -143,7 +143,11 @@
 .episode-view .audio-controls { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 0 16px; }
 .audio-waveform { position: relative; height: 48px; min-width: 0; }
 .audio-waveform-bars { display: block; width: 100%; height: 100%; }
-.audio-playhead-time { position: absolute; left: clamp(22px, var(--audio-progress), calc(100% - 22px)); top: -15px; transform: translateX(-50%); font: 11px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--player-ink, #fff); pointer-events: none; }
+.audio-waveform-bars rect { transform-box: view-box; transform-origin: center; transition: transform 350ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .audio-waveform-bars rect { transition: none; }
+}
+.audio-playhead-time { position: absolute; z-index: 1; left: clamp(0px, calc(var(--audio-progress) - 22px), calc(100% - 44px)); top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 44px; height: 20px; background: var(--player-ink, #fff); color: var(--player-background, #182024); font: 500 11px/1 var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
 .episode-view .audio-waveform input { position: absolute; inset: 0; width: 100%; height: 48px; min-height: 44px; margin: 0; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
 .episode-view .audio-waveform input::-webkit-slider-runnable-track { height: 48px; background: transparent; }
 .episode-view .audio-waveform input::-moz-range-track { height: 48px; background: transparent; }
@@ -167,7 +171,7 @@
 }
 .episode-reading .modal-body { max-width: none; padding: 0; margin: 0; }
 .episode-reading .episode-breadcrumb { margin-top: 0; margin-bottom: 8px; }
-.episode-reading .modal-title { font-size: clamp(60px, min(9vw, 22cqw), 128px); line-height: 1.05; }
+.episode-reading .modal-title { font-size: clamp(60px, min(9vw, 22cqw), 128px); line-height: 0.98; margin-bottom: 14px; }
 .episode-reading .modal-description,
 .episode-reading .modal-meta-item,
 .episode-reading .transcript summary,
@@ -175,11 +179,29 @@
 .episode-reading .modal-share-btn { color: #fff; }
 .episode-reading .transcript { overflow-wrap: anywhere; }
 .episode-reading .transcript summary { color: #fff; }
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-width: 1000px) and (max-height: 500px) {
   .episode-view { display: block; }
   .episode-shell .modal-header { top: max(12px, env(safe-area-inset-top)); right: 16px; }
-  .episode-media { --artwork-size: min(100%, 420px); height: auto; z-index: 1; gap: 0; padding: max(24px, env(safe-area-inset-top)) 24px 16px; background: #152026e8; backdrop-filter: blur(20px); }
+  .episode-media { --artwork-size: min(100%, 420px); position: relative; height: auto; gap: 0; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); }
+  .episode-media-card { position: relative; }
+  .episode-media .episode-listen-panel { position: absolute; inset: auto 0 0; padding: 20px 16px; }
   .episode-media .modal-image { max-height: none; }
-  .episode-reading { padding: 20px 24px max(32px, env(safe-area-inset-bottom)); }
-  .episode-reading .modal-title { font-size: clamp(40px, 10vw, 60px); }
+  .episode-reading { padding: 24px max(20px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
+  .episode-reading .modal-title { font-size: clamp(40px, 12vw, 64px); }
+  .episode-reading .episode-breadcrumb { font-size: 18px; }
+  .episode-reading .episode-breadcrumb-home { min-width: 44px; }
+  .episode-reading .modal-description,
+  .episode-reading .transcript,
+  .episode-reading .transcript summary,
+  .episode-reading .episode-sources { font-size: 16px; line-height: 1.65; }
+  .episode-reading .modal-meta-item { font-size: 14px; }
+  .episode-actions { margin-left: auto; gap: 0; }
+  .episode-actions .audio-get-angle-btn,
+  .episode-actions .modal-share-btn { width: 44px; height: 44px; padding: 10px; }
+  .episode-actions svg { width: 20px; height: 20px; }
+  .episode-actions .episode-action-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .episode-shell .modal-close { background: #182024b3; backdrop-filter: blur(12px); }
+}
+@media (max-width: 1000px) and (max-height: 500px) {
+  .episode-media { --artwork-size: min(100%, 420px, calc(70svh * 0.75)); }
 }

@@ -1,9 +1,8 @@
 import Link from 'next/link';
 
-export function SiteFooter({ showStream = false }: { showStream?: boolean }) {
+export function SiteFooter() {
   return <footer className="catalog-footer">
-    <p className="editorial-link"><Link href="/about">About Angle and feedback</Link></p>
-    {showStream && <Link href="/home-v2" className="switch-link">Try stream view →</Link>}
+    <p className="editorial-link"><Link href="/about">About</Link></p>
     <div className="site-footer">
       <a href="https://x.com/angle_newsapp" target="_blank" rel="noopener noreferrer" aria-label="Follow Angle on X">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">

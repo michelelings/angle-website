@@ -4,7 +4,10 @@ import { formatTime } from '@/lib/episodes';
 import { createListeningTracker } from '@/lib/listening';
 import { trackEvent } from '@/lib/analytics';
 import { cachedWaveform, loadWaveform } from '@/lib/audio-waveform';
-const pendingWaveform = Array.from({ length: 80 }, () => .18);
+// A stable speech-like silhouette renders immediately, including before hydration.
+// These are decorative placeholder peaks; decoded audio replaces them when ready.
+const pendingWaveform = Array.from({ length: 80 }, (_, index) =>
+  .42 + .22 * Math.abs(Math.sin(index * 1.73 + .8)) + .2 * Math.abs(Math.sin(index * .37 + 1.2)));
 export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -51,7 +54,7 @@ export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string
       </button>
       <div className="audio-waveform" data-ready={!!waveform} style={{ '--audio-progress': `${duration ? Math.min(100, time / duration * 100) : 0}%` } as CSSProperties}>
         <svg className="audio-waveform-bars" viewBox="0 0 320 48" preserveAspectRatio="none" aria-hidden="true">
-          {(waveform || pendingWaveform).map((peak, index) => <rect key={index} x={index * 4} y={24 - peak * 22} width="2" height={peak * 44} fill={duration && index / 80 < time / duration ? 'var(--player-ink, #fff)' : 'var(--player-track, #ffffff35)'} />)}
+          {(waveform || pendingWaveform).map((peak, index) => <rect key={index} x={index * 4} y="2" width="2" height="44" style={{ transform: `scaleY(${peak})` }} fill={duration && index / 80 < time / duration ? 'var(--player-ink, #fff)' : 'var(--player-track, #ffffff35)'} />)}
         </svg>
         {playing && <span className="audio-playhead-time" aria-hidden="true">{formatTime(time)}</span>}
         <input aria-label="Playback position" type="range" min="0" max={duration || 1} step="0.1" value={time} disabled={!duration}

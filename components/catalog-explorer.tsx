@@ -147,6 +147,6 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
         {visible.map((episode, index) => <EpisodeCard key={episode.id} episode={episode} gallery priority={index === 0} />)}
       </Gallery></div>
     </div>
-    <SiteFooter showStream />
+    <SiteFooter />
   </main>;
 }

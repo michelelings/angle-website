@@ -76,6 +76,19 @@ function pointer(h, target, type, x, time, overrides = {}) {
     target.dispatchEvent(event);
 }
 
+test('mobile gallery stays still while manual browsing remains available', t => {
+    const h = setup(t, 20);
+    h.wrapper.style.setProperty('--gallery-autoplay', '0');
+    h.gallery.measure();
+    const position = h.gallery.position;
+    h.tick(0);
+    h.tick(1000);
+    assert.equal(h.gallery.position, position);
+    h.gallery.move(120);
+    h.tick(1100);
+    assert.equal(h.gallery.position, position + 120);
+});
+
 test('artwork theme follows the centered story without updating on every frame', t => {
     const { gallery } = setup(t, 20);
     const centered = [];

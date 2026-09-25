@@ -178,17 +178,21 @@ export class ContinuousGallery {
         this.velocity = 0;
         const oldStride = this.stride;
         this.width = this.wrapper.clientWidth;
+        const style = getComputedStyle(this.wrapper);
+        this.autoplay = style.getPropertyValue('--gallery-autoplay').trim() !== '0';
+        let cardWidth = parseFloat(style.getPropertyValue('--card-width'));
         // Keep CSS and JS geometry aligned without a layout read on each frame.
         if (this.wrapper.dataset.fitHeight && this.wrapper.clientHeight) {
             const height = this.wrapper.clientHeight;
-            const caption = this.items.some(item => item.hookLine) ? 270 : 210;
-            const cardWidth = height < 430
+            const caption = this.items.some(item => item.hookLine)
+                ? parseFloat(style.getPropertyValue('--hook-caption-space')) || 270
+                : parseFloat(style.getPropertyValue('--caption-space')) || 210;
+            cardWidth = height < 430
                 ? Math.min(420, this.width)
                 : Math.min(this.width, 520, Math.max(160, (height - caption) * 0.75));
             this.wrapper.style.setProperty('--card-width', `${cardWidth}px`);
         }
-        const style = getComputedStyle(this.wrapper);
-        this.stride = parseFloat(style.getPropertyValue('--card-width')) + parseFloat(style.getPropertyValue('--card-gap'));
+        this.stride = cardWidth + parseFloat(style.getPropertyValue('--card-gap'));
         this.gap = parseFloat(style.getPropertyValue('--card-gap'));
         this.position = this.position / oldStride * this.stride;
         this.updateMode();
@@ -341,7 +345,7 @@ export class ContinuousGallery {
     }
 
     schedule() {
-        if (this.destroyed || this.frame !== null || !this.items.length || ((this.pauses.size || this.mode !== 'loop') && !this.pendingDelta && !this.velocity)) return;
+        if (this.destroyed || this.frame !== null || !this.items.length || ((this.pauses.size || !this.autoplay || this.mode !== 'loop') && !this.pendingDelta && !this.velocity)) return;
         this.frame = requestAnimationFrame(time => {
             this.frame = null;
             if (this.pendingDelta) {
@@ -358,7 +362,7 @@ export class ContinuousGallery {
                     // Give the reader a full pause after the glide finishes.
                     this.move(0);
                 }
-            } else if (!this.pauses.size && this.lastTime !== null) {
+            } else if (this.autoplay && !this.pauses.size && this.lastTime !== null) {
                 // Ignore catch-up after suspension or a long task.
                 this.position += 15 * Math.min((time - this.lastTime) / 1000, 0.05);
             }
