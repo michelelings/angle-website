@@ -23,6 +23,11 @@ for (const path of ['/new', '/popular', '/new?q=technology']) {
 const home = new JSDOM(await (await request('/')).text()).window.document;
 assert.ok(home.querySelectorAll('.filters a').length > 0);
 assert.ok(home.querySelector('.filters a[aria-current="page"]'));
+assert.ok(home.querySelector('form[method="get"] input[name="q"]'), 'Search works through a server GET request');
+for (const image of home.querySelectorAll('.episode-card img')) {
+  assert.match(image.getAttribute('src'), /^\/api\/artwork\/|^\/images\/icon\.webp$/);
+}
+assert.equal((await request('/api/artwork/story?w=999&v=x')).status, 400);
 assert.equal(home.querySelector('.brand-logo')?.getAttribute('src'), '/images/logo.svg');
 home.querySelectorAll('script,noscript').forEach(node => node.remove());
 for (const episode of episodes) assert.ok(home.querySelector(`a[href="/episode/${episode.id}"]`), `SSR link to ${episode.id}`);
@@ -37,6 +42,9 @@ for (const path of ['/?q=technology', '/new?q=technology']) {
 }
 if (episodes.length) {
   const episode = episodes[0];
+  const searchDoc = new JSDOM(await (await request('/?q=' + encodeURIComponent(episode.title))).text()).window.document;
+  assert.ok(searchDoc.querySelector(`.catalog-fallback a[href="/episode/${episode.id}"]`), 'Search results exist in server HTML');
+  assert.match(searchDoc.querySelector('.catalog-search-status').textContent, /match/);
   const response = await request(`/episode/${episode.id}`);
   assert.equal(response.status, 200);
   const html = await response.text();

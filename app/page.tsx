@@ -4,4 +4,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
   return searchMetadata(pageMetadata(), await searchParams);
 }
-export default function Home() { return <CatalogPage />; }
+export default async function Home({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  return <CatalogPage query={typeof params.q === 'string' ? params.q : ''} />;
+}

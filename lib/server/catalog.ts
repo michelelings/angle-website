@@ -9,7 +9,7 @@ export async function catalogEnv(): Promise<Env> {
   // developed. Use its public read-only API locally; production uses the binding.
   return { ...env, ANGLE_BACKEND: process.env.NODE_ENV === 'development' || env.ENVIRONMENT === 'local' ? undefined : env.ANGLE_BACKEND };
 }
-// React cache deduplicates within a server render, without persisting a stale catalog.
+// Deduplicate within the render; readCatalog also has a 60-second edge cache.
 export const getCatalog = cache(async () => readCatalog(await catalogEnv()));
 export const getEpisode = cache(async (id: string) => {
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) return null;

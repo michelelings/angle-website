@@ -1,3 +1,5 @@
+import { publicCache } from './public-cache';
+
 export interface Episode {
   id: string;
   title: string;
@@ -31,6 +33,7 @@ export interface Episode {
 export type Env = Omit<WorkerEnv, 'ASSETS' | 'ANGLE_BACKEND'> & {
   ASSETS: Pick<Fetcher, 'fetch'>;
   ANGLE_BACKEND?: Pick<Fetcher, 'fetch'>;
+  IMAGES?: Pick<ImagesBinding, 'input'>;
 };
 
 export class CatalogError extends Error {
@@ -210,6 +213,11 @@ export async function readEpisode(env: Env, id: string): Promise<Episode | null>
 }
 
 export async function readCatalog(env: Env): Promise<Episode[]> {
+  const response = await publicCache(env, 'catalog', 60, async () => Response.json(await loadCatalog(env)));
+  return response.json();
+}
+
+async function loadCatalog(env: Env): Promise<Episode[]> {
   const episodes: Episode[] = []; const ids = new Set<string>(); let offset = 0;
   for (let page = 0; page < 100; page++) {
     const body = object(await backendJson(env, `/v2/episodes?limit=100&offset=${offset}`));

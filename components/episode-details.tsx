@@ -1,10 +1,11 @@
+import { artworkProps } from '@/lib/artwork';
 import Link from 'next/link';
 import { type Episode, formatDate, formatTime } from '@/lib/episodes';
 import { EpisodeExperience } from './episode-experience';
 import { categoryLabel } from '@/lib/catalog-copy';
 export function EpisodeDetails({ episode, modal = false, related = [] }: { episode: Episode; modal?: boolean; related?: Episode[] }) {
   const Title = modal ? 'h2' : 'h1';
-  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} title={episode.title} audioUrl={episode.audioUrl}>
+  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={artworkProps(episode, '(max-width: 768px) 100vw, 600px')} title={episode.title} audioUrl={episode.audioUrl}>
     <div className="modal-body">
       <nav className="episode-breadcrumb" aria-label="Breadcrumb"><Link href="/">All stories</Link>
         {episode.category && <> / <span>{categoryLabel(episode.category)}</span></>}

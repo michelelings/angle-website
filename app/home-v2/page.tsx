@@ -1,3 +1,4 @@
+import { artworkUrl } from '@/lib/artwork';
 import { Header } from '@/components/header';
 import { SiteFooter } from '@/components/site-footer';
 import { EpisodeCard } from '@/components/episode-card';
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = pageMetadata('/', 'Audio Story Stream | Angle');
 export default async function Stream() {
   const episodes = await getCatalog();
-  return <main><ArtworkThemeSource src={episodes[0]?.coverImage || '/images/icon.webp'} /><Header count={episodes.length} stream /><div className="rails-container">
+  return <main><ArtworkThemeSource src={episodes[0]?.coverImage ? artworkUrl(episodes[0], 360) : '/images/icon.webp'} /><Header count={episodes.length} stream /><div className="rails-container">
     {!episodes.length && <p className="empty-state">New stories are on their way.</p>}
     {['new', 'popular', ...categoriesFor(episodes)].map(category => {
       const items = filterEpisodes(episodes, category);

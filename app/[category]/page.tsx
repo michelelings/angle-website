@@ -12,4 +12,7 @@ export async function generateMetadata({ params, searchParams }: Props) {
   const label = category === 'new' ? 'New' : category === 'popular' ? 'Popular' : category;
   return searchMetadata(pageMetadata(`/${categorySlug(category)}`, `${label} Stories | Angle`, `${label} stories worth listening.`, `/api/og-image/category/${categorySlug(category)}`), await searchParams);
 }
-export default async function Category({ params }: Props) { return <CatalogPage slug={(await params).category} />; }
+export default async function Category({ params, searchParams }: Props) {
+  const search = await searchParams;
+  return <CatalogPage slug={(await params).category} query={typeof search.q === 'string' ? search.q : ''} />;
+}
