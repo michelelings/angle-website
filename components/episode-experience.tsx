@@ -1,39 +1,58 @@
 'use client';
-import type { artworkProps } from '@/lib/artwork';
-import { artworkFallback } from '@/lib/artwork-fallback';
+import type { progressiveArtworkProps } from '@/lib/artwork';
+import { ArtworkImage } from './artwork-image';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { extractArtworkPalette } from '@/lib/artwork-palette';
+import { extractArtworkColors } from '@/lib/artwork-palette';
 import { AudioPlayer } from './audio-player';
-import { GetAngleLink } from './get-angle-link';
-import { ShareButton } from './share-button';
 
 export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl, children }: {
-  id: string; artwork: string; artworkSources: ReturnType<typeof artworkProps>; title: string; audioUrl: string | null; children: ReactNode;
+  id: string; artwork: string; artworkSources: ReturnType<typeof progressiveArtworkProps>; title: string; audioUrl: string | null; children: ReactNode;
 }) {
   const image = useRef<HTMLImageElement>(null);
-  const [palette, setPalette] = useState<{ source: string; colors: string[] } | null>(null);
+  const player = useRef<HTMLDivElement>(null);
+  const [playerHeight, setPlayerHeight] = useState(92);
+  useEffect(() => {
+    const element = player.current;
+    if (!element) return;
+    const measure = () => setPlayerHeight(element.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [audioUrl]);
+  const [palette, setPalette] = useState<{ source: string; colors: string[]; dominant: string; darkText: boolean } | null>(null);
   useEffect(() => {
     const element = image.current!;
     let cancelled = false;
     async function extract() {
       try {
-        const colors = await extractArtworkPalette(element);
-        if (!cancelled && colors) setPalette({ source: artwork, colors });
+        const colors = await extractArtworkColors(element);
+        if (!cancelled && colors) setPalette({ source: artwork, colors: colors.palette, dominant: colors.dominant, darkText: colors.darkText });
       } catch { /* A blocked or unavailable image keeps the readable fallback mesh. */ }
     }
     if (element.complete && element.naturalWidth) void extract();
     element.addEventListener('load', extract);
     return () => { cancelled = true; element.removeEventListener('load', extract); };
-  }, [artwork]);
+  }, [artwork, artworkSources.src]);
   const colors = palette?.source === artwork ? palette.colors : [];
-  const style = Object.fromEntries(colors.map((color, i) => [`--mesh-${i + 1}`, color])) as CSSProperties;
+  const style = {
+    ...Object.fromEntries(colors.map((color, i) => [`--mesh-${i + 1}`, color])),
+    '--episode-player-height': `${audioUrl ? playerHeight : 0}px`,
+  } as CSSProperties;
+  const playerStyle = palette?.source === artwork ? {
+    '--player-background': palette.dominant,
+    '--player-ink': palette.darkText ? '#000' : '#fff',
+    '--player-track': palette.darkText ? '#00000030' : '#ffffff35',
+  } as CSSProperties : undefined;
   return <div className="episode-view" style={style}>
     <div className="artwork-mesh" aria-hidden="true" />
     <section className="episode-media" aria-label="Artwork and audio player">
-      <img ref={image} className="modal-image" {...artworkSources} fetchPriority="high" crossOrigin="anonymous" alt={title} width="600" height="800"
-        onError={event => { artworkFallback(event.currentTarget, artwork); }} />
-      {audioUrl && <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} />}
-      <div className="episode-actions"><GetAngleLink location="modal" episodeId={id} /><ShareButton id={id} /></div>
+      <div className="episode-media-card">
+        <ArtworkImage previewRef={image} className="modal-image" {...artworkSources} fetchPriority="high" crossOrigin="anonymous" alt={title} width="600" height="800" />
+        {audioUrl && <div ref={player} className="episode-listen-panel" style={playerStyle}>
+          <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} />
+        </div>}
+      </div>
     </section>
     <div className="episode-reading">{children}</div>
   </div>;

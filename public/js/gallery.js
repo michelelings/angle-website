@@ -49,6 +49,19 @@ export class ContinuousGallery {
             else onOpen(item);
         });
         this.listen(wrapper, 'dragstart', e => e.preventDefault());
+        this.listen(wrapper, 'pointerover', e => {
+            if (e.pointerType === 'touch') return;
+            const card = e.target.closest('.episode-card');
+            if (card === this.hoveredCard) return;
+            this.hoveredCard = card;
+            this.pause('hover', !!card);
+            this.notifyCenter();
+        });
+        this.listen(wrapper, 'pointerleave', () => {
+            this.hoveredCard = null;
+            this.pause('hover', false);
+            this.notifyCenter();
+        });
         this.listen(document, 'keydown', () => delete wrapper.dataset.pointerFocus);
         this.listen(wrapper, 'keydown', e => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -57,14 +70,29 @@ export class ContinuousGallery {
             this.pause('focus', true);
             this.move(e.key === 'ArrowRight' ? this.stride : -this.stride);
         });
-        this.listen(wrapper, 'focusin', e => this.pause('focus', e.target !== wrapper || !this.pointer));
-        this.listen(wrapper, 'focusout', () => queueMicrotask(() =>
-            this.pause('focus', wrapper.contains(document.activeElement))));
-        this.listen(wrapper, 'wheel', e => {
-            if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) && !e.shiftKey) return;
+        this.listen(wrapper, 'focusin', e => {
+            this.focusedCard = e.target.closest('.episode-card');
+            this.pause('focus', e.target !== wrapper || !this.pointer);
+            this.notifyCenter();
+        });
+        this.listen(wrapper, 'focusout', () => queueMicrotask(() => {
+            if (this.destroyed) return;
+            this.focusedCard = this.track.contains(document.activeElement)
+                ? document.activeElement.closest('.episode-card') : null;
+            this.pause('focus', wrapper.contains(document.activeElement));
+            this.notifyCenter();
+        }));
+        const pageScroll = !!wrapper.closest('.catalog-page');
+        this.listen(pageScroll ? window : wrapper, 'wheel', e => {
+            if (e.defaultPrevented || e.ctrlKey || this.pauses.has('modal')) return;
+            if (pageScroll && (wrapper.closest('[hidden]') || e.target.closest?.('.filters, input, textarea, select, dialog'))) return;
+            if (!pageScroll && Math.abs(e.deltaX) <= Math.abs(e.deltaY) && !e.shiftKey) return;
             e.preventDefault();
             const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.width : 1;
-            this.move((e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * unit);
+            const delta = pageScroll
+                ? (Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX)
+                : (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX);
+            this.move(delta * unit);
         }, { passive: false });
 
         // Capture only after a horizontal drag is recognized: a simple tap still
@@ -151,6 +179,14 @@ export class ContinuousGallery {
         const oldStride = this.stride;
         this.width = this.wrapper.clientWidth;
         // Keep CSS and JS geometry aligned without a layout read on each frame.
+        if (this.wrapper.dataset.fitHeight && this.wrapper.clientHeight) {
+            const height = this.wrapper.clientHeight;
+            const caption = this.items.some(item => item.hookLine) ? 270 : 210;
+            const cardWidth = height < 430
+                ? Math.min(420, this.width)
+                : Math.min(this.width, 520, Math.max(160, (height - caption) * 0.75));
+            this.wrapper.style.setProperty('--card-width', `${cardWidth}px`);
+        }
         const style = getComputedStyle(this.wrapper);
         this.stride = parseFloat(style.getPropertyValue('--card-width')) + parseFloat(style.getPropertyValue('--card-gap'));
         this.gap = parseFloat(style.getPropertyValue('--card-gap'));
@@ -201,8 +237,11 @@ export class ContinuousGallery {
         this.nodes.clear();
         this.renderedStart = null;
         this.centeredItem = null;
+        this.hoveredCard = null;
+        this.focusedCard = null;
+        this.pause('hover', false);
         this.track.replaceChildren();
-        this.updateMode();
+        this.measure();
         if (!items.length) {
             const empty = document.createElement('div');
             empty.className = 'loading';
@@ -256,7 +295,18 @@ export class ContinuousGallery {
     }
 
     notifyCenter() {
-        if (!this.onCenter) return;
+        if (!this.onCenter || !this.items.length || this.destroyed) return;
+        // Hover/focus owns the palette until interaction ends. Center changes
+        // during scrolling must not overwrite the story the reader is inspecting.
+        const selected = [this.hoveredCard, this.focusedCard].find(card => card && this.track.contains(card));
+        if (selected) {
+            const item = this.items[Number(selected.dataset.itemIndex)];
+            if (item && item !== this.centeredItem) {
+                this.centeredItem = item;
+                this.onCenter(item, selected.querySelector('img'));
+            }
+            return;
+        }
         const offset = this.mode === 'loop' ? 0 : this.centerOffset;
         const index = Math.round((this.position + this.width / 2 - offset - (this.stride - this.gap) / 2) / this.stride);
         const itemIndex = this.mode === 'loop' ? ((index % this.items.length) + this.items.length) % this.items.length

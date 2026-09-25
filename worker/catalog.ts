@@ -1,9 +1,11 @@
 import { publicCache } from './public-cache';
+import { publishedHook } from '../lib/published-hooks';
 
 export interface Episode {
   id: string;
   title: string;
   description: string | null;
+  hookLine?: string | null;
   coverImage: string | null;
   createdAt: string;
   updatedAt: string | null;
@@ -98,6 +100,7 @@ export function parseCatalog(payload: unknown): Episode[] {
       seen.add(row.id);
       return {
         id: row.id, title: row.title, description: nullableString(row.description),
+        hookLine: nullableString(row.hookLine),
         coverImage: mediaUrl(row.coverImage), createdAt: row.createdAt,
         updatedAt: timestamp(row.updatedAt), category: nullableString(row.category),
         duration: nullableNumber(row.duration), audioUrl: mediaUrl(row.audioUrl),
@@ -138,6 +141,7 @@ export function mapV2Episode(value: unknown): Episode {
   }).join('\n\n');
   const mapped = parseCatalog({ success: true, data: [{
     id: row.id, title: row.title, description: row.excerpt, fullDescription: row.excerpt,
+    hookLine: nullableString(row.hookLine) ?? publishedHook(row.id, row.revisionId),
     coverImage: row.coverUrl, createdAt: row.createdAt, category: row.category,
     previewVideoUrl: row.previewVideoUrl,
     previewVideoWidth: row.previewVideoWidth, previewVideoHeight: row.previewVideoHeight,

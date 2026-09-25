@@ -2,8 +2,6 @@
 @property --mesh-1 { syntax: "<color>"; inherits: true; initial-value: #31494b; }
 @property --mesh-2 { syntax: "<color>"; inherits: true; initial-value: #26394a; }
 @property --mesh-3 { syntax: "<color>"; inherits: true; initial-value: #514335; }
-@property --mesh-4 { syntax: "<color>"; inherits: true; initial-value: #413a4b; }
-@property --mesh-5 { syntax: "<color>"; inherits: true; initial-value: #19272c; }
 
 .episode-shell {
   position: relative;
@@ -13,6 +11,8 @@
 }
 .site-artwork-theme,
 .episode-view {
+  /* Reserve the player and 80px above/below, then derive the portrait width. */
+  --artwork-size: min(max(120px, calc((100dvh - 160px - var(--episode-player-height, 92px)) * 0.75)), max(160px, calc(100vw - 560px)));
   --ink: #fff;
   --secondary: #f0f0f0;
   --blue: #fff;
@@ -29,12 +29,11 @@
 }
 .site-artwork-theme .site-artwork-mesh {
   position: fixed;
-  transition: --mesh-1 850ms ease, --mesh-2 850ms ease, --mesh-3 850ms ease, --mesh-4 850ms ease, --mesh-5 850ms ease;
+  transition: --mesh-1 850ms ease, --mesh-2 850ms ease, --mesh-3 850ms ease;
 }
 @media (prefers-reduced-motion: reduce) {
   .site-artwork-theme .site-artwork-mesh { transition: none; }
 }
-.site-artwork-theme .episode-card,
 .site-artwork-theme .rail-card { background: #0000000a; }
 .site-artwork-theme .button,
 .site-artwork-theme .category-tag.active { color: #182024; background: #fff; }
@@ -46,7 +45,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: calc(var(--artwork-size) + 160px) minmax(0, 1fr);
   width: 100%;
   min-height: 100dvh;
   color: #fff;
@@ -58,11 +57,19 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 0% 10%, var(--mesh-1, #31494b) 0%, transparent 65%),
-    radial-gradient(ellipse at 95% 0%, var(--mesh-3, #514335) 0%, transparent 65%),
-    radial-gradient(ellipse at 80% 100%, var(--mesh-2, #26394a) 0%, transparent 65%),
-    radial-gradient(ellipse at 10% 90%, var(--mesh-4, #413a4b) 0%, transparent 65%),
-    var(--mesh-5, #19272c);
+    radial-gradient(ellipse at 0% 10%, var(--mesh-1, #31494b) 0%, transparent 75%),
+    radial-gradient(ellipse at 95% 0%, var(--mesh-3, #514335) 0%, transparent 75%),
+    var(--mesh-2, #26394a);
+}
+.artwork-mesh::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('/images/mesh-grain.svg') repeat;
+  background-size: 200px 200px;
+  opacity: 0.38;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
 }
 .episode-shell .modal-header {
   position: fixed;
@@ -79,7 +86,6 @@
 .episode-shell .modal-close:hover { background: #ffffff20; }
 .episode-shell :focus-visible { outline-color: #fff; }
 .episode-media {
-  --artwork-size: min(100%, 480px, max(100px, calc((100dvh - 300px) * 0.75)));
   position: sticky;
   top: 0;
   align-self: start;
@@ -88,65 +94,92 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 0;
   min-width: 0;
   min-height: 0;
-  padding: 72px clamp(24px, 4vw, 72px) 48px;
+  padding: 80px;
+}
+.episode-media-card {
+  display: flex;
+  flex-direction: column;
+  width: var(--artwork-size);
+  flex-shrink: 0;
+  box-shadow: 0 32px 100px -16px rgb(0 0 0 / 32%), 0 12px 40px -12px rgb(0 0 0 / 18%);
 }
 .episode-media .modal-image {
   position: static;
   flex-shrink: 1;
-  width: var(--artwork-size);
+  width: 100%;
   height: auto;
   min-height: 0;
   aspect-ratio: 3 / 4;
   object-fit: contain;
   background: transparent;
-  border-radius: 4px;
-  box-shadow: 0 24px 70px #00000030;
+  border-radius: 0;
+}
+.episode-listen-panel {
+  width: 100%;
+  flex-shrink: 0;
+  padding: 20px 18px;
+  border: 0;
+  border-radius: 0;
+  color: var(--player-ink, #fff);
+  background: var(--player-background, #182024);
 }
 .episode-media .modal-audio-player {
-  width: var(--artwork-size);
-  flex-shrink: 0;
+  width: 100%;
   padding: 0;
   margin: 0;
   background: transparent;
 }
-.episode-view .audio-play-pause { background: #fff; color: #182024; }
-.episode-view .audio-play-pause:hover { background: #e5e5e5; }
+.episode-view .audio-play-pause { width: 52px; height: 52px; background: var(--player-ink, #fff); color: var(--player-background, #182024); box-shadow: 0 4px 16px #00000020; cursor: pointer; }
+.episode-view .audio-play-pause svg { width: 32px; height: 32px; }
+.episode-view .audio-play-pause:active { transform: scale(.96); }
+@media (hover: hover) { .episode-view .audio-play-pause:hover { opacity: .85; } }
+.episode-listen-panel :focus-visible { outline-color: var(--player-ink, #fff); }
 .episode-view .audio-get-angle-btn { color: #fff; border-color: #ffffff50; }
-.episode-view .audio-error { color: #fff; }
+.episode-view .audio-error { color: var(--player-ink, #fff); }
 .episode-view input[type="range"] { accent-color: #fff; }
-.episode-view .audio-controls { flex-wrap: nowrap; }
-.episode-view .audio-time { width: auto; }
-.episode-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; width: var(--artwork-size); }
+.episode-view .audio-controls { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 0 16px; }
+.audio-waveform { position: relative; height: 48px; min-width: 0; }
+.audio-waveform-bars { display: block; width: 100%; height: 100%; }
+.audio-playhead-time { position: absolute; left: clamp(22px, var(--audio-progress), calc(100% - 22px)); top: -15px; transform: translateX(-50%); font: 11px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--player-ink, #fff); pointer-events: none; }
+.episode-view .audio-waveform input { position: absolute; inset: 0; width: 100%; height: 48px; min-height: 44px; margin: 0; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+.episode-view .audio-waveform input::-webkit-slider-runnable-track { height: 48px; background: transparent; }
+.episode-view .audio-waveform input::-moz-range-track { height: 48px; background: transparent; }
+.episode-view .audio-waveform input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 2px; height: 48px; border: 0; border-radius: 0; background: var(--player-ink, #fff); }
+.episode-view .audio-waveform input::-moz-range-thumb { width: 2px; height: 48px; border: 0; border-radius: 0; background: var(--player-ink, #fff); }
+.episode-view .audio-waveform input:disabled { cursor: default; }
+.episode-reading .modal-meta { align-items: center; gap: 8px 16px; }
+.episode-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
 .episode-actions .audio-get-angle-btn,
-.episode-actions .modal-share-btn { margin: 0; min-height: 44px; padding: 10px 16px; font: 12px/1.5 var(--sans); border-color: #ffffff50; color: #fff; background: transparent; border-radius: 6px; }
+.episode-actions .modal-share-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 44px; padding: 10px; font: 500 13px/1.5 var(--sans); border: 0; color: #fff; background: transparent; border-radius: 8px; }
+.episode-actions svg { width: 17px; height: 17px; flex-shrink: 0; }
 .episode-actions .audio-get-angle-btn:hover,
 .episode-actions .modal-share-btn:hover { background: #ffffff15; }
 .episode-actions [role="status"] { flex-basis: 100%; margin: 0; }
 .episode-actions [role="status"]:empty { display: none; }
 .episode-reading {
+  container-type: inline-size;
   min-width: 0;
   min-height: 0;
-  padding: clamp(80px, 12vh, 140px) clamp(32px, 6vw, 100px) 64px clamp(16px, 2vw, 40px);
+  padding: 80px 80px 80px 0;
 }
-.episode-reading .modal-body { max-width: 680px; padding: 0; margin: 0 auto; }
-.episode-reading .modal-title { font-size: clamp(38px, 3.8vw, 64px); }
-.episode-reading .modal-description { font-size: 17px; line-height: 1.75; }
+.episode-reading .modal-body { max-width: none; padding: 0; margin: 0; }
+.episode-reading .episode-breadcrumb { margin-top: 0; margin-bottom: 8px; }
+.episode-reading .modal-title { font-size: clamp(60px, min(9vw, 22cqw), 128px); line-height: 1.05; }
+.episode-reading .modal-description,
+.episode-reading .modal-meta-item,
+.episode-reading .transcript summary,
+.episode-reading .episode-sources { font-size: 13px; line-height: 1.6; }
 .episode-reading .modal-share-btn { color: #fff; }
 .episode-reading .transcript { overflow-wrap: anywhere; }
 .episode-reading .transcript summary { color: #fff; }
 @media (max-width: 768px) {
   .episode-view { display: block; }
   .episode-shell .modal-header { top: max(12px, env(safe-area-inset-top)); right: 16px; }
-  .episode-media { --artwork-size: min(100%, 420px); height: auto; z-index: 1; gap: 12px; padding: max(24px, env(safe-area-inset-top)) 24px 16px; background: #152026e8; backdrop-filter: blur(20px); }
-  .episode-media .modal-image { width: min(100%, 15dvh); max-height: 20dvh; }
+  .episode-media { --artwork-size: min(100%, 420px); height: auto; z-index: 1; gap: 0; padding: max(24px, env(safe-area-inset-top)) 24px 16px; background: #152026e8; backdrop-filter: blur(20px); }
+  .episode-media .modal-image { max-height: none; }
   .episode-reading { padding: 20px 24px max(32px, env(safe-area-inset-bottom)); }
-  .episode-reading .modal-title { font-size: clamp(32px, 7vw, 44px); }
-  .episode-reading .modal-description { font-size: 16px; }
-}
-@media (min-width: 769px) and (max-height: 550px) {
-  .episode-media { --artwork-size: min(100%, calc((100dvh - 180px) * 0.75)); padding: 20px 24px; gap: 12px; }
-  .episode-reading { padding-top: 76px; }
+  .episode-reading .modal-title { font-size: clamp(40px, 10vw, 60px); }
 }

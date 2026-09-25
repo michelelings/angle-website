@@ -4,12 +4,9 @@ import { useRouter } from 'next/navigation';
 import type { Episode } from '@/lib/episodes';
 import { ContinuousGallery } from '@/lib/gallery/continuous-gallery.js';
 import { createGalleryCard } from '@/lib/gallery/card';
-import { shareEpisode } from './share-button';
-import { ORIGIN } from '@/lib/site';
 import { useArtworkTheme } from './artwork-theme';
 export function Gallery({ episodes, paused = false, children }: { episodes: Episode[]; paused?: boolean; children: ReactNode }) {
   const wrapper = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState('');
   const [ready, setReady] = useState(false);
   const fallback = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -27,11 +24,7 @@ export function Gallery({ episodes, paused = false, children }: { episodes: Epis
       if (!wrapper.current) return;
       gallery = new ContinuousGallery(wrapper.current, episode => createGalleryCard(episode),
         episode => router.push(`/episode/${encodeURIComponent(episode.id)}`, { scroll: false }),
-        async episode => {
-          try { setStatus(await shareEpisode(episode.id)); } catch (error) {
-            if (!(error instanceof Error && error.name === 'AbortError')) setStatus(`Copy this link: ${ORIGIN}/episode/${episode.id}`);
-          }
-        }, (_episode, image) => updateTheme(image));
+        () => {}, (_episode, image) => updateTheme(image));
       instance.current = gallery;
       gallery.setItems(latest.current.episodes);
       gallery.pause('search', latest.current.paused);
@@ -47,7 +40,6 @@ export function Gallery({ episodes, paused = false, children }: { episodes: Epis
   return <><div ref={fallback} className="gallery-wrapper catalog-fallback" hidden={ready}><div className="collection-grid">
       {children}
     </div></div>
-    <div ref={wrapper} className={`gallery-wrapper${ready ? '' : ' gallery-pending'}`} aria-hidden={!ready} inert={!ready}><div className="collection-grid" /></div>
-    <p className="text-center text-sm text-secondary px-5 break-all" role="status">{status}</p>
+    <div ref={wrapper} data-fit-height="true" className={`gallery-wrapper${ready ? '' : ' gallery-pending'}`} aria-hidden={!ready} inert={!ready}><div className="collection-grid" /></div>
   </>;
 }

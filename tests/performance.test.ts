@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
 import { publicCache } from '../worker/public-cache';
 import { artworkResponse } from '../worker/artwork';
-import { artworkProps, artworkUrl } from '../lib/artwork';
+import { artworkProps, artworkUrl, artworkVariantUrl, progressiveArtworkProps } from '../lib/artwork';
 import { mapV2Episode, type Env } from '../worker/catalog';
 import { readSearchDocuments } from '../lib/server/search';
 
@@ -121,4 +121,53 @@ test('artwork from the backend origin uses its service binding instead of public
   t.mock.method(globalThis, 'fetch', async () => { throw new Error('Must use service binding'); });
   const response = await artworkResponse(new Request(new URL(artworkUrl(episode, 540), env.PUBLIC_ORIGIN)), episode.id, env);
   assert.equal(response.status, 200); assert.equal(mediaCalls, 1);
+});
+
+test('prepared WebP variants are streamed directly without a transformation binding', async t => {
+  memoryCache(t); const env = environment();
+  const nativeRow = { ...row, coverUrl: env.ANGLE_API_ORIGIN + '/v2/media/cover' };
+  const episode = mapV2Episode(nativeRow);
+  const requested: string[] = [];
+  env.ANGLE_BACKEND = { async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/v2/media/cover') {
+      requested.push(url.searchParams.get('size')!);
+      return new Response('prepared-' + url.searchParams.get('size'), { headers: { 'Content-Type': 'image/webp' } });
+    }
+    return Response.json({ catalogEpoch: 'angle-pipeline-v2', episodes: [nativeRow], nextOffset: null });
+  } };
+  const props = progressiveArtworkProps(episode);
+  assert.equal(props.src, artworkVariantUrl(episode, 'small'));
+  assert.equal(props.fullSrc, artworkVariantUrl(episode, 'original'));
+  for (const size of ['small', 'medium', 'original'] as const) {
+    const response = await artworkResponse(new Request(new URL(artworkVariantUrl(episode, size), env.PUBLIC_ORIGIN)), episode.id, env);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Content-Type'), 'image/webp');
+    assert.equal(await response.text(), 'prepared-' + size);
+  }
+  assert.deepEqual(requested, ['small', 'medium', 'original']);
+});
+
+test('historical PNGs become small WebP previews and full-resolution WebP originals', async t => {
+  memoryCache(t); const env = environment(); const episode = mapV2Episode(row);
+  const transforms: unknown[] = [], qualities: unknown[] = [];
+  env.IMAGES = { input: () => ({
+    transform(options) { transforms.push(options); return this; },
+    draw() { return this; },
+    async output(options) { qualities.push(options.quality); return {
+      response: () => new Response('converted'), image: () => new Response('converted').body!, contentType: () => 'image/webp',
+    }; },
+  }) };
+  t.mock.method(globalThis, 'fetch', async () => new Response('png', { headers: { 'Content-Type': 'image/png' } }));
+  for (const size of ['small', 'original'] as const) {
+    const response = await artworkResponse(new Request(new URL(artworkVariantUrl(episode, size), env.PUBLIC_ORIGIN)), episode.id, env);
+    assert.equal(response.headers.get('Content-Type'), 'image/webp');
+    await response.text();
+  }
+  assert.deepEqual(transforms, [{ width: 400, height: 400, fit: 'scale-down' }]);
+  assert.deepEqual(qualities, [82, 90]);
+  for (const query of ['size=huge', 'size=original&w=540']) {
+    const response = await artworkResponse(new Request(`${env.PUBLIC_ORIGIN}/api/artwork/story?${query}&v=x`), 'story', env);
+    assert.equal(response.status, 400);
+  }
 });

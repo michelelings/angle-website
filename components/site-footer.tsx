@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 export function SiteFooter({ showStream = false }: { showStream?: boolean }) {
-  return <footer className="text-center">
+  return <footer className="catalog-footer">
     <p className="editorial-link"><Link href="/about">About Angle and feedback</Link></p>
     {showStream && <Link href="/home-v2" className="switch-link">Try stream view →</Link>}
     <div className="site-footer">

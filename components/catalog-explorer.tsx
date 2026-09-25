@@ -3,7 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ComponentProps } from
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Header } from './header';
+import { GetAngleLink } from './get-angle-link';
 import { SiteFooter } from './site-footer';
 import { Gallery } from './gallery';
 import { EpisodeCard } from './episode-card';
@@ -102,12 +102,14 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
       <button className="search-close" type="button" aria-label="Close search" aria-hidden={!expanded} tabIndex={expanded ? 0 : -1} onClick={closeSearch}>×</button>
     </div>
   </div>;
-  return <main>
-    <Header count={visible.length} search={null} />
+  return <main className="catalog-page">
+    <h1 className="sr-only">Angle stories</h1>
     <noscript><form action={initialActive === 'all' ? '/' : '/' + categorySlug(initialActive)} method="get" role="search">
       <label>Search stories <input name="q" type="search" defaultValue={requestedQuery} maxLength={200} /></label>
       <button type="submit">Search</button>
     </form></noscript>
+    <header className="catalog-header">
+    <Link href="/" className="catalog-home" aria-label="Angle home"><img src="/images/logo.svg" alt="" className="brand-logo" width="36" height="36" /></Link>
     <div className={`catalog-toolbar${expanded ? ' is-searching' : ''}`}>
     <div className="catalog-search-slot">{search}</div>
     <nav className="filters" aria-label="Story categories" inert={expanded} aria-hidden={expanded}>
@@ -123,6 +125,8 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
       })}
     </nav>
     </div>
+    <GetAngleLink location="header" />
+    </header>
     <section className="catalog-refinements" aria-label="Search status" hidden={!expanded || (!filtering && state !== 'error' && state !== 'loading')}>
       <p className="catalog-search-status" role="status">
         {state === 'loading' ? 'Loading searchable stories…'

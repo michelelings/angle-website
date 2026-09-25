@@ -1,20 +1,33 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { formatTime } from '@/lib/episodes';
 import { createListeningTracker } from '@/lib/listening';
 import { trackEvent } from '@/lib/analytics';
+import { cachedWaveform, loadWaveform } from '@/lib/audio-waveform';
+const pendingWaveform = Array.from({ length: 80 }, () => .18);
 export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState(false);
+  const [waveform, setWaveform] = useState<number[] | undefined>(undefined);
   const [tracker] = useState(() => createListeningTracker(event => trackEvent(event.name,
     event.percent === undefined ? {} : { percent: event.percent }, episodeId)));
   useEffect(() => {
     const element = audio.current;
     if (element) { element.src = src; element.load(); }
     return () => { if (element) { element.pause(); element.removeAttribute('src'); element.load(); } };
+  }, [src]);
+  useEffect(() => {
+    const cached = cachedWaveform(src);
+    setWaveform(cached);
+    if (cached) return;
+    const controller = new AbortController();
+    void loadWaveform(src, controller.signal).then(peaks => {
+      if (!controller.signal.aborted) setWaveform(peaks);
+    }).catch(() => { /* Playback and seeking remain available without waveform data. */ });
+    return () => controller.abort();
   }, [src]);
   async function toggle() {
     const element = audio.current;
@@ -33,10 +46,17 @@ export function AudioPlayer({ src, episodeId }: { src: string; episodeId: string
         if (!element.paused && !element.seeking) tracker.sample(element.currentTime, element.duration);
       }} onError={() => setError(true)} />
     <div className="audio-controls">
-      <button type="button" className="audio-play-pause" aria-label={playing ? 'Pause audio' : 'Play audio'} onClick={toggle}>{playing ? '⏸' : '▶'}</button>
-      <div className="audio-progress-container"><input aria-label="Playback position" type="range" min="0" max={duration || 1} step="0.1" value={time} disabled={!duration}
-        aria-valuetext={`${formatTime(time)} of ${formatTime(duration)}`} onChange={e => { if (audio.current) audio.current.currentTime = Number(e.target.value); setTime(Number(e.target.value)); }} /></div>
-      <div className="audio-time"><span>{formatTime(time)}</span><span>/</span><span>{formatTime(duration)}</span></div>
+      <button type="button" className="audio-play-pause" aria-label={playing ? 'Pause audio' : 'Play audio'} onClick={toggle}>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">{playing ? <path d="M6 4h4v16H6zm8 0h4v16h-4z" /> : <path d="M8 4.5v15l12-7.5z" />}</svg>
+      </button>
+      <div className="audio-waveform" data-ready={!!waveform} style={{ '--audio-progress': `${duration ? Math.min(100, time / duration * 100) : 0}%` } as CSSProperties}>
+        <svg className="audio-waveform-bars" viewBox="0 0 320 48" preserveAspectRatio="none" aria-hidden="true">
+          {(waveform || pendingWaveform).map((peak, index) => <rect key={index} x={index * 4} y={24 - peak * 22} width="2" height={peak * 44} fill={duration && index / 80 < time / duration ? 'var(--player-ink, #fff)' : 'var(--player-track, #ffffff35)'} />)}
+        </svg>
+        {playing && <span className="audio-playhead-time" aria-hidden="true">{formatTime(time)}</span>}
+        <input aria-label="Playback position" type="range" min="0" max={duration || 1} step="0.1" value={time} disabled={!duration}
+          aria-valuetext={`${formatTime(time)} of ${formatTime(duration)}`} onChange={e => { if (audio.current) audio.current.currentTime = Number(e.target.value); setTime(Number(e.target.value)); }} />
+      </div>
     </div>
     {error && <p className="audio-error" role="alert">Unable to play audio. Please try again.</p>}
   </div>;

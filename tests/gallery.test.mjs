@@ -25,8 +25,8 @@ test('last-to-first seam advances by exactly the requested fraction of a pixel',
     assert.ok(Math.abs((2 * 390 - after.offset) - (3 * 390 - before.offset) + 0.2) < 1e-9);
 });
 
-function setup(t, count = 1000) {
-    const dom = new JSDOM('<div class="gallery-wrapper" style="--card-width:380px;--card-gap:10px"><div class="collection-grid"></div></div>', { pretendToBeVisual: true });
+function setup(t, count = 1000, pageScroll = false) {
+    const dom = new JSDOM(`<main class="${pageScroll ? 'catalog-page' : ''}"><nav class="filters"></nav><div class="gallery-wrapper" style="--card-width:380px;--card-gap:10px"><div class="collection-grid"></div></div><footer>Footer</footer></main>`, { pretendToBeVisual: true });
     const { window } = dom;
     const frames = new Map();
     let id = 0;
@@ -95,6 +95,41 @@ test('artwork theme follows the centered story without updating on every frame',
     assert.equal(centered.at(-1), 'only');
     gallery.setItems([]);
     assert.equal(centered.at(-1), null);
+});
+
+test('hover selects a story palette, survives scrolling, and restores the centered story on leave', t => {
+    const h = setup(t, 7);
+    const changes = [];
+    h.gallery.onCenter = item => changes.push(item?.id ?? null);
+    h.gallery.render();
+    const card = h.gallery.nodes.get(0);
+    pointer(h, card, 'pointerover', 100, 0, { pointerType: 'mouse' });
+    assert.deepEqual(changes, [1, 0]);
+    pointer(h, card.querySelector('a'), 'pointerover', 100, 1, { pointerType: 'mouse' });
+    assert.deepEqual(changes, [1, 0], 'moving between children does not repeat extraction');
+    h.gallery.position += h.gallery.stride;
+    h.gallery.render();
+    assert.equal(changes.at(-1), 0);
+    pointer(h, h.wrapper, 'pointerleave', 0, 2, { pointerType: 'mouse' });
+    assert.equal(changes.at(-1), 2);
+    assert.equal(h.gallery.pauses.has('hover'), false);
+    pointer(h, card, 'pointerover', 100, 3);
+    assert.equal(changes.at(-1), 2, 'touch does not latch a hover palette');
+});
+
+test('keyboard focus selects artwork and replacing the catalog clears hover state', async t => {
+    const h = setup(t, 7);
+    const changes = [];
+    h.gallery.onCenter = item => changes.push(item?.id ?? null);
+    h.gallery.nodes.get(0).querySelector('a').focus();
+    assert.equal(changes.at(-1), 0);
+    h.wrapper.focus();
+    await Promise.resolve();
+    assert.equal(changes.at(-1), 1);
+    pointer(h, h.gallery.nodes.get(0), 'pointerover', 100, 0, { pointerType: 'mouse' });
+    h.gallery.setItems([{ id: 'replacement' }]);
+    assert.equal(changes.at(-1), 'replacement');
+    assert.equal(h.gallery.pauses.has('hover'), false);
 });
 
 test('touch capture can transfer from a card to the gallery without ending the swipe', t => {
@@ -370,4 +405,39 @@ test('React unmount disposes animation, global handlers and pending resume work'
     assert.equal(gallery.track.childElementCount, 0);
     gallery.schedule();
     assert.equal(frames.size, 0);
+});
+
+test('regular page wheel moves the carousel but preserves filters, zoom, and episode scrolling', t => {
+    const h = setup(t, 7, true);
+    const wheel = (target, options = {}) => {
+        const event = new h.window.WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 120, ...options });
+        target.dispatchEvent(event);
+        h.tick(16);
+        return event.defaultPrevented;
+    };
+    const footer = h.window.document.querySelector('footer');
+    assert.equal(wheel(footer), true);
+    assert.equal(h.gallery.position, 120);
+    assert.equal(wheel(h.wrapper, { deltaY: -60 }), true);
+    assert.equal(h.gallery.position, 60);
+    assert.equal(wheel(h.window.document.querySelector('.filters')), false);
+    assert.equal(wheel(footer, { ctrlKey: true }), false);
+    h.gallery.pause('modal', true);
+    assert.equal(wheel(footer), false);
+    assert.equal(h.gallery.position, 60);
+    h.gallery.destroy();
+    assert.equal(wheel(footer), false);
+});
+
+test('viewport card sizing preserves 3:4 artwork space and responds to caption changes', t => {
+    const h = setup(t, 7, true);
+    h.wrapper.dataset.fitHeight = 'true';
+    Object.defineProperty(h.wrapper, 'clientHeight', { configurable: true, value: 700 });
+    h.gallery.measure();
+    assert.equal(h.gallery.stride, (700 - 210) * 0.75 + 10);
+    h.gallery.setItems([{ id: 'with-hook', hookLine: 'An editorial subtitle.' }]);
+    assert.equal(h.gallery.stride, (700 - 270) * 0.75 + 10);
+    Object.defineProperty(h.wrapper, 'clientHeight', { configurable: true, value: 300 });
+    h.gallery.measure();
+    assert.equal(h.gallery.stride, 430);
 });

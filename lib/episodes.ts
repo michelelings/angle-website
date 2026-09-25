@@ -20,3 +20,9 @@ export function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 export type Renditions = Record<string, { sources: { url: string; width: number }[] }>;
+
+export function formatMinutes(seconds: number | null): string {
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return '';
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+}

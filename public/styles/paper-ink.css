@@ -72,7 +72,9 @@ body {
   color: var(--ink);
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
+  /* Clip horizontal overflow without creating a vertical scroll container
+     that prevents the episode artwork from sticking to the viewport. */
+  overflow-x: clip;
 }
 button,
 a {
@@ -206,7 +208,7 @@ h1 {
   --card-gap: 20px;
   touch-action: pan-y pinch-zoom;
   overflow: hidden;
-  width: calc(100% - 40px);
+  width: calc(100% - 2 * var(--card-gap));
   margin-inline: auto;
   position: relative;
   cursor: grab;
@@ -247,6 +249,11 @@ h1 {
 }
 .episode-card {
   width: var(--card-width);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: transform 0.2s;
 }
 .episode-card.hidden {
   opacity: 0;
@@ -278,12 +285,11 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 24px;
-  min-height: 300px;
+  padding: 12px 0 0;
   flex: 1;
 }
 .episode-title {
-  font: 400 32px/1.12 var(--serif);
+  font: 400 40px/1.12 var(--serif);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
@@ -309,24 +315,22 @@ h1 {
   overflow: hidden;
   align-self: flex-start;
 }
+.episode-category {
+  font-weight: 700;
+  margin-bottom: -6px;
+}
 .episode-description {
-  font: 16px/1.5 var(--sans);
+  font: 13px/1.5 var(--sans);
   color: var(--secondary);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
 }
 .episode-footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  min-height: 44px;
-  padding-right: 48px;
-  margin-top: auto;
-  padding-top: 16px;
-  font: 11px/1.5 var(--mono);
+  margin-top: 0;
+  padding: 0;
+  font: 12px/1.5 var(--sans);
   color: var(--secondary);
 }
 .episode-share-btn {
@@ -726,18 +730,16 @@ body.modal-open {
 @media (max-width: 1366px) {
   .gallery-wrapper {
     --card-width: 280px;
-    --card-gap: 16px;
   }
   .episode-info {
-    padding: 16px;
+    padding: 12px 0 0;
     gap: 10px;
-    min-height: 236px;
   }
   .episode-title {
-    font-size: 26px;
+    font-size: 34px;
   }
   .episode-description {
-    font-size: 14px;
+    font-size: 12px;
   }
   .episode-share-btn {
     right: 12px;
@@ -773,21 +775,19 @@ body.modal-open {
   /* Pixel token stays in sync with the gallery's measured geometry. */
   .gallery-wrapper {
     --card-width: 260px;
-    --card-gap: 12px;
-    width: calc(100% - 32px);
+    --card-gap: 16px;
   }
   .collection-grid {
     padding-bottom: 28px;
   }
   .episode-info {
-    padding: 16px;
-    min-height: 224px;
+    padding: 12px 0 0;
   }
   .episode-title {
-    font-size: 24px;
+    font-size: 32px;
   }
   .episode-description {
-    font-size: 14px;
+    font-size: 12px;
   }
   .episode-share-btn {
     right: 12px;
@@ -841,9 +841,6 @@ body.modal-open {
   .episode-title {
     font-size: 24px;
   }
-  .episode-info {
-    min-height: 224px;
-  }
   .modal-body {
     padding: 24px 20px;
   }
@@ -888,7 +885,6 @@ body.modal-open {
 @media (orientation: landscape) and (max-height: 500px) and (max-width: 1000px) {
   .gallery-wrapper {
     --card-width: 420px;
-    --card-gap: 16px;
   }
   .episode-card {
     flex-direction: row;
@@ -900,19 +896,18 @@ body.modal-open {
   }
   .episode-info {
     min-width: 0;
-    min-height: 212px;
-    padding: 12px;
+    padding: 0 0 0 16px;
     gap: 8px;
   }
   .episode-title {
-    font-size: 23px;
+    font-size: 30px;
   }
   .episode-description {
-    font-size: 14px;
+    font-size: 12px;
   }
   .episode-footer {
     gap: 4px 8px;
-    padding-top: 8px;
+    padding-top: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

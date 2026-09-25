@@ -12,7 +12,7 @@ for (const path of ['/', '/new', '/popular', '/home-v2', '/about']) {
   const html = await response.text();
   assert.match(html, /_next\//, path);
   const heading = new JSDOM(html).window.document.querySelector('h1')?.textContent || '';
-  assert.match(heading, /\d+ stor(?:y|ies) worth listening|About Angle/, path);
+  assert.match(heading, path === '/about' ? /^About Angle$/ : path === '/home-v2' ? /\d+ stor(?:y|ies) worth listening/ : /^Angle stories$/, path);
   assert.match(html, /rel="canonical"/, path);
   console.log('PASS page', path);
 }
@@ -59,7 +59,7 @@ if (episodes.length) {
   assert.equal(doc.querySelectorAll('.episode-actions .modal-share-btn').length, 1);
   const sourceHrefs = new Set([...doc.querySelectorAll('.episode-sources a')].map(link => link.href));
   for (const source of data.data.sources || []) assert.ok(sourceHrefs.has(source.url), `Source link ${source.url}`);
-  if (data.data.presenterDisclosure) assert.equal(doc.querySelector('.presenter-disclosure')?.textContent, data.data.presenterDisclosure);
+  assert.equal(doc.querySelector('.presenter-disclosure'), null);
   assert.equal(doc.querySelectorAll('.transcript h2').length, data.data.chapters?.length || 0);
   for (const image of ['/api/og-image', `/api/og-image/${episode.id}`]) {
     const response = await request(image);
