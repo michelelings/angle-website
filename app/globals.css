@@ -62,6 +62,30 @@
 .about-page { max-width: 760px; margin: 32px auto 64px; padding: 0 24px; font: 18px/1.7 var(--sans); }
 .about-page h1 { font: 44px/1.2 var(--serif); margin-bottom: 24px; }
 .about-page p { margin: 16px 0; }
+.subject-page { max-width: 960px; margin: 32px auto 64px; padding: 0 24px; font: 18px/1.7 var(--sans); }
+.subject-page h1 { font: 44px/1.2 var(--serif); margin-bottom: 12px; overflow-wrap: anywhere; }
+.subject-page h2 { font: 26px/1.25 var(--serif); margin: 40px 0 16px; }
+.subject-kind { color: var(--blue); font: 600 11px/1.5 var(--mono); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 8px; }
+.subject-description { max-width: 680px; color: var(--secondary); }
+.subject-story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; list-style: none; }
+.subject-story-grid li { display: flex; min-width: 0; }
+.subject-story-grid .rail-card { width: 100%; }
+.subject-story-grid .rail-card-info { min-height: 0; padding: 16px 20px 20px; }
+.subject-story-grid .rail-card-title { font-size: 24px; }
+.subject-story-grid .episode-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 14px; line-height: 1.5; }
+.subject-background { max-width: 680px; }
+.subject-background p { margin: 16px 0; }
+.subject-background a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+.subject-note { padding-left: 12px; border-left: 2px solid var(--rule); color: var(--secondary); font-size: 15px; }
+.subject-excerpt { border-top: 1px solid var(--rule); }
+.subject-excerpt:last-of-type { border-bottom: 1px solid var(--rule); }
+.subject-excerpt summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; font-weight: 600; }
+.subject-excerpt summary::-webkit-details-marker { display: none; }
+.subject-excerpt summary::before { content: ''; flex-shrink: 0; width: 0; height: 0; margin-right: 10px; border-block: 5px solid transparent; border-left: 7px solid currentColor; transition: transform 0.15s; }
+.subject-excerpt[open] summary::before { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .subject-excerpt summary::before { transition: none; } }
+.subject-excerpt summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.subject-attribution { color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .rail-card-link { display: flex; flex: 1; flex-direction: column; color: inherit; text-decoration: none; }
 .rail-card-link:focus-visible { outline-offset: -4px; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
@@ -175,4 +199,9 @@ dialog.modal-overlay::backdrop { background: transparent; }
   .catalog-page .episode-info { gap: 8px; }
   .about-page { margin: 24px auto; padding-inline: 20px; font-size: 16px; }
   .about-page h1 { font-size: 38px; }
+  .subject-page { margin: 24px auto; padding-inline: 16px; font-size: 16px; }
+  .subject-page h1 { font-size: 38px; }
+  .subject-story-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .subject-story-grid .rail-card-info { padding: 12px 14px 14px; }
+  .subject-story-grid .rail-card-title { font-size: 20px; }
 }

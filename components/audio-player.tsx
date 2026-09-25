@@ -9,7 +9,11 @@ import { cachedWaveform, loadWaveform } from '@/lib/audio-waveform';
 // These are decorative placeholder peaks; decoded audio replaces them when ready.
 const pendingWaveform = Array.from({ length: 80 }, (_, index) =>
   .42 + .22 * Math.abs(Math.sin(index * 1.73 + .8)) + .2 * Math.abs(Math.sin(index * .37 + 1.2)));
-export function AudioPlayer({ src, episodeId, playbackRef }: { src: string; episodeId: string; playbackRef?: Ref<EpisodePlaybackHandle> }) {
+export function AudioPlayer({ src, episodeId, playbackRef, onPosition }: {
+  src: string; episodeId: string; playbackRef?: Ref<EpisodePlaybackHandle>;
+  /** Listening position for the story timeline and map; null until listening starts. */
+  onPosition?: (seconds: number | null) => void;
+}) {
   const audio = useRef<HTMLAudioElement>(null);
   const pendingSeek = useRef<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -65,6 +69,7 @@ export function AudioPlayer({ src, episodeId, playbackRef }: { src: string; epis
         }
       }}
       onTimeUpdate={e => { const element = e.currentTarget; setTime(element.currentTime);
+        if (!element.paused || element.currentTime > 0) onPosition?.(element.currentTime);
         if (!element.paused && !element.seeking) tracker.sample(element.currentTime, element.duration);
       }} onError={() => setError(true)} />
     <div className="audio-controls">

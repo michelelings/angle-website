@@ -1,6 +1,8 @@
 import { publicCache } from './public-cache';
 import { publishedHook } from '../lib/published-hooks';
-import { parseEpisodeStory, type EpisodeStory } from '../lib/episode-story';
+import { parseEpisodeStory, parseKeyFacts, parseScript, type EpisodeStory, type KeyFact, type ScriptChapter } from '../lib/episode-story';
+import { parseEpisodeTaxonomy, type EpisodeTaxonomy } from '../lib/episode-taxonomy';
+import { parseSubjectHub, type SubjectHub } from '../lib/subject-hub';
 
 export interface Episode {
   id: string;
@@ -8,6 +10,10 @@ export interface Episode {
   description: string | null;
   hookLine?: string | null;
   story?: EpisodeStory;
+  keyFacts?: KeyFact[];
+  /** Narrated solo script, shown as the readable story. */
+  script?: ScriptChapter[];
+  taxonomy?: EpisodeTaxonomy;
   coverImage: string | null;
   createdAt: string;
   updatedAt: string | null;
@@ -158,15 +164,23 @@ export function mapV2Episode(value: unknown): Episode {
       }) : [],
   }] })[0];
   mapped.asOf = timestamp(row.asOf);
-  mapped.story = parseEpisodeStory(row.story, row.playbackContext, String(mode), mapped.duration);
-  mapped.hookLine = mapped.story?.hookLine || mapped.hookLine;
+  mapped.taxonomy = parseEpisodeTaxonomy(row.taxonomy);
   mapped.presenterDisclosure = nullableString(presenters.disclosure);
+  // Timeline events cite sources by ID; keep every ID resolvable after URL de-duplication.
+  const sourcesById = new Map<string, { title: string; url: string; publisher: string | null }>();
   mapped.sources = Array.isArray(row.sources) ? row.sources.flatMap(value => {
     const source = object(value);
     const url = sourceUrl(source.url);
-    return url ? [{ url, title: nullableString(source.title)?.replace(/\s+/g, ' ').trim() || new URL(url).hostname,
-      publisher: nullableString(source.publisher) }] : [];
+    if (!url) return [];
+    const item = { url, title: nullableString(source.title)?.replace(/\s+/g, ' ').trim() || new URL(url).hostname,
+      publisher: nullableString(source.publisher) };
+    if (nullableString(source.id)) sourcesById.set(source.id as string, item);
+    return [item];
   }).filter((source, index, sources) => sources.findIndex(other => other.url === source.url) === index) : [];
+  mapped.story = parseEpisodeStory(row.story, row.playbackContext, String(mode), mapped.duration, sourcesById);
+  mapped.hookLine = mapped.story?.hookLine || mapped.hookLine;
+  mapped.keyFacts = parseKeyFacts(row.companion);
+  mapped.script = parseScript(object(row.transcripts).solo);
   mapped.chapters = chapters.map(value => {
     const chapter = object(value);
     return { title: nullableString(chapter.title) || 'Transcript', turns: (Array.isArray(chapter.turns) ? chapter.turns : []).flatMap(value => {
@@ -217,6 +231,11 @@ async function backendJson(env: Env, path: string): Promise<unknown> {
 
 export async function readEpisode(env: Env, id: string): Promise<Episode | null> {
   try { return mapV2Episode(await backendJson(env, '/v2/episodes/' + encodeURIComponent(id))); }
+  catch (error) { if (error instanceof CatalogError && error.status === 404) return null; throw error; }
+}
+
+export async function readSubjectHub(env: Env, id: string): Promise<SubjectHub | null> {
+  try { return parseSubjectHub(await backendJson(env, '/v2/hubs/' + encodeURIComponent(id)), mapV2Episode); }
   catch (error) { if (error instanceof CatalogError && error.status === 404) return null; throw error; }
 }
 

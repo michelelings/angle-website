@@ -2,7 +2,7 @@
 import type { progressiveArtworkProps } from '@/lib/artwork';
 import { ArtworkImage } from './artwork-image';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { EpisodePlaybackContext, type EpisodePlaybackHandle } from './episode-playback';
+import { EpisodePlaybackClock, EpisodePlaybackContext, createPlaybackClock, type EpisodePlaybackHandle } from './episode-playback';
 import { extractArtworkColors } from '@/lib/artwork-palette';
 import { AudioPlayer } from './audio-player';
 
@@ -12,6 +12,7 @@ export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl
   const image = useRef<HTMLImageElement>(null);
   const playback = useRef<EpisodePlaybackHandle>(null);
   const playFrom = useCallback((seconds: number) => playback.current?.playFrom(seconds), []);
+  const [clock] = useState(createPlaybackClock);
   const player = useRef<HTMLDivElement>(null);
   const [playerHeight, setPlayerHeight] = useState(92);
   useEffect(() => {
@@ -47,17 +48,17 @@ export function EpisodeExperience({ id, artwork, artworkSources, title, audioUrl
     '--player-ink': palette.darkText ? '#000' : '#fff',
     '--player-track': palette.darkText ? '#00000030' : '#ffffff35',
   } as CSSProperties : undefined;
-  return <EpisodePlaybackContext.Provider value={playFrom}><div className="episode-view" style={style}>
+  return <EpisodePlaybackContext.Provider value={playFrom}><EpisodePlaybackClock.Provider value={clock}><div className="episode-view" style={style}>
     <div className="artwork-mesh" aria-hidden="true" />
     <section className="episode-media" aria-label="Artwork and audio player">
       <div className="episode-media-card">
         <ArtworkImage previewRef={image} cornerShade className="modal-image" {...artworkSources} fetchPriority="high" crossOrigin="anonymous" alt={title} width="600" height="800" />
         {artworkHeader}
         {audioUrl && <div ref={player} className="episode-listen-panel" style={playerStyle}>
-          <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} playbackRef={playback} />
+          <AudioPlayer key={`${id}:${audioUrl}`} src={audioUrl} episodeId={id} playbackRef={playback} onPosition={clock.set} />
         </div>}
       </div>
     </section>
     <div className="episode-reading">{children}</div>
-  </div></EpisodePlaybackContext.Provider>;
+  </div></EpisodePlaybackClock.Provider></EpisodePlaybackContext.Provider>;
 }

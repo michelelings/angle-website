@@ -7,9 +7,9 @@ import { categoryLabel } from '@/lib/catalog-copy';
 import { GetAngleLink } from './get-angle-link';
 import { ShareButton } from './share-button';
 import { EpisodeTitle } from './episode-title';
-import { storyEventDate, storyEventStatus } from '@/lib/episode-story';
-import { HearStoryMoment } from './episode-playback';
+import { StoryKeyFacts, StoryProvider, StoryScript, StoryTimeline } from './story-timeline';
 import { StoryPlaces } from './story-places';
+import { EpisodeTaxonomy } from './episode-taxonomy';
 export function EpisodeDetails({ episode, modal = false, related = [] }: { episode: Episode; modal?: boolean; related?: Episode[] }) {
   return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={progressiveArtworkProps(episode)} title={episode.title} audioUrl={episode.audioUrl}
     artworkHeader={<nav className="episode-breadcrumb" aria-label="Breadcrumb"><Link href="/" className="episode-breadcrumb-home" aria-label="Angle home"><img src="/images/logo.svg" alt="" width="32" height="32" /></Link>
@@ -34,16 +34,13 @@ export function EpisodeDetails({ episode, modal = false, related = [] }: { episo
         </section>) : episode.transcript}
       </details>}
       </section>
-      {!!episode.story?.events.length && <section className="story-section"><h2>Timeline</h2>
-        <ol className="story-timeline">{episode.story.events.map(event => <li key={event.id}>
-          <div className="story-event-copy">
-            <div className="story-event-meta"><span>{storyEventDate(event)}</span>{storyEventStatus(event.status) && <span className="story-label">{storyEventStatus(event.status)}</span>}</div>
-            <h3>{episode.audioUrl && event.startTime !== null ? <HearStoryMoment seconds={event.startTime} title={event.title} /> : event.title}</h3>{event.summary && <p>{event.summary}</p>}
-          </div>
-        </li>)}</ol>
-      </section>}
-      {!!episode.story?.places.length && <StoryPlaces places={episode.story.places} />}
-      {episode.tags?.length ? <div className="modal-tags">{episode.tags.map(tag => <span className="modal-tag" key={tag}>{tag}</span>)}</div> : null}
+      {(!!episode.keyFacts?.length || !!episode.script?.length || !!episode.story?.events.length || !!episode.story?.places.length) && <StoryProvider moments={episode.story?.moments ?? []} places={episode.story?.places ?? []}>
+        {!!episode.keyFacts?.length && <StoryKeyFacts facts={episode.keyFacts} />}
+        {!!episode.script?.length && <StoryScript chapters={episode.script} />}
+        {!!episode.story?.events.length && <StoryTimeline events={episode.story.events} places={episode.story.places} playable={!!episode.audioUrl} />}
+        {!!episode.story?.places.length && <StoryPlaces places={episode.story.places} events={episode.story.events} />}
+      </StoryProvider>}
+      <EpisodeTaxonomy episode={episode} />
       {!!episode.sources?.length && <section className="episode-sources"><h2>Sources</h2>
         <ul>{episode.sources.map(source => <li key={source.url}><a href={source.url} rel="noopener noreferrer">{source.title}</a>
           {source.publisher && <span> — {source.publisher}</span>}</li>)}</ul>

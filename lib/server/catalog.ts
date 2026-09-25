@@ -1,7 +1,8 @@
 import 'server-only';
 import { cache } from 'react';
 import { getCloudflareContext } from '../opennext-context.js';
-import { readCatalog, readEpisode, type Env } from '../../worker/catalog';
+import { readCatalog, readEpisode, readSubjectHub, type Env } from '../../worker/catalog';
+import { subjectIdPattern } from '../subject-hub';
 
 export async function catalogEnv(): Promise<Env> {
   const { env } = await getCloudflareContext({ async: true });
@@ -14,4 +15,8 @@ export const getCatalog = cache(async () => readCatalog(await catalogEnv()));
 export const getEpisode = cache(async (id: string) => {
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) return null;
   return readEpisode(await catalogEnv(), id);
+});
+export const getSubjectHub = cache(async (id: string) => {
+  if (!subjectIdPattern.test(id)) return null;
+  return readSubjectHub(await catalogEnv(), id);
 });

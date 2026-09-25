@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ORIGIN, DESCRIPTION } from './site';
 import type { Episode } from './episodes';
+import { subjectPath, type SubjectHub } from './subject-hub';
 export function pageMetadata(path = '/', title = 'Angle — Audio Stories and News Explainers', description = DESCRIPTION, image = '/api/og-image'): Metadata {
   const socialImage = `${ORIGIN}${image}?v=artwork-3`;
   return { title, description, robots: { index: true, follow: true }, alternates: { canonical: ORIGIN + path },
@@ -30,6 +31,14 @@ export function episodeMetadata(episode: Episode): Metadata {
       ...(episode.previewVideoHeight ? { height: episode.previewVideoHeight } : {}),
     }] } : {}),
   } };
+}
+export function subjectMetadata(hub: SubjectHub): Metadata {
+  const description = hub.description && hub.description.length <= 200 ? hub.description
+    : `Listen to Angle audio stories featuring ${hub.name}, with transcripts, timelines and sources.`;
+  // A resolved profile is the subject's cross-episode identity; taxonomy IDs can differ per episode.
+  const meta = pageMetadata(subjectPath(hub.profile?.id ?? hub.id), `${hub.name} | Angle`, description);
+  // An ambiguous hub mixes stories that may be about different people or things.
+  return hub.profileStatus === 'ambiguous' || !hub.episodes.length ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 export function episodeJsonLd(episode: Episode): string {
   return JSON.stringify({ '@context': 'https://schema.org', '@type': 'PodcastEpisode', name: episode.title,
