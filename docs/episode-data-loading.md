@@ -18,8 +18,8 @@ search reuses the same compact response and retains its transcript index.
 
 ## Rollout
 
-Both changes are local until deployed. Deploying the API enables the smaller
-response; the website change opts into it. Either deployment order is compatible:
+Deploying the API enables the smaller response; the website change opts into it.
+Either deployment order is compatible:
 the older API ignores the query and the website can still parse its full response.
 No media backfill, database migration or published-artifact mutation is needed.
 The API still checks publication access and returns 404 for drafts/withdrawals.
@@ -35,3 +35,21 @@ transfer and downstream parsing, and links only the selected mode's story sectio
 Backend projection and D1/R2 route tests cover selected timing, missing alignment,
 source IDs, preserved default responses and release access. Website tests cover
 the compact request, caching, solo-only transcript search and playback highlights.
+
+## Production rollout — September 26, 2026
+
+- Website code: `169e4c9`; Cloudflare version `ff018926-543c-4ab8-b0b9-2edf52234eea`.
+- API code (Angle repository): `6839e93`; Cloudflare version `bfc38303-2861-44ce-a743-39da7c994dbb`.
+- Both were pushed to GitHub and deployed from clean commit archives. The API's
+  previously untracked runtime dependencies were included; staged iOS work and
+  unrelated local website files were left untouched.
+- Website tests (96), isolated API tests (66), the OpenNext build, Worker type
+  check and both deployment dry runs passed.
+- Live full/compact responses mapped identically and matched the sizes above.
+  The default API response and API bindings/runtime were preserved. Audio range
+  requests returned 206, and a nonexistent compact episode returned 404.
+- Homepage, direct episode, readiness and sitemap returned 200. Browser navigation
+  showed the immediate preview, completed the story load, and returned to the
+  overview when closed.
+- A prepared cover's small (29,688 bytes) and medium (175,380 bytes) WebPs matched
+  the upstream files byte-for-byte through the website artwork route.
