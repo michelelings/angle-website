@@ -14,7 +14,8 @@ export async function catalogEnv(): Promise<Env> {
 export const getCatalog = cache(async () => readCatalog(await catalogEnv()));
 export const getEpisode = cache(async (id: string) => {
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) return null;
-  return readEpisode(await catalogEnv(), id);
+  const published = (await getCatalog()).find(episode => episode.id === id);
+  return published ? readEpisode(await catalogEnv(), id, published) : null;
 });
 export const getSubjectHub = cache(async (id: string) => {
   if (!subjectIdPattern.test(id)) return null;

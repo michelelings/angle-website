@@ -3,6 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 import { ORIGIN } from '@/lib/site';
 import { ArtworkTheme } from '@/components/artwork-theme';
+import { EpisodeNavigation } from '@/components/episode-navigation';
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 export const metadata: Metadata = {
   metadataBase: new URL(ORIGIN),
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 export default function RootLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
-  return <html lang="en"><body><ArtworkTheme>{children}{modal}</ArtworkTheme>
+  return <html lang="en"><body><ArtworkTheme><EpisodeNavigation>{children}{modal}</EpisodeNavigation></ArtworkTheme>
     <Script src="https://www.googletagmanager.com/gtag/js?id=G-RRQ8EPNMPQ" strategy="afterInteractive" />
     <Script id="analytics" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RRQ8EPNMPQ');`}</Script>
   </body></html>;

@@ -6,6 +6,7 @@ import { parseSubjectHub, type SubjectHub } from '../lib/subject-hub';
 
 export interface Episode {
   id: string;
+  revisionId?: string | null;
   title: string;
   description: string | null;
   hookLine?: string | null;
@@ -140,7 +141,8 @@ export function mapV2Episode(value: unknown): Episode {
   const hosts = object(presenters.hosts);
   const hostKeys = mode === 'solo_mara' ? ['mara'] : mode === 'solo_eli' ? ['eli'] : ['mara', 'eli'];
   const host = hostKeys.map(key => nullableString(object(hosts[key]).displayName)).filter(Boolean).join(' & ');
-  const transcript = object(object(row.transcripts)[String(mode)]);
+  const transcripts = object(row.transcripts);
+  const transcript = object(transcripts[String(mode)] ?? (String(mode).startsWith('solo_') ? transcripts.solo : null));
   const chapters = Array.isArray(transcript.chapters) ? transcript.chapters : [];
   const transcriptText = chapters.flatMap(chapter => {
     const c = object(chapter);
@@ -164,6 +166,7 @@ export function mapV2Episode(value: unknown): Episode {
       }) : [],
   }] })[0];
   mapped.asOf = timestamp(row.asOf);
+  mapped.revisionId = nullableString(row.revisionId);
   mapped.taxonomy = parseEpisodeTaxonomy(row.taxonomy);
   mapped.presenterDisclosure = nullableString(presenters.disclosure);
   // Timeline events cite sources by ID; keep every ID resolvable after URL de-duplication.
@@ -229,8 +232,18 @@ async function backendJson(env: Env, path: string): Promise<unknown> {
   }
 }
 
-export async function readEpisode(env: Env, id: string): Promise<Episode | null> {
-  try { return mapV2Episode(await backendJson(env, '/v2/episodes/' + encodeURIComponent(id))); }
+export async function readEpisode(env: Env, id: string, published?: Episode): Promise<Episode | null> {
+  // Website renders pass the current catalog entry, so a changed publication
+  // gets a new key immediately after the catalog's 60-second refresh.
+  const version = published
+    ? JSON.stringify([published.revisionId, published.updatedAt, published.createdAt, published.coverImage])
+    : 'current';
+  try {
+    // Older backends ignore this opt-in query and still map correctly during rollout.
+    const response = await publicCache(env, `episode-website-v1/${id}/${encodeURIComponent(version)}`, 60,
+      async () => Response.json(mapV2Episode(await backendJson(env, '/v2/episodes/' + encodeURIComponent(id) + '?view=website-v1'))));
+    return response.json();
+  }
   catch (error) { if (error instanceof CatalogError && error.status === 404) return null; throw error; }
 }
 

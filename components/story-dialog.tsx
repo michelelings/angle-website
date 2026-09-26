@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-export function StoryDialog({ children, title }: { children: React.ReactNode; title: string }) {
+export function StoryDialog({ children, title, onClose }: { children: React.ReactNode; title: string; onClose?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
+  const close = onClose ?? (() => router.back());
   useEffect(() => {
     const element = dialog.current!;
     const previous = document.activeElement as HTMLElement | null;
@@ -22,8 +23,8 @@ export function StoryDialog({ children, title }: { children: React.ReactNode; ti
     };
   }, [title]);
   return <dialog ref={dialog} className="modal-overlay" aria-labelledby="story-title"
-    onCancel={event => { event.preventDefault(); router.back(); }}
-    onClick={event => { if (event.target === event.currentTarget) router.back(); }}>
-    <div className="episode-shell"><div className="modal-header"><button type="button" className="modal-close" aria-label="Close story" autoFocus onClick={() => router.back()}>×</button></div>{children}</div>
+    onCancel={event => { event.preventDefault(); close(); }}
+    onClick={event => { if (event.target === event.currentTarget) close(); }}>
+    <div className="episode-shell"><div className="modal-header"><button type="button" className="modal-close" aria-label="Close story" autoFocus onClick={close}>×</button></div>{children}</div>
   </dialog>;
 }

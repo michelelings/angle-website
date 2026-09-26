@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
 import { publicCache } from '../worker/public-cache';
-import { artworkResponse } from '../worker/artwork';
+import { artworkResponse, mediaArtworkResponse } from '../worker/artwork';
 import { artworkProps, artworkUrl, artworkVariantUrl, progressiveArtworkProps } from '../lib/artwork';
-import { mapV2Episode, type Env } from '../worker/catalog';
+import { mapV2Episode, readEpisode, type Env } from '../worker/catalog';
 import { readSearchDocuments } from '../lib/server/search';
 
 const row = { id: 'story', title: 'Story', excerpt: 'Summary', coverUrl: 'https://media.example/cover.png', createdAt: '2026-09-25T08:00:00Z', availableModes: ['duo'], renditions: { duo: { url: 'https://media.example/audio.mp3', durationSeconds: 62 } } };
@@ -42,6 +42,87 @@ test('public cache reuses successful data, expires it, and never caches failures
   for (let i = 0; i < 2; i++) await publicCache(env, 'failure', 60, async () => { failures++; return new Response('', { status: 502 }); });
   assert.equal(failures, 2);
   await assert.rejects(publicCache(env, 'throws', 60, async () => { throw new Error('unavailable'); }));
+});
+
+test('episode cache follows publication revisions, expires, and does not retain missing episodes', async t => {
+  const cache = memoryCache(t); const env = environment();
+  let revision = 'revision-one'; let details = 0; let status = 200;
+  env.ANGLE_BACKEND = { async fetch(request) {
+    const current = { ...row, revisionId: revision };
+    if (new URL(request.url).pathname === '/v2/episodes/story') {
+      assert.equal(new URL(request.url).searchParams.get('view'), 'website-v1');
+      details++;
+      return status === 200 ? Response.json(current) : new Response('', { status });
+    }
+    return Response.json({ catalogEpoch: 'angle-pipeline-v2', episodes: [current], nextOffset: null });
+  } };
+  const read = () => readEpisode(env, 'story', mapV2Episode({ ...row, revisionId: revision }));
+  assert.equal((await read())?.revisionId, 'revision-one');
+  await read();
+  assert.equal(details, 1);
+  revision = 'revision-two';
+  // A fresh catalog item bypasses the old detail entry even before its TTL expires.
+  assert.equal((await readEpisode(env, 'story', mapV2Episode({ ...row, revisionId: revision })))?.revisionId, revision);
+  assert.equal(details, 2);
+  cache.advance(61);
+  await read();
+  assert.equal(details, 3);
+  cache.advance(61); status = 404;
+  assert.equal(await read(), null);
+  status = 200;
+  assert.equal((await read())?.revisionId, revision);
+  assert.equal(details, 5);
+});
+
+test('compact detail preserves solo-only transcript search, readable prose, and measured highlights', async () => {
+  const env = environment();
+  const compact = { ...row, availableModes: ['solo_eli'], renditions: { solo_eli: row.renditions.duo },
+    transcripts: { solo: { chapters: [{ id: 'c1', title: 'Chapter', turns: [
+      { id: 't1', text: 'Unique search phrase.' }, { id: 't2', text: 'Thanks for listening.' },
+    ], segments: [{ id: 's1', turnIds: ['t1', 't2'] }] }] } },
+    story: { version: 1, format: 'news', events: [], places: [] },
+    companion: { keyFacts: [{ id: 'f1', text: 'Key fact' }] },
+    playbackContext: { version: 1, contexts: { solo: [{ id: 'ctx', turnIds: ['t1'], keyFacts: [{ id: 'f1' }] }] },
+      timelines: { solo_eli: [{ contextId: 'ctx', chapterId: 'c1', segmentId: 's1', start: 2, end: 12 }] } },
+  };
+  env.ANGLE_BACKEND = { async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname.includes('/v2/episodes/')) {
+      assert.equal(url.searchParams.get('view'), 'website-v1');
+      return Response.json(compact);
+    }
+    return Response.json({ catalogEpoch: 'angle-pipeline-v2', episodes: [compact], nextOffset: null });
+  } };
+  const detail = await readEpisode(env, 'story');
+  assert.match(detail!.transcript!, /Unique search phrase/);
+  assert.deepEqual(detail!.script?.[0].segments[0].paragraphs, ['Unique search phrase.']);
+  assert.deepEqual(detail!.story?.moments, [{ start: 2, end: 12, eventIds: [], placeIds: [], keyFactIds: ['f1'], segment: 'c1/s1' }]);
+  assert.match((await readSearchDocuments(env))[0].transcript, /Unique search phrase/);
+});
+
+test('native media artwork skips the catalog, uses a fixed origin, and caches converted variants', async t => {
+  memoryCache(t); const env = environment(); const requests: string[] = [];
+  env.ANGLE_BACKEND = { async fetch(request) {
+    requests.push(request.url);
+    assert.equal(new URL(request.url).origin, env.ANGLE_API_ORIGIN);
+    assert.equal(new URL(request.url).pathname, '/v2/media/cover');
+    return new Response('png', { headers: { 'Content-Type': 'image/png' } });
+  } };
+  const widths: number[] = [];
+  env.IMAGES = { input: () => ({
+    transform(options) { widths.push(options.width!); return this; }, draw() { return this; },
+    async output() { return { response: () => new Response('webp'), image: () => new Response('webp').body!, contentType: () => 'image/webp' }; },
+  }) };
+  for (const size of ['small', 'medium', 'small']) {
+    const response = await mediaArtworkResponse(new Request(`${env.PUBLIC_ORIGIN}/api/artwork/media/cover?size=${size}&url=https://untrusted.example`), 'cover', env);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'image/webp');
+  }
+  assert.equal(requests.length, 2);
+  assert.deepEqual(widths, [400, 960]);
+  assert.equal((await mediaArtworkResponse(new Request(`${env.PUBLIC_ORIGIN}/?size=small`), '../private', env)).status, 400);
+  const episode = mapV2Episode({ ...row, coverUrl: 'https://angle-api.footy.workers.dev/v2/media/cover' });
+  assert.deepEqual(progressiveArtworkProps(episode), { src: '/api/artwork/media/cover?size=small', fullSrc: '/api/artwork/media/cover?size=medium' });
 });
 
 test('search documents reuse the built index and refresh after five minutes', async t => {
@@ -138,7 +219,7 @@ test('prepared WebP variants are streamed directly without a transformation bind
   } };
   const props = progressiveArtworkProps(episode);
   assert.equal(props.src, artworkVariantUrl(episode, 'small'));
-  assert.equal(props.fullSrc, artworkVariantUrl(episode, 'original'));
+  assert.equal(props.fullSrc, artworkVariantUrl(episode, 'medium'));
   for (const size of ['small', 'medium', 'original'] as const) {
     const response = await artworkResponse(new Request(new URL(artworkVariantUrl(episode, size), env.PUBLIC_ORIGIN)), episode.id, env);
     assert.equal(response.status, 200);

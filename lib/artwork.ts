@@ -7,11 +7,15 @@ export type ArtworkSize = 'small' | 'medium' | 'original';
 
 export function artworkVariantUrl(episode: Artwork, size: ArtworkSize): string {
   if (!episode.coverImage) return '/images/icon.webp';
+  const source = new URL(episode.coverImage);
+  if (source.origin === 'https://angle-api.footy.workers.dev' && /^\/v2\/media\/[a-zA-Z0-9_-]+$/.test(source.pathname)) {
+    return `/api/artwork/media/${source.pathname.split('/').pop()}?size=${size}`;
+  }
   return `/api/artwork/${encodeURIComponent(episode.id)}?${new URLSearchParams({ size, v: artworkVersion(episode) })}`;
 }
 
 export function progressiveArtworkProps(episode: Artwork) {
-  return { src: artworkVariantUrl(episode, 'small'), fullSrc: artworkVariantUrl(episode, 'original') };
+  return { src: artworkVariantUrl(episode, 'small'), fullSrc: artworkVariantUrl(episode, 'medium') };
 }
 
 export function artworkVersion(episode: Artwork): string {

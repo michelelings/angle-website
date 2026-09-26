@@ -25,15 +25,9 @@ export function EpisodeDetails({ episode, modal = false, related = [] }: { episo
         {episode.episodeNumber !== null && <span className="modal-meta-item">Episode {episode.episodeNumber}</span>}
         <div className="episode-actions"><GetAngleLink location="modal" episodeId={episode.id} /><ShareButton id={episode.id} /></div>
       </div>
-      <section className="story-overview" aria-label="Overview">
-      <p className="modal-description">{episode.story?.summary || episode.fullDescription || episode.description}</p>
-      {episode.story?.whyItMatters && <div className="story-importance"><h2>Why it matters</h2><p className="modal-description">{episode.story.whyItMatters}</p></div>}
-      {episode.transcript && <details className="transcript"><summary>Read full transcript</summary>
-        {episode.chapters?.length ? episode.chapters.map((chapter, index) => <section key={index}>
-          <h2>{chapter.title}</h2>{chapter.turns.map((turn, i) => <p key={i}>{turn.speaker && <strong>{turn.speaker}: </strong>}{turn.text}</p>)}
-        </section>) : episode.transcript}
-      </details>}
-      </section>
+      {episode.story?.whyItMatters && <section className="story-overview" aria-label="Overview">
+        <p className="modal-description">{episode.story.whyItMatters}</p>
+      </section>}
       {(!!episode.keyFacts?.length || !!episode.script?.length || !!episode.story?.events.length || !!episode.story?.places.length) && <StoryProvider moments={episode.story?.moments ?? []} places={episode.story?.places ?? []}>
         {!!episode.keyFacts?.length && <StoryKeyFacts facts={episode.keyFacts} />}
         {!!episode.script?.length && <StoryScript chapters={episode.script} />}

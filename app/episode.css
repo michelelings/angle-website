@@ -224,9 +224,6 @@
 .episode-reading .story-section { margin: 52px 0; font-size: 13px; line-height: 1.6; }
 .episode-reading .story-section h2 { margin: 0 0 18px; font: 400 32px/1.2 var(--serif); }
 .story-overview .modal-description { margin: 0; }
-.story-importance { margin-top: 24px; }
-.episode-reading .story-importance h2 { margin: 0 0 8px; font: 600 16px/1.4 var(--sans); }
-.story-overview .transcript { margin: 24px 0 0; }
 .story-section p { margin: 0; }
 .taxonomy-groups { margin: 0; }
 .taxonomy-group + .taxonomy-group { margin-top: 18px; }

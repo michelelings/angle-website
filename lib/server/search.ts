@@ -16,7 +16,7 @@ async function buildSearchDocuments(env: Env): Promise<SearchDocument[]> {
   await Promise.all(Array.from({ length: Math.min(6, catalog.length) }, async () => {
     while (cursor < catalog.length) {
       const episode = catalog[cursor++];
-      const detail = await readEpisode(env, episode.id);
+      const detail = await readEpisode(env, episode.id, episode);
       if (detail) documents.push(searchDocument(detail));
     }
   }));
