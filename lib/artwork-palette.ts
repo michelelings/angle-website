@@ -15,6 +15,9 @@ export function readableArtworkColor({ r, g, b }: ArtworkColor): string {
   return `rgb(${channels.join(', ')})`;
 }
 
+// Social images sample the same 64px thumbnail on the server; keep both mesh palettes identical.
+export const artworkPaletteOptions = { colorCount: 3, quality: 5 };
+
 // Browser-only cache: reuse palettes when an episode is reopened, with a bounded size.
 const palettes = new Map<string, { palette: string[]; dominant: string; darkText: boolean }>();
 export async function extractArtworkColors(image: HTMLImageElement): Promise<{ palette: string[]; dominant: string; darkText: boolean } | null> {
@@ -27,7 +30,7 @@ export async function extractArtworkColors(image: HTMLImageElement): Promise<{ p
   const context = canvas.getContext('2d');
   if (!context) return null;
   context.drawImage(image, 0, 0, 64, 64);
-  const colors = getPaletteSync(canvas, { colorCount: 3, quality: 5 });
+  const colors = getPaletteSync(canvas, artworkPaletteOptions);
   if (!colors?.length) return null;
   const palette = colors.map(color => readableArtworkColor(color.rgb()));
   const { r, g, b } = (getColorSync(canvas, { quality: 5 }) || colors[0]).rgb();

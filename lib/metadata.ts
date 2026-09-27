@@ -3,7 +3,7 @@ import { ORIGIN, DESCRIPTION } from './site';
 import type { Episode } from './episodes';
 import { subjectPath, type SubjectHub } from './subject-hub';
 export function pageMetadata(path = '/', title = 'Angle — Audio Stories and News Explainers', description = DESCRIPTION, image = '/api/og-image'): Metadata {
-  const socialImage = `${ORIGIN}${image}?v=artwork-3`;
+  const socialImage = `${ORIGIN}${image}?v=artwork-4`;
   return { title, description, robots: { index: true, follow: true }, alternates: { canonical: ORIGIN + path },
     openGraph: { title, description, url: ORIGIN + path, type: 'website', images: [{ url: socialImage, width: 1200, height: 630, type: 'image/png', alt: title }] },
     twitter: { card: 'summary_large_image', title, description, images: [socialImage] } };
