@@ -18,6 +18,14 @@
     {
       "pattern": "www.newsangle.co/*",
       "zone_name": "newsangle.co"
+    },
+    {
+      "pattern": "angle.fm",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.angle.fm",
+      "custom_domain": true
     }
   ],
   "assets": {
