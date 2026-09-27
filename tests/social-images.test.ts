@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { ogImage } from '../lib/server/og';
+import { socialImage } from '../lib/server/og-store';
 import { fitTitle, lineCount } from '../lib/server/og-title';
 import { pageMetadata } from '../lib/metadata';
 import { readableArtworkColor } from '../lib/artwork-palette';
@@ -114,6 +115,41 @@ test('titles use at most three lines and shorten with an ellipsis inside the tit
     }
     assert.ok(top >= 112 && bottom <= 508 && right <= 1086, `${title.slice(0, 30)}… spans y ${top}–${bottom}, x to ${right}`);
   }
+});
+// An in-memory stand-in for the R2 bucket.
+function bucket() {
+  const objects = new Map<string, ArrayBuffer>();
+  return { objects, binding: {
+    get: async (key: string) => objects.has(key) ? { body: new Response(objects.get(key)).body } : null,
+    put: async (key: string, value: ArrayBuffer) => { objects.set(key, value); },
+  } as unknown as Env['SOCIAL_IMAGES'] };
+}
+test('social images render once, are stored in R2 and are served from storage afterwards', async () => {
+  const store = bucket(), requests: string[] = [];
+  const cover = await bands([[220, 80, 60], [40, 90, 160], [60, 150, 90]]);
+  const context = env({ ANGLE_BACKEND: backend(cover, 'image/webp', requests), IMAGES: images(image => image.png()), SOCIAL_IMAGES: store.binding });
+  const card = { title: 'A new perspective', category: 'Politics', coverImage: 'https://backend.example/v2/media/cover', duration: 623 };
+  const first = await socialImage(context, 'episode/story', card);
+  assert.equal(first.headers.get('X-Social-Image'), 'rendered');
+  assert.equal(first.headers.get('Cache-Control'), 'public, max-age=3600');
+  const bytes = Buffer.from(await first.arrayBuffer());
+  assert.deepEqual([...store.objects.keys()].map(key => key.replace(/[0-9a-f]{24}/, 'hash')), ['artwork-4/episode/story/hash.png']);
+  const second = await socialImage(context, 'episode/story', card);
+  assert.equal(second.headers.get('X-Social-Image'), 'stored');
+  assert.deepEqual(Buffer.from(await second.arrayBuffer()), bytes);
+  assert.equal(requests.length, 1, 'Stored cards need no artwork');
+  assert.equal((await socialImage(context, 'episode/story', { ...card, title: 'A corrected title' })).headers.get('X-Social-Image'), 'rendered');
+  assert.equal(store.objects.size, 2, 'Changed content is stored under a new key');
+});
+test('cards drawn without their artwork are served but not stored', async () => {
+  const store = bucket();
+  const context = env({ ANGLE_BACKEND: backend(Buffer.alloc(0), 'image/webp'), IMAGES: images(image => image.png()), SOCIAL_IMAGES: store.binding });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const response = await socialImage(context, 'episode/story', { title: 'A new perspective', coverImage: 'https://backend.example/v2/media/missing' });
+    assert.equal(response.headers.get('X-Social-Image'), 'rendered');
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  }
+  assert.equal(store.objects.size, 0);
 });
 test('missing artwork still produces a branded image with long text', async () => {
   const response = await ogImage({ title: 'International security and governance: understanding the decisions that shape our shared future', category: 'Greenland security announcement status decision channels and local stakes' }, env());

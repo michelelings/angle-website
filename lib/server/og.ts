@@ -77,6 +77,8 @@ export async function ogImage(card: SocialCard, env: Env): Promise<Response> {
     Promise.all(covers.map(cover => loadArtwork(cover, env))),
   ]);
   const artwork = loaded.filter((value): value is Artwork => !!value);
+  // A card drawn without its artwork or colors after a failed fetch must not be stored.
+  const complete = artwork.length === covers.length && (!artwork.length || !!artwork[0].mesh);
   const [mesh1, mesh2, mesh3] = artwork[0]?.mesh || defaultMesh;
   // Satori blends `transparent` through black; fading each color out matches the browser.
   const clear = (color: string) => color.replace('rgb(', 'rgba(').replace(')', ', 0)');
@@ -110,5 +112,5 @@ export async function ogImage(card: SocialCard, env: Env): Promise<Response> {
     { name: 'Reckless', data: serif, weight: 400, style: 'normal' },
     { name: 'Inter', data: medium, weight: 500, style: 'normal' },
     { name: 'Inter', data: semibold, weight: 600, style: 'normal' },
-  ], headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600' } });
+  ], headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600', 'X-Social-Card': complete ? 'complete' : 'partial' } });
 }
