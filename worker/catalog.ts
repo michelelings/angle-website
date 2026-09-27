@@ -45,6 +45,7 @@ export type Env = Omit<WorkerEnv, 'ASSETS' | 'ANGLE_BACKEND'> & {
   ASSETS: Pick<Fetcher, 'fetch'>;
   ANGLE_BACKEND?: Pick<Fetcher, 'fetch'>;
   IMAGES?: Pick<ImagesBinding, 'input'>;
+  SOCIAL_IMAGES?: Pick<R2Bucket, 'get' | 'put'>;
 };
 
 export class CatalogError extends Error {

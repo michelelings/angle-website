@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "angle-website",
   "account_id": "118438a64acf487f0c03264439e49d9b",
-  "main": ".open-next/worker.js",
+  "main": "worker/main.ts",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": [
     "nodejs_compat",
@@ -28,11 +28,21 @@
       "custom_domain": true
     }
   ],
+  "triggers": {
+    // Pre-render new and changed social images into R2 (worker/main.ts).
+    "crons": ["*/10 * * * *"]
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
     "run_worker_first": true
   },
+  "r2_buckets": [
+    {
+      "binding": "SOCIAL_IMAGES",
+      "bucket_name": "angle-social-images"
+    }
+  ],
   "observability": {
     "enabled": true,
     "traces": {

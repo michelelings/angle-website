@@ -1,5 +1,5 @@
-import { CatalogError, readCatalog, readEpisode, categoriesFor, resolveCategory, type Env } from '../../worker/catalog';
-import { ogImage } from './og';
+import { CatalogError, readCatalog, readEpisode, categoriesFor, categorySlug, resolveCategory, type Env } from '../../worker/catalog';
+import { socialImage } from './og-store';
 import { sitemapResponse } from './sitemap';
 import { readSearchDocuments } from './search';
 const failure = (message: string, status: number) => Response.json({ success: false, error: message }, { status });
@@ -16,7 +16,7 @@ export async function apiResponse(path: string[], env: Env): Promise<Response> {
     if (key === 'sitemap') return sitemapResponse(await readCatalog(env));
     if (key === 'og-image') {
       const episodes = await readCatalog(env).catch(() => []);
-      return await ogImage({ title: 'Stories worth listening.', artworks: episodes.flatMap(e => e.coverImage ? [e.coverImage] : []).slice(0, 3) }, env);
+      return await socialImage(env, 'home', { title: 'Stories worth listening.', artworks: episodes.flatMap(e => e.coverImage ? [e.coverImage] : []).slice(0, 3) });
     }
     if (path[0] === 'og-image' && path[1] === 'category' && path.length === 3) {
       const episodes = await readCatalog(env);
@@ -24,14 +24,14 @@ export async function apiResponse(path: string[], env: Env): Promise<Response> {
       if (!category) return failure('Category not found', 404);
       const label = category === 'new' ? 'New' : category === 'popular' ? 'Popular' : category;
       const stories = episodes.filter(e => category === 'new' || category === 'popular' || e.category === category);
-      return await ogImage({ title: `${label}\nstories.`, artworks: stories.flatMap(e => e.coverImage ? [e.coverImage] : []).slice(0, 3) }, env);
+      return await socialImage(env, `category/${categorySlug(category)}`, { title: `${label}\nstories.`, artworks: stories.flatMap(e => e.coverImage ? [e.coverImage] : []).slice(0, 3) });
     }
     if (['episodes', 'og-image'].includes(path[0]) && path.length === 2) {
       if (!/^[a-zA-Z0-9_-]+$/.test(path[1])) return failure('Invalid episode ID', 400);
       const episode = await readEpisode(env, path[1]);
       if (!episode) return failure('Episode not found', 404);
       return path[0] === 'episodes' ? Response.json({ success: true, data: episode })
-        : await ogImage({ title: episode.title, category: episode.category, coverImage: episode.coverImage, duration: episode.duration }, env);
+        : await socialImage(env, `episode/${episode.id}`, { title: episode.title, category: episode.category, coverImage: episode.coverImage, duration: episode.duration });
     }
     return failure('Not found', 404);
   } catch (error) {
