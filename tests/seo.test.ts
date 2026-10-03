@@ -25,13 +25,13 @@ test('source projection rejects executable and credentialed links, preserves dis
   assert.equal(mapV2Episode({ ...base, updatedAt: 'invalid' }).updatedAt, null);
 });
 
-test('sitemap uses content dates and only includes the main catalog, about, and episodes', async () => {
+test('sitemap uses content dates and includes canonical categories but excludes alternate catalog views', async () => {
   const episode = mapV2Episode({ ...base, updatedAt: '2026-09-23' });
   const xml = await sitemapResponse([episode]).text();
   assert.match(xml, /<lastmod>2026-09-23<\/lastmod>/);
   assert.ok(!xml.includes('/new</loc>') && !xml.includes('/home-v2</loc>') && !xml.includes('/popular</loc>'));
-  assert.ok(!xml.includes('/technology</loc>'));
-  assert.equal((xml.match(/<loc>/g) || []).length, 3);
+  assert.ok(xml.includes('/technology</loc>'));
+  assert.equal((xml.match(/<loc>/g) || []).length, 4);
   assert.ok(!(await sitemapResponse([mapV2Episode({ ...base, listenCount: 4 })]).text()).includes('/popular</loc>'));
 });
 

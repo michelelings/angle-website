@@ -124,7 +124,7 @@ export function parseScript(transcript: unknown): ScriptChapter[] {
   }).filter((chapter, index, all) => all.findIndex(other => other.id === chapter.id) === index);
   // The final paragraph is the spoken sign-off ("Thanks for listening…").
   const lastChapter = chapters.at(-1), lastSegment = lastChapter?.segments.at(-1);
-  lastSegment?.paragraphs.pop();
+  if (/^(?:Thanks? (?:you )?for listening|Thank you for (?:joining|listening)|That[’\']s (?:all|it) for (?:today|now))[.! ,]/i.test(lastSegment?.paragraphs.at(-1) || '')) lastSegment?.paragraphs.pop();
   if (lastChapter && lastSegment && !lastSegment.paragraphs.length) lastChapter.segments.pop();
   if (lastChapter && !lastChapter.segments.length) chapters.pop();
   return chapters;

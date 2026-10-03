@@ -1,3 +1,4 @@
+import { episodeHeadline } from './episode-headlines';
 import type { Episode } from './episodes';
 
 export type SearchDocument = Pick<Episode, 'id' | 'title' | 'category' | 'coverImage' | 'createdAt'> & {
@@ -8,7 +9,7 @@ export type SearchDocument = Pick<Episode, 'id' | 'title' | 'category' | 'coverI
 export function searchDocument(episode: Episode): SearchDocument {
   return { id: episode.id, title: episode.title, category: episode.category,
     coverImage: episode.coverImage, createdAt: episode.createdAt,
-    topics: episode.topics || [], topicNames: episode.topicNames || [], transcript: episode.transcript || '' };
+    topics: [...(episode.topics || []), ...(episodeHeadline(episode) !== episode.title ? [episodeHeadline(episode)] : [])], topicNames: episode.topicNames || [], transcript: episode.transcript || '' };
 }
 export const normalizeSearch = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 // Adjacent swapped letters count as one typo, alongside insertions, deletions,

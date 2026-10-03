@@ -8,6 +8,8 @@ export interface Episode {
   id: string;
   revisionId?: string | null;
   title: string;
+  /** Optional editorial headline for discovery; the creative title is preserved. */
+  searchTitle?: string | null;
   description: string | null;
   hookLine?: string | null;
   story?: EpisodeStory;
@@ -109,7 +111,7 @@ export function parseCatalog(payload: unknown): Episode[] {
       }
       seen.add(row.id);
       return {
-        id: row.id, title: row.title, description: nullableString(row.description),
+        id: row.id, title: row.title, searchTitle: nullableString(row.searchTitle)?.trim() || null, description: nullableString(row.description),
         hookLine: nullableString(row.hookLine),
         coverImage: mediaUrl(row.coverImage), createdAt: row.createdAt,
         updatedAt: timestamp(row.updatedAt), category: nullableString(row.category),
@@ -151,7 +153,7 @@ export function mapV2Episode(value: unknown): Episode {
     return [nullableString(c.title), ...turns.map(turn => nullableString(object(turn).text))].filter(Boolean);
   }).join('\n\n');
   const mapped = parseCatalog({ success: true, data: [{
-    id: row.id, title: row.title, description: row.excerpt, fullDescription: row.excerpt,
+    id: row.id, title: row.title, searchTitle: row.searchTitle, description: row.excerpt, fullDescription: row.excerpt,
     hookLine: nullableString(row.hookLine) ?? publishedHook(row.id, row.revisionId),
     coverImage: row.coverUrl, createdAt: row.createdAt, category: row.category,
     previewVideoUrl: row.previewVideoUrl,

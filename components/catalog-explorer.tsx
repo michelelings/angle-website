@@ -8,7 +8,9 @@ import { SiteFooter } from './site-footer';
 import { Gallery } from './gallery';
 import { EpisodeCard } from './episode-card';
 import { categorySlug, filterEpisodes, type Episode } from '@/lib/episodes';
-import { categoryLabel } from '@/lib/catalog-copy';
+import { featuredSubjects } from '@/lib/subject-editorial';
+import { subjectPath } from '@/lib/subject-hub';
+import { categoryLabel, catalogCopy } from '@/lib/catalog-copy';
 import { createSearchIndex, type SearchDocument } from '@/lib/search';
 import { catalogCategory, catalogHref, catalogResults } from '@/lib/catalog-search';
 
@@ -47,8 +49,7 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
     if (!routeCategory) return;
     setLastCatalog(previous => previous.category === routeCategory && previous.query === requestedQuery
       ? previous : { category: routeCategory, query: requestedQuery });
-    const label = routeCategory === 'new' ? 'New' : routeCategory === 'popular' ? 'Popular' : routeCategory;
-    document.title = routeCategory === 'all' ? 'Angle — Audio Stories and News Explainers' : `${label} Stories | Angle`;
+    document.title = routeCategory === 'all' ? 'Angle — Audio Stories and News Explainers' : `${catalogCopy(routeCategory).heading} | Angle`;
   }, [routeCategory, requestedQuery]);
   useEffect(() => {
     if (!expanded || documentsReady.current) return;
@@ -72,6 +73,8 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
   const filtering = !!query.trim();
   const pending = filtering && state !== 'ready';
   const visible = useMemo(() => pending ? [] : model.results, [pending, model.results]);
+  const copy = catalogCopy(active);
+  const guides = featuredSubjects(episodes);
   const filters = ['all', 'new', ...(filterEpisodes(episodes, 'popular').length ? ['popular'] : []), ...categories.filter(c => !['all', 'new', 'popular'].includes(c))];
   function update(nextQuery: string, typing = false) {
     const url = catalogHref(pathname, nextQuery, '');
@@ -103,7 +106,6 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
     </div>
   </div>;
   return <main className="catalog-page">
-    <h1 className="sr-only">Angle stories</h1>
     <noscript><form action={initialActive === 'all' ? '/' : '/' + categorySlug(initialActive)} method="get" role="search">
       <label>Search stories <input name="q" type="search" defaultValue={requestedQuery} maxLength={200} /></label>
       <button type="submit">Search</button>
@@ -127,6 +129,12 @@ export function CatalogExplorer({ episodes, categories, active: initialActive, i
     </div>
     <GetAngleLink location="header" />
     </header>
+    <section className="catalog-introduction" aria-label="About these stories">
+      <h1>{copy.heading}</h1><p>{copy.description}</p>
+      {!filtering && guides.length > 0 && <nav className="featured-subjects" aria-label="Topic reading guides">
+        <span>Explore:</span>{guides.map(guide => <Link key={guide.id} href={subjectPath(guide.id)}>{guide.aliases[0] === 'moores-law' ? 'Moore’s law' : guide.aliases[0] === 'bitcoin' ? 'Bitcoin' : 'Universal basic income'}</Link>)}
+      </nav>}
+    </section>
     <section className="catalog-refinements" aria-label="Search status" hidden={!expanded || (!filtering && state !== 'error' && state !== 'loading')}>
       <p className="catalog-search-status" role="status">
         {state === 'loading' ? 'Loading searchable stories…'

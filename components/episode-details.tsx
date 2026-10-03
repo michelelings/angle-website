@@ -1,3 +1,4 @@
+import { episodeHeadline } from '@/lib/episode-headlines';
 import { artworkVariantUrl, progressiveArtworkProps } from '@/lib/artwork';
 import { ArtworkImage } from './artwork-image';
 import Link from 'next/link';
@@ -11,12 +12,13 @@ import { StoryKeyFacts, StoryProvider, StoryScript, StoryTimeline } from './stor
 import { StoryPlaces } from './story-places';
 import { EpisodeTaxonomy } from './episode-taxonomy';
 export function EpisodeDetails({ episode, modal = false, related = [] }: { episode: Episode; modal?: boolean; related?: Episode[] }) {
-  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={progressiveArtworkProps(episode)} title={episode.title} audioUrl={episode.audioUrl}
+  return <EpisodeExperience id={episode.id} artwork={episode.coverImage || '/images/icon.webp'} artworkSources={progressiveArtworkProps(episode)} title={episodeHeadline(episode)} audioUrl={episode.audioUrl}
     artworkHeader={<nav className="episode-breadcrumb" aria-label="Breadcrumb"><Link href="/" className="episode-breadcrumb-home" aria-label="Angle home"><img src="/images/logo.svg" alt="" width="32" height="32" /></Link>
         {episode.category && <span>{categoryLabel(episode.category)}</span>}
       </nav>}>
     <div className="modal-body">
-      <EpisodeTitle title={episode.title} modal={modal} />
+      <EpisodeTitle title={episodeHeadline(episode)} modal={modal} />
+      {episodeHeadline(episode) !== episode.title && <p className="episode-creative-title">{episode.title}</p>}
       {episode.story?.hookLine && <p className="story-hook">{episode.story.hookLine}</p>}
       <div className="modal-meta">
         {episode.duration !== null && <span className="modal-meta-item">{formatMinutes(episode.duration)}</span>}
@@ -25,8 +27,8 @@ export function EpisodeDetails({ episode, modal = false, related = [] }: { episo
         {episode.episodeNumber !== null && <span className="modal-meta-item">Episode {episode.episodeNumber}</span>}
         <div className="episode-actions"><GetAngleLink location="modal" episodeId={episode.id} /><ShareButton id={episode.id} /></div>
       </div>
-      {episode.story?.whyItMatters && <section className="story-overview" aria-label="Overview">
-        <p className="modal-description">{episode.story.whyItMatters}</p>
+      {(episode.story?.whyItMatters || episode.description) && <section className="story-overview" aria-label="Overview">
+        <p className="modal-description">{episode.story?.whyItMatters || episode.description}</p>
       </section>}
       {(!!episode.keyFacts?.length || !!episode.script?.length || !!episode.story?.events.length || !!episode.story?.places.length) && <StoryProvider moments={episode.story?.moments ?? []} places={episode.story?.places ?? []}>
         {!!episode.keyFacts?.length && <StoryKeyFacts facts={episode.keyFacts} />}
@@ -34,6 +36,17 @@ export function EpisodeDetails({ episode, modal = false, related = [] }: { episo
         {!!episode.story?.events.length && <StoryTimeline events={episode.story.events} places={episode.story.places} playable={!!episode.audioUrl} />}
         {!!episode.story?.places.length && <StoryPlaces places={episode.story.places} events={episode.story.events} />}
       </StoryProvider>}
+      {!episode.script?.length && (!!episode.chapters?.length || !!episode.transcript) && <section className="story-section story-script">
+        <h2>Transcript</h2>
+        {episode.chapters?.length ? episode.chapters.map((chapter, index) => <section key={index} className="story-chapter">
+          <h3>{chapter.title}</h3>
+          {chapter.turns.map((turn, index) => <p key={index}>{turn.speaker && <strong>{turn.speaker}: </strong>}{turn.text}</p>)}
+        </section>) : episode.transcript?.split(/\n{2,}/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+      </section>}
+      {(episode.host || episode.presenterDisclosure) && <section className="episode-presenters" aria-label="Presenters">
+        {episode.host && <p>Presented by {episode.host}</p>}
+        {episode.presenterDisclosure && <p>{episode.presenterDisclosure}</p>}
+      </section>}
       <EpisodeTaxonomy episode={episode} />
       {!!episode.sources?.length && <section className="episode-sources"><h2>Sources</h2>
         <ul>{episode.sources.map(source => <li key={source.url}><a href={source.url} rel="noopener noreferrer">{source.title}</a>
@@ -47,7 +60,7 @@ export function EpisodeDetails({ episode, modal = false, related = [] }: { episo
         <ul className="related-story-grid">{related.map(other => <li key={other.id}>
           <Link href={`/episode/${other.id}`} className="related-story-card">
             <ArtworkImage className="related-story-artwork" src={artworkVariantUrl(other, 'small')} fullSrc={artworkVariantUrl(other, 'small')} alt="" width="60" height="80" loading="lazy" />
-            <span className="related-story-title">{other.title}</span>
+            <span className="related-story-title">{episodeHeadline(other)}</span>
           </Link>
         </li>)}</ul>
       </section>}

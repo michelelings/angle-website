@@ -205,3 +205,22 @@ dialog.modal-overlay::backdrop { background: transparent; }
   .subject-story-grid .rail-card-info { padding: 12px 14px 14px; }
   .subject-story-grid .rail-card-title { font-size: 20px; }
 }
+
+/* Keep the reading guide compact enough to leave room for the story gallery. */
+.catalog-introduction { flex-shrink: 0; margin: 0 var(--page-gutter) 20px; padding: 0; max-width: 880px; text-align: left; color: var(--ink); }
+.catalog-introduction h1 { font: 28px/1.15 var(--serif); margin: 0 0 8px; }
+.catalog-introduction p { font: 14px/1.5 var(--sans); margin: 0; max-width: 76ch; }
+.featured-subjects { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font: 13px/1.5 var(--sans); }
+.featured-subjects a, .subject-questions a { text-decoration: underline; text-underline-offset: 3px; }
+.subject-questions { padding-left: 24px; }
+.subject-questions li { margin-bottom: 20px; }
+.subject-questions p { margin-top: 4px; }
+.episode-creative-title { font: italic 18px/1.4 var(--serif); margin: 8px 0 16px; }
+.episode-presenters { font: 14px/1.6 var(--sans); margin-top: 24px; }
+.catalog-page .episode-title { font-size: clamp(24px, 2.2vw, 32px); line-height: 1.12; -webkit-line-clamp: unset; }
+@media (max-width: 768px) {
+  .catalog-introduction { margin-bottom: 16px; }
+  .catalog-introduction h1 { font-size: 24px; }
+  .catalog-introduction p { font-size: 13px; }
+  .catalog-page { min-height: 850px; }
+}

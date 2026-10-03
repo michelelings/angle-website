@@ -1,3 +1,4 @@
+import { episodeHeadline } from '../episode-headlines';
 import { type Episode, formatDate, formatMinutes } from '../episodes';
 import { categoryLabel } from '../catalog-copy';
 import { progressiveArtworkProps } from '../artwork';
@@ -10,9 +11,9 @@ export function createGalleryCard(episode: Episode): HTMLElement {
   const card = document.createElement('article');
   card.className = 'episode-card';
   card.dataset.episodeId = episode.id;
-  card.innerHTML = `<span class="progressive-artwork corner-shaded"><img alt="${escape(episode.title)}" width="600" height="800" draggable="false"><img class="artwork-full" alt="" aria-hidden="true" width="600" height="800" draggable="false">${episode.category ? `<span class="episode-category artwork-category">${escape(categoryLabel(episode.category))}</span>` : ''}</span>
+  card.innerHTML = `<span class="progressive-artwork corner-shaded"><img alt="${escape(episodeHeadline(episode))}" width="600" height="800" draggable="false"><img class="artwork-full" alt="" aria-hidden="true" width="600" height="800" draggable="false">${episode.category ? `<span class="episode-category artwork-category">${escape(categoryLabel(episode.category))}</span>` : ''}</span>
     <div class="episode-info">
-    <h3 class="episode-title"><a href="/episode/${encodeURIComponent(episode.id)}" draggable="false">${escape(episode.title)}</a></h3>
+    <h3 class="episode-title"><a href="/episode/${encodeURIComponent(episode.id)}" draggable="false">${escape(episodeHeadline(episode))}</a></h3>
     ${episode.hookLine ? `<p class="episode-description">${escape(episode.hookLine)}</p>` : ''}
     <div class="episode-footer">${episode.duration !== null ? `<span>${formatMinutes(episode.duration)}</span>` : ''}<span>${formatDate(episode.createdAt)}</span></div></div>
 `;

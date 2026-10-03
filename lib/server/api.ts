@@ -1,6 +1,6 @@
-import { CatalogError, readCatalog, readEpisode, categoriesFor, categorySlug, resolveCategory, type Env } from '../../worker/catalog';
+import { CatalogError, readCatalog, readEpisode, readSubjectHub, categoriesFor, categorySlug, resolveCategory, type Env } from '../../worker/catalog';
 import { socialImage } from './og-store';
-import { sitemapResponse } from './sitemap';
+import { curatedSitemap } from './sitemap';
 import { readSearchDocuments } from './search';
 const failure = (message: string, status: number) => Response.json({ success: false, error: message }, { status });
 export async function apiResponse(path: string[], env: Env): Promise<Response> {
@@ -13,7 +13,7 @@ export async function apiResponse(path: string[], env: Env): Promise<Response> {
     if (key === 'episodes') return Response.json({ success: true, data: await readCatalog(env) });
     if (key === 'categories') return Response.json({ success: true, data: categoriesFor(await readCatalog(env)) });
     if (key === 'ready') { await readCatalog(env); return Response.json({ status: 'ok', catalog: 'reachable' }); }
-    if (key === 'sitemap') return sitemapResponse(await readCatalog(env));
+    if (key === 'sitemap') return curatedSitemap(await readCatalog(env), id => readSubjectHub(env, id));
     if (key === 'og-image') {
       const episodes = await readCatalog(env).catch(() => []);
       return await socialImage(env, 'home', { title: 'Stories worth listening.', artworks: episodes.flatMap(e => e.coverImage ? [e.coverImage] : []).slice(0, 3) });

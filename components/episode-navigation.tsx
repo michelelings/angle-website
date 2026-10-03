@@ -1,4 +1,5 @@
 'use client';
+import { episodeHeadline } from '@/lib/episode-headlines';
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,7 @@ export function EpisodeNavigation({ children }: { children: ReactNode }) {
   }, [router]);
   const value = useMemo(() => ({ open, prefetch }), [open, prefetch]);
   return <Navigation.Provider value={value}>{children}
-    {isPending && pending && <StoryDialog title={pending.episode.title} onClose={() => {
+    {isPending && pending && <StoryDialog title={episodeHeadline(pending.episode)} onClose={() => {
       const origin = pending.origin;
       setPending(null);
       // Supersede the in-flight navigation so a late response cannot reopen it.
@@ -52,7 +53,7 @@ function EpisodePreview({ episode }: { episode: Episode }) {
       </div>
     </section>
     <div className="episode-reading"><div className="modal-body">
-      <EpisodeTitle title={episode.title} modal />
+      <EpisodeTitle title={episodeHeadline(episode)} modal />
       {episode.hookLine && <p className="story-hook">{episode.hookLine}</p>}
       <div className="modal-meta">
         {episode.duration !== null && <span className="modal-meta-item">{formatMinutes(episode.duration)}</span>}

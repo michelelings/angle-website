@@ -28,7 +28,7 @@ test('Next API retains catalog and episode response contracts, including missing
 });
 test('sitemap and JSON-LD preserve canonical routes and escape untrusted text', async () => {
   const xml = await (await apiResponse(['sitemap'], env())).text();
-  assert.doesNotMatch(xml, /https:\/\/www.newsangle.co\/science-and-tech/);
+  assert.match(xml, /https:\/\/www.newsangle.co\/science-and-tech/);
   assert.match(xml, /https:\/\/www.newsangle.co\/episode\/story-one/);
   const { data: [episode] } = await (await apiResponse(['episodes'], env())).json();
   assert.ok(!episodeJsonLd(episode).includes('</script>'));

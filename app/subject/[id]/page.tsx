@@ -1,3 +1,5 @@
+import { editorialForSubject } from '@/lib/subject-editorial';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSubjectHub } from '@/lib/server/catalog';
 import { subjectMetadata } from '@/lib/metadata';
@@ -16,10 +18,17 @@ export async function generateMetadata({ params }: Props) {
 export default async function Subject({ params }: Props) {
   const hub = await getSubjectHub((await params).id);
   if (!hub) notFound();
+  const editorial = editorialForSubject(hub);
+  const questions = editorial?.questions.filter(item => hub.episodes.some(episode => episode.id === item.episodeId)) || [];
   return <main><Header /><article className="subject-page">
     <p className="subject-kind">{subjectKindLabel(hub.kind)}</p>
-    <h1>{hub.name}</h1>
-    {hub.description && <p className="subject-description">{hub.description}</p>}
+    <h1>{editorial?.title || hub.name}</h1>
+    {editorial ? <section className="subject-introduction" aria-label="Reading guide">
+      {editorial.introduction.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+      {!!questions.length && <><h2>Questions these stories explore</h2><ul className="subject-questions">
+        {questions.map(item => <li key={item.episodeId}><Link href={`/episode/${item.episodeId}`}>{item.question}</Link><p>{item.context}</p></li>)}
+      </ul></>}
+    </section> : hub.description && <p className="subject-description">{hub.description}</p>}
     <section aria-labelledby="subject-stories">
       <h2 id="subject-stories">Stories on Angle</h2>
       {hub.episodes.length

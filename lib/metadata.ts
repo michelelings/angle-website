@@ -1,3 +1,5 @@
+import { editorialForSubject, eligibleSubject } from './subject-editorial';
+import { episodeHeadline } from './episode-headlines';
 import type { Metadata } from 'next';
 import { ORIGIN, DESCRIPTION, SOCIAL_IMAGE_VERSION } from './site';
 import type { Episode } from './episodes';
@@ -18,10 +20,10 @@ export function episodeDescription(episode: Episode): string {
   const text = (episode.description || episode.fullDescription || DESCRIPTION).replace(/\s+/g, ' ').trim();
   if (text.length <= 200) return text;
   // Do not extract a claim while dropping qualifications from later sentences.
-  return `Listen to “${episode.title}” on Angle. Read the episode summary, transcript, and available sources.`;
+  return `Listen to “${episodeHeadline(episode)}” on Angle. Read the episode summary, transcript, and available sources.`;
 }
 export function episodeMetadata(episode: Episode): Metadata {
-  const meta = pageMetadata(`/episode/${episode.id}`, `${episode.title} | Angle`, episodeDescription(episode), `/api/og-image/${episode.id}`);
+  const meta = pageMetadata(`/episode/${episode.id}`, `${episodeHeadline(episode)} | Angle`, episodeDescription(episode), `/api/og-image/${episode.id}`);
   return { ...meta, openGraph: { ...meta.openGraph, type: 'article',
     ...(episode.previewVideoUrl ? { videos: [{
       url: episode.previewVideoUrl,
@@ -33,15 +35,16 @@ export function episodeMetadata(episode: Episode): Metadata {
   } };
 }
 export function subjectMetadata(hub: SubjectHub): Metadata {
-  const description = hub.description && hub.description.length <= 200 ? hub.description
-    : `Listen to Angle audio stories featuring ${hub.name}, with transcripts, timelines and sources.`;
+  const editorial = editorialForSubject(hub);
+  const description = editorial?.description || (hub.description && hub.description.length <= 200 ? hub.description
+    : `Listen to Angle audio stories featuring ${hub.name}, with transcripts, timelines and sources.`);
   // A resolved profile is the subject's cross-episode identity; taxonomy IDs can differ per episode.
-  const meta = pageMetadata(subjectPath(hub.profile?.id ?? hub.id), `${hub.name} | Angle`, description);
-  // An ambiguous hub mixes stories that may be about different people or things.
-  return hub.profileStatus === 'ambiguous' || !hub.episodes.length ? { ...meta, robots: { index: false, follow: true } } : meta;
+  const meta = pageMetadata(subjectPath(hub.profile?.id ?? hub.id), `${editorial?.title || hub.name} | Angle`, description);
+  // Only curated reading guides with their linked stories are ready for indexing.
+  return !eligibleSubject(hub) ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 export function episodeJsonLd(episode: Episode): string {
-  return JSON.stringify({ '@context': 'https://schema.org', '@type': 'PodcastEpisode', name: episode.title,
+  return JSON.stringify({ '@context': 'https://schema.org', '@type': 'PodcastEpisode', name: episodeHeadline(episode),
     url: `${ORIGIN}/episode/${episode.id}`, description: episode.fullDescription || episode.description || DESCRIPTION,
     datePublished: episode.createdAt, dateModified: episode.updatedAt || episode.createdAt,
     publisher: { '@type': 'Organization', name: 'Angle', url: ORIGIN },

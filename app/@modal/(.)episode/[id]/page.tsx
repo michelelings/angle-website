@@ -1,3 +1,4 @@
+import { episodeHeadline } from '@/lib/episode-headlines';
 import { notFound } from 'next/navigation';
 import { getEpisode } from '@/lib/server/catalog';
 import { EpisodeDetails } from '@/components/episode-details';
@@ -13,5 +14,5 @@ export async function generateMetadata({ params }: Props) {
 export default async function EpisodeModal({ params }: Props) {
   const episode = await getEpisode((await params).id);
   if (!episode) notFound();
-  return <StoryDialog title={episode.title}><EpisodeDetails episode={episode} modal /></StoryDialog>;
+  return <StoryDialog title={episodeHeadline(episode)}><EpisodeDetails episode={episode} modal /></StoryDialog>;
 }
